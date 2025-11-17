@@ -74,7 +74,7 @@ export default function ImageProcessor() {
       }
     } catch (error) {
       console.error('Error processing image:', error)
-      alert('画像の処理中にエラーが発生しました。')
+      alert('😅 うまくいかなかったみたい。もう一度写真をとってみてね！')
     } finally {
       setIsProcessing(false)
     }
@@ -88,7 +88,7 @@ export default function ImageProcessor() {
       await processImageWithCorners(originalImage!, adjustedCorners)
     } catch (error) {
       console.error('Error processing image with corners:', error)
-      alert('画像の処理中にエラーが発生しました。')
+      alert('😅 うまくいかなかったみたい。もう一度やってみてね！')
     } finally {
       setIsProcessing(false)
     }
@@ -103,7 +103,7 @@ export default function ImageProcessor() {
       await processImageWithCorners(originalImage!, null)
     } catch (error) {
       console.error('Error processing image:', error)
-      alert('画像の処理中にエラーが発生しました。')
+      alert('😅 うまくいかなかったみたい。もう一度やってみてね！')
     } finally {
       setIsProcessing(false)
     }
@@ -118,48 +118,66 @@ export default function ImageProcessor() {
     const blurred = new cv.Mat()
     cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
 
-    // Edge detection using Canny
-    const edges = new cv.Mat()
-    cv.Canny(blurred, edges, 50, 150)
+    // Try multiple Canny thresholds for better detection
+    const thresholdPairs = [
+      [30, 100],
+      [50, 150],
+      [75, 200],
+    ]
 
-    // Find contours
-    const contours = new cv.MatVector()
-    const hierarchy = new cv.Mat()
-    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    // Find the largest contour that approximates to a quadrilateral
-    let maxArea = 0
     let bestContour = null
+    let maxArea = 0
 
-    for (let i = 0; i < contours.size(); i++) {
-      const contour = contours.get(i)
-      const area = cv.contourArea(contour)
+    for (const [low, high] of thresholdPairs) {
+      // Edge detection using Canny
+      const edges = new cv.Mat()
+      cv.Canny(blurred, edges, low, high)
 
-      // Skip small contours (less than 10% of image area)
-      if (area < src.rows * src.cols * 0.1) {
-        continue
+      // Find contours
+      const contours = new cv.MatVector()
+      const hierarchy = new cv.Mat()
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+      // Find the largest contour that approximates to a quadrilateral
+      for (let i = 0; i < contours.size(); i++) {
+        const contour = contours.get(i)
+        const area = cv.contourArea(contour)
+
+        // Skip small contours (less than 5% of image area - reduced from 10%)
+        if (area < src.rows * src.cols * 0.05) {
+          continue
+        }
+
+        // Approximate contour to polygon with varying epsilon
+        const peri = cv.arcLength(contour, true)
+        for (const epsilon of [0.02, 0.03, 0.04]) {
+          const approx = new cv.Mat()
+          cv.approxPolyDP(contour, approx, epsilon * peri, true)
+
+          // Check if it's a quadrilateral (4 points)
+          if (approx.rows === 4 && area > maxArea) {
+            maxArea = area
+            if (bestContour) bestContour.delete()
+            bestContour = approx.clone()
+          }
+          approx.delete()
+        }
       }
 
-      // Approximate contour to polygon
-      const peri = cv.arcLength(contour, true)
-      const approx = new cv.Mat()
-      cv.approxPolyDP(contour, approx, 0.02 * peri, true)
+      // Cleanup
+      edges.delete()
+      contours.delete()
+      hierarchy.delete()
 
-      // Check if it's a quadrilateral (4 points)
-      if (approx.rows === 4 && area > maxArea) {
-        maxArea = area
-        if (bestContour) bestContour.delete()
-        bestContour = approx.clone()
+      // If we found a good candidate (> 20% of image), stop searching
+      if (bestContour && maxArea > src.rows * src.cols * 0.2) {
+        break
       }
-      approx.delete()
     }
 
     // Cleanup
     gray.delete()
     blurred.delete()
-    edges.delete()
-    contours.delete()
-    hierarchy.delete()
 
     return bestContour
   }
@@ -381,9 +399,10 @@ export default function ImageProcessor() {
               onCancel={handleCornersCancel}
             />
           ) : isProcessing ? (
-            <div className="rounded-lg bg-white p-8 text-center shadow-lg">
+            <div className="rounded-lg bg-gradient-to-br from-orange-50 to-yellow-50 p-8 text-center shadow-lg">
               <div className="mx-auto mb-4 h-16 w-16 animate-spin rounded-full border-b-4 border-orange-500"></div>
-              <p className="text-gray-600">画像を処理中...</p>
+              <p className="text-lg font-semibold text-orange-600">🔍 絵をチェック中...</p>
+              <p className="mt-2 text-sm text-gray-600">ちょっと待ってね！</p>
             </div>
           ) : leftImage && rightImage ? (
             <>
@@ -391,9 +410,9 @@ export default function ImageProcessor() {
               <div className="text-center">
                 <button
                   onClick={handleReset}
-                  className="rounded-lg bg-orange-500 px-6 py-3 text-white transition-colors hover:bg-orange-600"
+                  className="rounded-lg bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg active:scale-95"
                 >
-                  別の画像を読み込む
+                  🔄 別の絵で遊ぶ
                 </button>
               </div>
             </>

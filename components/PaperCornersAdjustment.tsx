@@ -47,6 +47,7 @@ export default function PaperCornersAdjustment({
       drawCanvas(img, corners, scale)
     }
     img.src = imageDataUrl
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageDataUrl, corners])
 
   const drawCanvas = (img: HTMLImageElement, corners: Point[], scale: number) => {
@@ -64,10 +65,12 @@ export default function PaperCornersAdjustment({
 
     // Draw corners and lines
     ctx.strokeStyle = '#f97316' // orange
-    ctx.lineWidth = 2
+    ctx.lineWidth = 3
     ctx.fillStyle = '#f97316'
 
-    // Draw lines connecting corners
+    // Draw lines connecting corners with shadow
+    ctx.shadowColor = 'rgba(249, 115, 22, 0.3)'
+    ctx.shadowBlur = 5
     ctx.beginPath()
     corners.forEach((corner, index) => {
       const x = corner.x * scale
@@ -80,24 +83,47 @@ export default function PaperCornersAdjustment({
     })
     ctx.closePath()
     ctx.stroke()
+    ctx.shadowBlur = 0
 
     // Draw corner points
     corners.forEach((corner, index) => {
       const x = corner.x * scale
       const y = corner.y * scale
+      const isActive = draggingIndex === index
 
+      // Draw outer circle (glow effect)
+      if (isActive) {
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.3)'
+        ctx.beginPath()
+        ctx.arc(x, y, 20, 0, 2 * Math.PI)
+        ctx.fill()
+      }
+
+      // Draw main circle
+      ctx.fillStyle = isActive ? '#fb923c' : '#f97316'
       ctx.beginPath()
-      ctx.arc(x, y, 10, 0, 2 * Math.PI)
+      ctx.arc(x, y, 12, 0, 2 * Math.PI)
       ctx.fill()
 
-      // Draw label
-      ctx.fillStyle = 'white'
-      ctx.font = '12px sans-serif'
+      // Draw white border
+      ctx.strokeStyle = 'white'
+      ctx.lineWidth = 3
+      ctx.beginPath()
+      ctx.arc(x, y, 12, 0, 2 * Math.PI)
+      ctx.stroke()
+
+      // Draw emoji label
+      ctx.font = '16px sans-serif'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      const labels = ['左上', '右上', '右下', '左下']
-      ctx.fillText(labels[index], x, y)
-      ctx.fillStyle = '#f97316'
+      const emojis = ['↖️', '↗️', '↘️', '↙️']
+
+      // Draw text shadow for better visibility
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+      ctx.fillText(emojis[index], x + 1, y - 21)
+
+      ctx.fillStyle = 'white'
+      ctx.fillText(emojis[index], x, y - 22)
     })
   }
 
@@ -191,11 +217,11 @@ export default function PaperCornersAdjustment({
   }
 
   return (
-    <div className="space-y-4 rounded-lg bg-white p-6 shadow-lg">
+    <div className="space-y-4 rounded-lg bg-gradient-to-br from-orange-50 to-yellow-50 p-6 shadow-lg">
       <div className="text-center">
-        <h2 className="mb-2 text-xl font-bold text-gray-800">紙の範囲を調整</h2>
-        <p className="text-sm text-gray-600">
-          オレンジ色の点をドラッグして、紙の4つの角を調整してください
+        <h2 className="mb-2 text-2xl font-bold text-orange-600">📄 まっすぐに直そう！</h2>
+        <p className="text-base text-gray-700">
+          🟠 オレンジの点を動かして、絵の4つのかどを合わせてね
         </p>
       </div>
 
@@ -209,29 +235,33 @@ export default function PaperCornersAdjustment({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="cursor-pointer border-2 border-gray-300"
+          className="cursor-pointer rounded-lg border-4 border-orange-300 shadow-md"
           style={{ touchAction: 'none' }}
         />
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="rounded-lg bg-white p-3 text-center text-sm text-gray-600">
+        💡 ヒント: 点をタッチして動かすと、絵がまっすぐになるよ！
+      </div>
+
+      <div className="flex justify-center gap-3">
         <button
           onClick={handleReset}
-          className="rounded-lg bg-gray-500 px-6 py-3 text-white transition-colors hover:bg-gray-600"
+          className="rounded-lg bg-gray-400 px-5 py-3 text-base font-semibold text-white shadow-md transition-all hover:bg-gray-500 hover:shadow-lg active:scale-95"
         >
-          リセット
+          やり直し
         </button>
         <button
           onClick={onCancel}
-          className="rounded-lg bg-red-500 px-6 py-3 text-white transition-colors hover:bg-red-600"
+          className="rounded-lg bg-blue-500 px-5 py-3 text-base font-semibold text-white shadow-md transition-all hover:bg-blue-600 hover:shadow-lg active:scale-95"
         >
-          キャンセル
+          そのまま進む
         </button>
         <button
           onClick={handleApply}
-          className="rounded-lg bg-orange-500 px-6 py-3 text-white transition-colors hover:bg-orange-600"
+          className="rounded-lg bg-orange-500 px-6 py-3 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg active:scale-95"
         >
-          適用
+          これでOK！
         </button>
       </div>
     </div>
