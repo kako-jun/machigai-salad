@@ -27,14 +27,14 @@ export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProp
   }
 
   return (
-    <div className="rounded-lg bg-white p-8 shadow-lg">
+    <div className="rounded-lg bg-gradient-to-br from-orange-50 to-yellow-50 p-8 shadow-lg">
       <div className="mb-6 text-center">
-        <div className="mb-4 text-6xl">📸</div>
-        <h2 className="mb-2 text-2xl font-bold text-gray-800">間違い探しの画像を撮影</h2>
-        <p className="mb-4 text-gray-600">サイゼリヤの間違い探しを撮影してください</p>
-        {!cvLoaded && (
-          <p className="mb-4 text-sm text-orange-500">画像処理エンジンを読み込み中...</p>
-        )}
+        <div className="mb-4 text-7xl">🍤</div>
+        <h2 className="mb-2 text-3xl font-bold text-orange-600">小エビの間違いサラダ</h2>
+        <p className="mb-4 text-lg font-semibold text-gray-700">
+          サイゼリヤの間違いさがしの写真をとってね！
+        </p>
+        {!cvLoaded && <p className="mb-4 text-sm text-orange-500">⏳ ちょっと待ってね...</p>}
       </div>
 
       <div className="space-y-4">
@@ -50,19 +50,26 @@ export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProp
         <button
           onClick={handleButtonClick}
           disabled={!cvLoaded}
-          className="w-full rounded-lg bg-orange-500 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+          className="w-full rounded-lg bg-orange-500 px-8 py-5 text-xl font-bold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:shadow-none"
         >
-          {cvLoaded ? '📷 写真を撮る / 選択する' : '読み込み中...'}
+          {cvLoaded ? '📷 しゃしんを とる' : 'じゅんび中...'}
         </button>
       </div>
 
-      <div className="mt-6 text-sm text-gray-500">
-        <p className="mb-2 font-semibold">使い方:</p>
-        <ol className="list-inside list-decimal space-y-1">
-          <li>間違い探しの写真を撮影または選択</li>
-          <li>アプリが自動的に左右に分割</li>
-          <li>画面をタップして画像を切り替えて比較</li>
+      <div className="mt-6 rounded-lg bg-white p-4">
+        <p className="mb-3 text-base font-bold text-orange-600">📖 つかいかた</p>
+        <ol className="list-inside list-decimal space-y-2 text-sm text-gray-700">
+          <li>間違いさがしの絵を📷写真にとる</li>
+          <li>絵がまっすぐじゃなくても だいじょうぶ！</li>
+          <li>タッチして 2つの絵をくらべる</li>
+          <li>ちがうところを さがそう！🎯</li>
         </ol>
+      </div>
+
+      <div className="mt-4 rounded-lg bg-orange-100 p-3 text-center">
+        <p className="text-sm font-semibold text-orange-700">
+          💡 ヒント: 絵をまっすぐに写すと もっと見やすいよ！
+        </p>
       </div>
     </div>
   )

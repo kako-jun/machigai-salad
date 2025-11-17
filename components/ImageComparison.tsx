@@ -16,16 +16,16 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const handleTouchEnd = () => setShowLeft(true)
 
   return (
-    <div className="rounded-lg bg-white p-4 shadow-lg">
+    <div className="rounded-lg bg-gradient-to-br from-orange-50 to-yellow-50 p-4 shadow-lg">
       <div className="mb-4 text-center">
-        <h3 className="mb-2 text-xl font-bold text-gray-800">画像を比較</h3>
-        <p className="text-sm text-gray-600">
-          {showLeft ? '👆 タップして右の画像を表示' : '👆 離して左の画像を表示'}
+        <h3 className="mb-2 text-2xl font-bold text-orange-600">🎯 まちがいさがし！</h3>
+        <p className="text-base font-semibold text-gray-700">
+          {showLeft ? '👆 タッチすると もう1つの絵が見えるよ' : '✨ 指をはなすと もどるよ'}
         </p>
       </div>
 
       <div
-        className="relative cursor-pointer touch-none select-none overflow-hidden rounded-lg"
+        className="relative cursor-pointer touch-none select-none overflow-hidden rounded-lg border-4 border-orange-300 shadow-md"
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
@@ -54,20 +54,15 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
         />
 
         {/* Indicator */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-full bg-black bg-opacity-50 px-4 py-2 text-sm text-white">
-          {showLeft ? '左の画像' : '右の画像'}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 transform rounded-full bg-orange-500 bg-opacity-90 px-5 py-2 text-base font-bold text-white shadow-lg">
+          {showLeft ? '📄 1つ目の絵' : '📄 2つ目の絵'}
         </div>
       </div>
 
-      <div className="mt-4 flex justify-center gap-2">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <div className="h-3 w-3 rounded-full bg-blue-500"></div>
-          <span>左</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <div className="h-3 w-3 rounded-full bg-green-500"></div>
-          <span>右</span>
-        </div>
+      <div className="mt-4 rounded-lg bg-white p-3 text-center">
+        <p className="text-sm font-semibold text-gray-700">
+          💡 2つの絵をくらべて、ちがうところを さがしてね！
+        </p>
       </div>
     </div>
   )
