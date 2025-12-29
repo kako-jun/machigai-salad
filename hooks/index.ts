@@ -1,0 +1,1 @@
+export { useOpenCV } from './useOpenCV'

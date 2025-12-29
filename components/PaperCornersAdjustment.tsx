@@ -1,11 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-
-interface Point {
-  x: number
-  y: number
-}
+import type { Point } from '@/types'
 
 interface PaperCornersAdjustmentProps {
   imageDataUrl: string
