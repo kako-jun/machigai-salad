@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: '小エビの間違いサラダ',
-  description: 'サイゼリヤの間違い探しを支援するWebアプリ',
+  description: '間違い探しをかんたんに解くおたすけツール',
 }
 
 export default function RootLayout({

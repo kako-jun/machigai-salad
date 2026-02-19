@@ -14,8 +14,8 @@ const OPENCV_CDN_URL = 'https://docs.opencv.org/4.9.0/opencv.js'
 
 interface UseOpenCVReturn {
   cvLoaded: boolean
-  detectCorners: (imageDataUrl: string) => Promise<Point[] | null>
-  processImage: (imageDataUrl: string, corners: Point[] | null) => Promise<ProcessedImages>
+  suggestCorners: (imageDataUrl: string) => Promise<Point[] | null>
+  processImage: (imageDataUrl: string, corners: Point[]) => Promise<ProcessedImages>
 }
 
 interface ProcessedImages {
@@ -49,9 +49,10 @@ export function useOpenCV(): UseOpenCVReturn {
   }, [])
 
   /**
-   * 画像から紙の4つの角を検出する
+   * 画像から紙の4つの角を自動検出する（提案として返す）
+   * 検出に失敗した場合はnullを返す。呼び出し側はnullでもフローを止めない
    */
-  const detectCorners = useCallback(
+  const suggestCorners = useCallback(
     async (imageDataUrl: string): Promise<Point[] | null> => {
       if (!cvLoaded) {
         await waitForCvLoaded()
@@ -82,7 +83,9 @@ export function useOpenCV(): UseOpenCVReturn {
               resolve(null)
             }
           } catch (error) {
-            reject(error)
+            // Auto-detection failure is not critical; return null
+            console.warn('Auto-detection failed:', error)
+            resolve(null)
           }
         }
         img.onerror = reject
@@ -93,10 +96,11 @@ export function useOpenCV(): UseOpenCVReturn {
   )
 
   /**
-   * 画像を処理して左右に分割する
+   * 指定された角座標で画像を処理し、左右に分割する
+   * corners は必須（ユーザーが確認済みの角座標）
    */
   const processImage = useCallback(
-    async (imageDataUrl: string, corners: Point[] | null): Promise<ProcessedImages> => {
+    async (imageDataUrl: string, corners: Point[]): Promise<ProcessedImages> => {
       if (!cvLoaded) {
         await waitForCvLoaded()
       }
@@ -113,20 +117,15 @@ export function useOpenCV(): UseOpenCVReturn {
             const ctx = canvas.getContext('2d')!
             ctx.drawImage(img, 0, 0)
 
-            let src = cv.imread(canvas)
-            let processedImage = src
+            const src = cv.imread(canvas)
 
-            // 角が指定されている場合は透視変換を適用
-            if (corners) {
-              console.log('Applying perspective transform with corners:', corners)
-              processedImage = applyPerspectiveTransform(src, corners, cv)
-              src.delete()
-            } else {
-              console.log('No corners provided, using original image')
-            }
+            // 透視変換を適用
+            const warped = applyPerspectiveTransform(src, corners, cv)
+            src.delete()
 
             // 色調補正
-            const corrected = applyColorCorrection(processedImage, cv)
+            const corrected = applyColorCorrection(warped, cv)
+            warped.delete()
 
             // 左右分割
             const [leftMat, rightMat] = splitImage(corrected, cv)
@@ -141,7 +140,6 @@ export function useOpenCV(): UseOpenCVReturn {
             const rightImage = rightCanvas.toDataURL()
 
             // クリーンアップ
-            processedImage.delete()
             corrected.delete()
             leftMat.delete()
             rightMat.delete()
@@ -158,7 +156,7 @@ export function useOpenCV(): UseOpenCVReturn {
     [cvLoaded]
   )
 
-  return { cvLoaded, detectCorners, processImage }
+  return { cvLoaded, suggestCorners, processImage }
 }
 
 /**
