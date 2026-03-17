@@ -32,12 +32,14 @@ export default function PaperCornersAdjustment({
   onCancel,
 }: PaperCornersAdjustmentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const loadedImageRef = useRef<HTMLImageElement | null>(null)
   const effectiveInitialCorners = initialCorners ?? getDefaultCorners(imageSize)
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
   const hasAutoDetection = initialCorners !== null
 
+  // 画像の読み込みとキャンバスサイズ設定（imageDataUrl が変わった時のみ）
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -50,17 +52,27 @@ export default function PaperCornersAdjustment({
       const scaleY = maxHeight / img.height
       const newScale = Math.min(scaleX, scaleY, 1)
 
-      setScale(newScale)
+      loadedImageRef.current = img
       canvas.width = img.width * newScale
       canvas.height = img.height * newScale
-
-      drawCanvas(img, corners, newScale)
+      setScale(newScale)
     }
     img.src = imageDataUrl
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageDataUrl, corners])
+  }, [imageDataUrl])
 
-  const drawCanvas = (img: HTMLImageElement, corners: Point[], scale: number) => {
+  // corners・draggingIndex・scale が変わったときに再描画
+  useEffect(() => {
+    const img = loadedImageRef.current
+    if (!img) return
+    drawCanvas(img, corners, scale, draggingIndex)
+  }, [corners, draggingIndex, scale])
+
+  const drawCanvas = (
+    img: HTMLImageElement,
+    corners: Point[],
+    scale: number,
+    activeIndex: number | null
+  ) => {
     const canvas = canvasRef.current
     if (!canvas) return
 
@@ -103,8 +115,8 @@ export default function PaperCornersAdjustment({
     ctx.restore()
 
     // Draw border lines
-    ctx.strokeStyle = 'rgba(232, 86, 58, 0.7)'
-    ctx.lineWidth = 2
+    ctx.strokeStyle = 'rgba(245, 197, 24, 0.85)'
+    ctx.lineWidth = 2.5
     ctx.beginPath()
     corners.forEach((corner, index) => {
       const x = corner.x * scale
@@ -119,19 +131,19 @@ export default function PaperCornersAdjustment({
     corners.forEach((corner, index) => {
       const x = corner.x * scale
       const y = corner.y * scale
-      const isActive = draggingIndex === index
+      const isActive = activeIndex === index
 
       // Outer ring when active
       if (isActive) {
-        ctx.strokeStyle = 'rgba(232, 86, 58, 0.3)'
-        ctx.lineWidth = 2
+        ctx.strokeStyle = 'rgba(245, 197, 24, 0.4)'
+        ctx.lineWidth = 2.5
         ctx.beginPath()
         ctx.arc(x, y, 18, 0, 2 * Math.PI)
         ctx.stroke()
       }
 
       // Handle dot
-      ctx.fillStyle = isActive ? '#d44a30' : '#e8563a'
+      ctx.fillStyle = isActive ? '#D4A010' : '#F5C518'
       ctx.beginPath()
       ctx.arc(x, y, isActive ? 10 : 8, 0, 2 * Math.PI)
       ctx.fill()
@@ -232,13 +244,36 @@ export default function PaperCornersAdjustment({
 
   return (
     <div className="animate-fade-in space-y-4">
-      <p className="text-center text-sm text-muted">
-        {hasAutoDetection
-          ? '自どうで みつけたよ。ずれてたら なおしてね'
-          : 'かどの まるを うごかして 紙にあわせてね'}
-      </p>
+      {/* Instruction tip styled like a menu note */}
+      <div
+        className="rounded-xl px-4 py-2.5 text-center"
+        style={{
+          background: hasAutoDetection
+            ? 'linear-gradient(90deg, rgba(107,127,62,0.1), rgba(107,127,62,0.06))'
+            : 'rgba(245,197,24,0.1)',
+          border: hasAutoDetection
+            ? '1px solid rgba(107,127,62,0.3)'
+            : '1px solid rgba(212,160,16,0.3)',
+        }}
+      >
+        <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
+          {hasAutoDetection
+            ? '自どうで みつけたよ。ずれてたら なおしてね'
+            : 'かどの まるを うごかして 紙にあわせてね'}
+        </p>
+      </div>
 
-      <div className="flex justify-center">
+      {/* Canvas with placemat-style frame */}
+      <div
+        className="flex justify-center p-1"
+        style={{
+          background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
+          border: '2px solid var(--border)',
+          borderRadius: 16,
+          boxShadow:
+            '0 1px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.12)',
+        }}
+      >
         <canvas
           ref={canvasRef}
           onMouseDown={handleMouseDown}
@@ -248,28 +283,20 @@ export default function PaperCornersAdjustment({
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="cursor-pointer rounded-xl shadow-sm"
-          style={{ touchAction: 'none' }}
+          className="cursor-pointer"
+          style={{ touchAction: 'none', borderRadius: 10 }}
         />
       </div>
 
+      {/* Button row */}
       <div className="flex gap-2">
-        <button
-          onClick={handleReset}
-          className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-hover active:scale-[0.97]"
-        >
+        <button onClick={handleReset} className="btn-ghost flex-1 px-4 py-3 text-sm">
           もどす
         </button>
-        <button
-          onClick={onCancel}
-          className="flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-sm font-medium text-muted transition-all hover:bg-surface-hover active:scale-[0.97]"
-        >
+        <button onClick={onCancel} className="btn-ghost flex-1 px-4 py-3 text-sm">
           やめる
         </button>
-        <button
-          onClick={handleApply}
-          className="flex-[1.5] rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-accent-hover active:scale-[0.97]"
-        >
+        <button onClick={handleApply} className="btn-action flex-[1.5] px-4 py-3 text-sm">
           OK! すすむ
         </button>
       </div>

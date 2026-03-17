@@ -7,8 +7,18 @@ interface ImageUploadProps {
   cvLoaded: boolean
 }
 
+/**
+ * モバイルデバイスかどうかを判定する
+ * capture 属性はモバイルのみ有効にする（デスクトップでは選択肢がカメラのみに制限されるため）
+ */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+}
+
 export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const useCaptureAttr = isMobileDevice()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -27,56 +37,97 @@ export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProp
   }
 
   return (
-    <div className="animate-fade-in flex flex-col items-center py-12">
+    <div className="animate-fade-in flex flex-col items-center py-10">
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        {...(useCaptureAttr ? { capture: 'environment' } : {})}
         onChange={handleFileChange}
         className="hidden"
         disabled={!cvLoaded}
       />
 
-      <button
-        onClick={handleButtonClick}
-        disabled={!cvLoaded}
-        className="group flex flex-col items-center gap-3 rounded-2xl border border-border bg-surface px-10 py-8 shadow-sm transition-all hover:shadow-md active:scale-[0.97] disabled:opacity-40"
+      {/* Outer placemat panel */}
+      <div
+        className="flex w-full flex-col items-center gap-5 rounded-2xl px-8 py-10"
+        style={{
+          background: 'linear-gradient(160deg, #FFFDF4 0%, #FFF8E7 50%, #FDF3D8 100%)',
+          border: '2px solid var(--border)',
+          boxShadow:
+            '0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.1), 0 1px 3px rgba(60,36,21,0.07)',
+        }}
       >
-        {cvLoaded ? (
-          <CameraIcon />
-        ) : (
-          <div className="border-3 animate-spin-smooth h-10 w-10 rounded-full border-accent border-t-transparent" />
-        )}
+        {/* Camera shutter button */}
+        <button
+          onClick={handleButtonClick}
+          disabled={!cvLoaded}
+          className="btn-shutter flex flex-col items-center gap-4 px-10 py-8"
+        >
+          {cvLoaded ? (
+            <CameraIcon />
+          ) : (
+            <div
+              className="animate-spin-smooth h-12 w-12 rounded-full"
+              style={{
+                border: '3px solid rgba(60,36,21,0.15)',
+                borderTopColor: 'var(--accent)',
+                borderRightColor: 'var(--golden)',
+              }}
+            />
+          )}
 
-        <span className="text-base font-bold text-foreground">
-          {cvLoaded ? 'しゃしんを とる' : 'じゅんびちゅう...'}
-        </span>
-      </button>
+          <span className="text-base font-bold tracking-wide" style={{ color: 'var(--espresso)' }}>
+            {cvLoaded ? 'しゃしんを とる' : 'じゅんびちゅう...'}
+          </span>
+        </button>
 
-      <p className="mt-6 text-center text-sm leading-relaxed text-muted">
-        間違いさがしの紙を
-        <br />
-        まっすぐ撮ってね
-      </p>
+        {/* Instruction text styled like menu footnote */}
+        <div
+          className="rounded-xl px-4 py-2.5 text-center"
+          style={{
+            background: 'rgba(245,197,24,0.12)',
+            border: '1px solid rgba(212,160,16,0.3)',
+          }}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+            間違いさがしの紙を
+            <br />
+            まっすぐ撮ってね
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
 
 function CameraIcon() {
   return (
-    <svg
-      width="40"
-      height="40"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--accent)"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <div
+      className="flex items-center justify-center rounded-full"
+      style={{
+        width: 64,
+        height: 64,
+        background:
+          'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5) 0%, transparent 60%), linear-gradient(145deg, #FFF8E7, #D4A810)',
+        border: '2px solid #8B6B20',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 2px 8px rgba(60,36,21,0.2)',
+      }}
     >
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-      <circle cx="12" cy="13" r="4" />
-    </svg>
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="var(--espresso)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ opacity: 0.85 }}
+      >
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+      </svg>
+    </div>
   )
 }

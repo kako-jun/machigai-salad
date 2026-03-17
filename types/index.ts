@@ -77,6 +77,7 @@ export interface Mat {
 export interface MatVector {
   size: () => number
   get: (index: number) => Mat
+  push_back: (mat: Mat) => void
   delete: () => void
 }
 

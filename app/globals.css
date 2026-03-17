@@ -3,21 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --background: #faf8f5;
-  --foreground: #2d2a26;
-  --surface: #ffffff;
-  --surface-hover: #f3f0eb;
-  --border: #e5e0d8;
-  --muted: #8c857a;
-  --accent: #e8563a;
-  --accent-hover: #d44a30;
-  --accent-light: #fef0ed;
-  --success: #3a9e6e;
+  --background: #fff8e7;
+  --foreground: #3c2415;
+  --surface: #fffdf4;
+  --surface-hover: #fff3cc;
+  --border: #d4a85a;
+  --border-light: #e8c87a;
+  --muted: #8b6b3a;
+  --accent: #cc6b3c;
+  --accent-hover: #b85a2e;
+  --accent-light: #fdebd8;
+  --golden: #f5c518;
+  --golden-dark: #d4a010;
+  --olive: #6b7f3e;
+  --espresso: #3c2415;
+  --cream: #fff8e7;
+  --parchment: #f5e6c8;
+  --success: #6b7f3e;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(245, 197, 24, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, rgba(204, 107, 60, 0.06) 0%, transparent 50%);
   font-family:
     'Hiragino Kaku Gothic ProN',
     'Hiragino Sans',
@@ -28,6 +38,224 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  min-height: 100vh;
+}
+
+/* Linen/paper texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity: 0.6;
+}
+
+/* Skeuomorphic card — looks like a laminated restaurant menu card */
+.menu-card {
+  background: linear-gradient(145deg, #fffdf4 0%, #fff8e7 40%, #fdf3d8 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 rgba(180, 130, 60, 0.2) inset,
+    0 2px 6px rgba(60, 36, 21, 0.08),
+    0 8px 24px rgba(60, 36, 21, 0.06);
+}
+
+/* Embossed raised button — like a restaurant menu item */
+.btn-menu {
+  background: linear-gradient(180deg, #f8f0dc 0%, #edd98a 40%, #d4a810 100%);
+  border: 1px solid #b8890a;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -1px 0 rgba(120, 80, 0, 0.3) inset,
+    0 3px 8px rgba(60, 36, 21, 0.25),
+    0 1px 2px rgba(60, 36, 21, 0.15);
+  color: var(--espresso);
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.12s ease;
+}
+
+.btn-menu:hover {
+  background: linear-gradient(180deg, #fff5e0 0%, #f5c518 40%, #d4a810 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 rgba(120, 80, 0, 0.3) inset,
+    0 4px 12px rgba(60, 36, 21, 0.3),
+    0 1px 2px rgba(60, 36, 21, 0.2);
+}
+
+.btn-menu:active {
+  background: linear-gradient(180deg, #d4a810 0%, #edd98a 60%, #f8f0dc 100%);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 1px 0 rgba(120, 80, 0, 0.3) inset,
+    0 1px 3px rgba(60, 36, 21, 0.2);
+  transform: translateY(1px);
+}
+
+/* Terracotta action button — like a restaurant bell / call button */
+.btn-action {
+  background: linear-gradient(180deg, #e07040 0%, #cc6b3c 50%, #b05228 100%);
+  border: 1px solid #8b3e1a;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 -1px 0 rgba(80, 28, 8, 0.4) inset,
+    0 3px 8px rgba(60, 36, 21, 0.3),
+    0 1px 2px rgba(60, 36, 21, 0.2);
+  color: #fff;
+  font-weight: 700;
+  text-shadow: 0 -1px 0 rgba(80, 28, 8, 0.4);
+  transition: all 0.12s ease;
+}
+
+.btn-action:hover {
+  background: linear-gradient(180deg, #e88050 0%, #d4744a 50%, #ba5a30 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 -1px 0 rgba(80, 28, 8, 0.4) inset,
+    0 4px 12px rgba(60, 36, 21, 0.35);
+}
+
+.btn-action:active {
+  background: linear-gradient(180deg, #b05228 0%, #cc6b3c 60%, #e07040 100%);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 1px 0 rgba(80, 28, 8, 0.4) inset,
+    0 1px 3px rgba(60, 36, 21, 0.25);
+  transform: translateY(1px);
+}
+
+/* Muted ghost button — secondary actions */
+.btn-ghost {
+  background: linear-gradient(180deg, #fffdf4 0%, #f5e6c8 100%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 rgba(180, 130, 60, 0.15) inset,
+    0 2px 4px rgba(60, 36, 21, 0.1);
+  color: var(--muted);
+  font-weight: 500;
+  transition: all 0.12s ease;
+}
+
+.btn-ghost:hover {
+  background: linear-gradient(180deg, #fff8e7 0%, #edd98a 100%);
+  color: var(--espresso);
+}
+
+.btn-ghost:active {
+  background: linear-gradient(180deg, #f5e6c8 0%, #fffdf4 100%);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 1px 0 rgba(180, 130, 60, 0.15) inset,
+    0 1px 2px rgba(60, 36, 21, 0.08);
+  transform: translateY(1px);
+}
+
+/* Camera shutter button — feels like pressing a real shutter */
+.btn-shutter {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.5) 0%, transparent 55%),
+    linear-gradient(160deg, #f8f0dc 0%, #edd98a 30%, #d4a810 70%, #b8890a 100%);
+  border: 2px solid #8b6b20;
+  border-radius: 24px;
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.6) inset,
+    0 -2px 0 rgba(80, 50, 0, 0.35) inset,
+    0 6px 16px rgba(60, 36, 21, 0.3),
+    0 2px 4px rgba(60, 36, 21, 0.2),
+    0 0 0 4px rgba(245, 197, 24, 0.15);
+  transition: all 0.12s ease;
+}
+
+.btn-shutter:hover {
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.7) inset,
+    0 -2px 0 rgba(80, 50, 0, 0.35) inset,
+    0 8px 20px rgba(60, 36, 21, 0.35),
+    0 2px 4px rgba(60, 36, 21, 0.2),
+    0 0 0 6px rgba(245, 197, 24, 0.2);
+}
+
+.btn-shutter:active {
+  background:
+    radial-gradient(circle at 35% 70%, rgba(255, 255, 255, 0.3) 0%, transparent 55%),
+    linear-gradient(160deg, #b8890a 0%, #d4a810 30%, #edd98a 70%, #f8f0dc 100%);
+  box-shadow:
+    0 -2px 0 rgba(255, 255, 255, 0.4) inset,
+    0 2px 0 rgba(80, 50, 0, 0.4) inset,
+    0 2px 6px rgba(60, 36, 21, 0.2),
+    0 0 0 3px rgba(245, 197, 24, 0.1);
+  transform: translateY(2px);
+}
+
+.btn-shutter:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Placemat / comparison panel — paper mat texture */
+.placemat {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(180, 130, 60, 0.025) 2px,
+      rgba(180, 130, 60, 0.025) 4px
+    ),
+    linear-gradient(145deg, #fffdf4 0%, #fff8e7 50%, #fdf3d8 100%);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 rgba(180, 130, 60, 0.2) inset,
+    0 4px 16px rgba(60, 36, 21, 0.12),
+    0 1px 3px rgba(60, 36, 21, 0.08);
+}
+
+/* Step indicator badge — like menu item numbers */
+.step-badge-active {
+  background: linear-gradient(160deg, #e07040, #b05228);
+  border: 1px solid #8b3e1a;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 2px 4px rgba(60, 36, 21, 0.25);
+}
+
+.step-badge-done {
+  background: linear-gradient(160deg, #8b9f52, #5a6b30);
+  border: 1px solid #3e4e20;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 4px rgba(40, 60, 20, 0.2);
+}
+
+.step-badge-idle {
+  background: linear-gradient(160deg, #e8c87a, #c8a040);
+  border: 1px solid #a07830;
+  color: rgba(60, 36, 21, 0.5);
+}
+
+/* Decorative border stripe for menu-style headers */
+.menu-stripe {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--golden) 0px,
+    var(--golden) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  height: 3px;
+  border-radius: 2px;
 }
 
 @layer utilities {
@@ -77,6 +305,15 @@ body {
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
   }
 }
 

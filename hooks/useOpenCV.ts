@@ -30,21 +30,39 @@ export function useOpenCV(): UseOpenCVReturn {
   const [cvLoaded, setCvLoaded] = useState(false)
 
   useEffect(() => {
+    let mounted = true
+
     const script = document.createElement('script')
     script.src = OPENCV_CDN_URL
     script.async = true
     script.onload = () => {
-      if (window.cv) {
-        window.cv.onRuntimeInitialized = () => {
+      // cv オブジェクトがすでに存在しWASM初期化済みの場合は即座に完了
+      if (window.cv && window.cv.Mat) {
+        if (mounted) {
           console.log('OpenCV.js loaded successfully')
           setCvLoaded(true)
+        }
+        return
+      }
+      // WASMの初期化完了を待つ
+      if (window.cv) {
+        const prev = window.cv.onRuntimeInitialized
+        window.cv.onRuntimeInitialized = () => {
+          if (prev) prev()
+          if (mounted) {
+            console.log('OpenCV.js loaded successfully')
+            setCvLoaded(true)
+          }
         }
       }
     }
     document.body.appendChild(script)
 
     return () => {
-      document.body.removeChild(script)
+      mounted = false
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
     }
   }, [])
 
@@ -61,6 +79,8 @@ export function useOpenCV(): UseOpenCVReturn {
       return new Promise((resolve, reject) => {
         const img = new Image()
         img.onload = () => {
+          let src = null
+          let paperContour = null
           try {
             const cv = window.cv
 
@@ -70,20 +90,33 @@ export function useOpenCV(): UseOpenCVReturn {
             const ctx = canvas.getContext('2d')!
             ctx.drawImage(img, 0, 0)
 
-            const src = cv.imread(canvas)
-            const paperContour = detectPaperContour(src, cv)
+            src = cv.imread(canvas)
+            paperContour = detectPaperContour(src, cv)
 
             if (paperContour) {
               const corners = orderPoints(paperContour)
               paperContour.delete()
+              paperContour = null
               src.delete()
+              src = null
               resolve(corners)
             } else {
               src.delete()
+              src = null
               resolve(null)
             }
           } catch (error) {
-            // Auto-detection failure is not critical; return null
+            // 確保済みのMatを確実に解放してからnullを返す
+            if (paperContour) {
+              try {
+                paperContour.delete()
+              } catch (_) {}
+            }
+            if (src) {
+              try {
+                src.delete()
+              } catch (_) {}
+            }
             console.warn('Auto-detection failed:', error)
             resolve(null)
           }
@@ -108,6 +141,11 @@ export function useOpenCV(): UseOpenCVReturn {
       return new Promise((resolve, reject) => {
         const img = new Image()
         img.onload = () => {
+          let src = null
+          let warped = null
+          let corrected = null
+          let leftMat = null
+          let rightMat = null
           try {
             const cv = window.cv
 
@@ -117,18 +155,20 @@ export function useOpenCV(): UseOpenCVReturn {
             const ctx = canvas.getContext('2d')!
             ctx.drawImage(img, 0, 0)
 
-            const src = cv.imread(canvas)
+            src = cv.imread(canvas)
 
             // 透視変換を適用
-            const warped = applyPerspectiveTransform(src, corners, cv)
+            warped = applyPerspectiveTransform(src, corners, cv)
             src.delete()
+            src = null
 
             // 色調補正
-            const corrected = applyColorCorrection(warped, cv)
+            corrected = applyColorCorrection(warped, cv)
             warped.delete()
+            warped = null
 
             // 左右分割
-            const [leftMat, rightMat] = splitImage(corrected, cv)
+            ;[leftMat, rightMat] = splitImage(corrected, cv)
 
             // Canvasに出力
             const leftCanvas = document.createElement('canvas')
@@ -146,6 +186,27 @@ export function useOpenCV(): UseOpenCVReturn {
 
             resolve({ leftImage, rightImage })
           } catch (error) {
+            // 確保済みのMatを確実に解放してからエラーを返す
+            if (rightMat)
+              try {
+                rightMat.delete()
+              } catch (_) {}
+            if (leftMat)
+              try {
+                leftMat.delete()
+              } catch (_) {}
+            if (corrected)
+              try {
+                corrected.delete()
+              } catch (_) {}
+            if (warped)
+              try {
+                warped.delete()
+              } catch (_) {}
+            if (src)
+              try {
+                src.delete()
+              } catch (_) {}
             reject(error)
           }
         }
@@ -160,15 +221,27 @@ export function useOpenCV(): UseOpenCVReturn {
 }
 
 /**
- * OpenCV.jsのロードを待機するヘルパー
+ * OpenCV.jsのWASM初期化完了を待機するヘルパー
+ * タイムアウト10秒。超えた場合はエラーをスロー
  */
 function waitForCvLoaded(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const TIMEOUT_MS = 10000
+    const CHECK_INTERVAL_MS = 100
+    let elapsed = 0
+
     const interval = setInterval(() => {
-      if (window.cv) {
+      // window.cv.Mat が存在すればWASM初期化完了
+      if (window.cv && window.cv.Mat) {
         clearInterval(interval)
         resolve()
+        return
       }
-    }, 100)
+      elapsed += CHECK_INTERVAL_MS
+      if (elapsed >= TIMEOUT_MS) {
+        clearInterval(interval)
+        reject(new Error('OpenCV.js の読み込みがタイムアウトしました'))
+      }
+    }, CHECK_INTERVAL_MS)
   })
 }

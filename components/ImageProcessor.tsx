@@ -113,7 +113,14 @@ function getImageSize(dataUrl: string): Promise<{ width: number; height: number 
 
 function StepIndicator({ current, labels }: { current: number; labels: string[] }) {
   return (
-    <div className="flex items-center justify-center gap-1">
+    <div
+      className="flex items-center justify-center gap-1 rounded-2xl px-4 py-3"
+      style={{
+        background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
+        border: '1px solid var(--border)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.8) inset, 0 2px 6px rgba(60,36,21,0.06)',
+      }}
+    >
       {labels.map((label, i) => {
         const step = i + 1
         const isActive = step === current
@@ -122,12 +129,12 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
           <div key={step} className="flex items-center gap-1">
             <div className="flex items-center gap-1.5">
               <div
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
                   isDone
-                    ? 'bg-success text-white'
+                    ? 'step-badge-done text-white'
                     : isActive
-                      ? 'bg-accent text-white'
-                      : 'bg-border text-muted'
+                      ? 'step-badge-active text-white'
+                      : 'step-badge-idle'
                 }`}
               >
                 {isDone ? (
@@ -147,12 +154,23 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
                   step
                 )}
               </div>
-              <span className={`text-xs ${isActive ? 'font-bold text-foreground' : 'text-muted'}`}>
+              <span
+                className={`text-xs font-medium ${isActive ? 'font-bold' : ''}`}
+                style={{ color: isActive ? 'var(--espresso)' : 'var(--muted)' }}
+              >
                 {label}
               </span>
             </div>
             {step < labels.length && (
-              <div className={`mx-1 h-px w-4 ${step < current ? 'bg-success' : 'bg-border'}`} />
+              <div
+                className="mx-1 h-px w-5"
+                style={{
+                  background:
+                    step < current
+                      ? 'linear-gradient(90deg, var(--olive), var(--golden-dark))'
+                      : 'var(--border-light)',
+                }}
+              />
             )}
           </div>
         )
@@ -164,19 +182,27 @@ function StepIndicator({ current, labels }: { current: number; labels: string[] 
 function LoadingIndicator({ message }: { message: string }) {
   return (
     <div className="animate-fade-in flex flex-col items-center py-16">
-      <div className="animate-spin-smooth mb-4 h-8 w-8 rounded-full border-[2.5px] border-accent border-t-transparent" />
-      <p className="text-sm text-muted">{message}</p>
+      {/* Spinning plate loader */}
+      <div
+        className="animate-spin-smooth mb-4 h-10 w-10 rounded-full"
+        style={{
+          border: '3px solid var(--parchment)',
+          borderTopColor: 'var(--accent)',
+          borderRightColor: 'var(--golden)',
+          boxShadow: '0 2px 8px rgba(60,36,21,0.15)',
+        }}
+      />
+      <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
+        {message}
+      </p>
     </div>
   )
 }
 
 function ResetButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className="pt-2 text-center">
-      <button
-        onClick={onClick}
-        className="rounded-xl border border-border bg-surface px-6 py-3 text-sm font-medium text-muted shadow-sm transition-all hover:bg-surface-hover active:scale-[0.97]"
-      >
+    <div className="pt-3 text-center">
+      <button onClick={onClick} className="btn-ghost px-7 py-3 text-sm">
         もう一回やる
       </button>
     </div>

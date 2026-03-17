@@ -85,6 +85,7 @@ export function detectPaperContour(src: Mat, cv: OpenCV): Mat | null {
 
       // 小さすぎる輪郭はスキップ
       if (area < imageArea * MIN_AREA_RATIO) {
+        contour.delete()
         continue
       }
 
@@ -102,6 +103,7 @@ export function detectPaperContour(src: Mat, cv: OpenCV): Mat | null {
         }
         approx.delete()
       }
+      contour.delete()
     }
 
     // クリーンアップ
