@@ -39,7 +39,6 @@ export function useOpenCV(): UseOpenCVReturn {
       // cv オブジェクトがすでに存在しWASM初期化済みの場合は即座に完了
       if (window.cv && window.cv.Mat) {
         if (mounted) {
-          console.log('OpenCV.js loaded successfully')
           setCvLoaded(true)
         }
         return
@@ -50,7 +49,6 @@ export function useOpenCV(): UseOpenCVReturn {
         window.cv.onRuntimeInitialized = () => {
           if (prev) prev()
           if (mounted) {
-            console.log('OpenCV.js loaded successfully')
             setCvLoaded(true)
           }
         }
