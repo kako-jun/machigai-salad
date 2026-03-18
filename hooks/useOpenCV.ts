@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Point, OpenCV } from '@/types'
 import {
   detectPaperContour,
@@ -10,10 +10,20 @@ import {
   splitImage,
 } from '@/lib/opencv'
 
-const OPENCV_CDN_URL = 'https://docs.opencv.org/4.9.0/opencv.js'
+const OPENCV_CDN_URLS = [
+  'https://docs.opencv.org/4.9.0/opencv.js',
+  'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js',
+]
+
+const LOAD_TIMEOUT_MS = 30000
+
+type LoadState = 'loading' | 'ready' | 'error'
 
 interface UseOpenCVReturn {
   cvLoaded: boolean
+  loadState: LoadState
+  loadError: string | null
+  retryLoad: () => void
   suggestCorners: (imageDataUrl: string) => Promise<Point[] | null>
   processImage: (imageDataUrl: string, corners: Point[]) => Promise<ProcessedImages>
 }
@@ -25,44 +35,120 @@ interface ProcessedImages {
 
 /**
  * OpenCV.jsをロードして画像処理機能を提供するカスタムフック
+ * CDNフォールバック・タイムアウト検出・リトライ機能付き
  */
 export function useOpenCV(): UseOpenCVReturn {
-  const [cvLoaded, setCvLoaded] = useState(false)
+  const [loadState, setLoadState] = useState<LoadState>('loading')
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const mountedRef = useRef(true)
+  const scriptRef = useRef<HTMLScriptElement | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    let mounted = true
+  const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (scriptRef.current && document.body.contains(scriptRef.current)) {
+      document.body.removeChild(scriptRef.current)
+      scriptRef.current = null
+    }
+  }, [])
 
-    const script = document.createElement('script')
-    script.src = OPENCV_CDN_URL
-    script.async = true
-    script.onload = () => {
-      // cv オブジェクトがすでに存在しWASM初期化済みの場合は即座に完了
+  const attemptLoad = useCallback(
+    (cdnIndex = 0) => {
+      if (!mountedRef.current) return
+
+      // Already loaded from a previous attempt
       if (window.cv && window.cv.Mat) {
-        if (mounted) {
-          setCvLoaded(true)
+        setLoadState('ready')
+        setLoadError(null)
+        return
+      }
+
+      cleanup()
+      setLoadState('loading')
+      setLoadError(null)
+
+      const url = OPENCV_CDN_URLS[cdnIndex]
+      if (!url) {
+        // All CDNs exhausted
+        if (mountedRef.current) {
+          setLoadState('error')
+          setLoadError('OpenCV.js の読み込みに失敗しました。ネットワーク接続を確認してください。')
         }
         return
       }
-      // WASMの初期化完了を待つ
-      if (window.cv) {
-        const prev = window.cv.onRuntimeInitialized
-        window.cv.onRuntimeInitialized = () => {
-          if (prev) prev()
-          if (mounted) {
-            setCvLoaded(true)
+
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      scriptRef.current = script
+
+      // Timeout: try next CDN or fail
+      timeoutRef.current = setTimeout(() => {
+        if (!mountedRef.current) return
+        console.warn(`OpenCV.js load timeout from ${url}, trying next CDN...`)
+        cleanup()
+        attemptLoad(cdnIndex + 1)
+      }, LOAD_TIMEOUT_MS)
+
+      const onReady = () => {
+        if (!mountedRef.current) return
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
+        setLoadState('ready')
+        setLoadError(null)
+      }
+
+      script.onload = () => {
+        if (!mountedRef.current) return
+
+        // cv object already fully initialized
+        if (window.cv && window.cv.Mat) {
+          onReady()
+          return
+        }
+
+        // Wait for WASM initialization
+        if (window.cv) {
+          const prev = window.cv.onRuntimeInitialized
+          window.cv.onRuntimeInitialized = () => {
+            if (prev) prev()
+            onReady()
           }
         }
       }
-    }
-    document.body.appendChild(script)
+
+      script.onerror = () => {
+        if (!mountedRef.current) return
+        console.warn(`OpenCV.js failed to load from ${url}, trying next CDN...`)
+        cleanup()
+        attemptLoad(cdnIndex + 1)
+      }
+
+      document.body.appendChild(script)
+    },
+    [cleanup]
+  )
+
+  const retryLoad = useCallback(() => {
+    attemptLoad(0)
+  }, [attemptLoad])
+
+  useEffect(() => {
+    mountedRef.current = true
+    attemptLoad(0)
 
     return () => {
-      mounted = false
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
-      }
+      mountedRef.current = false
+      cleanup()
     }
-  }, [])
+  }, [attemptLoad, cleanup])
+
+  const cvLoaded = loadState === 'ready'
 
   /**
    * 画像から紙の4つの角を自動検出する（提案として返す）
@@ -215,7 +301,7 @@ export function useOpenCV(): UseOpenCVReturn {
     [cvLoaded]
   )
 
-  return { cvLoaded, suggestCorners, processImage }
+  return { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage }
 }
 
 /**

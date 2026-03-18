@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Point } from '@/types'
 import { useOpenCV } from '@/hooks'
+import { showToast } from './Toast'
 import ImageUpload from './ImageUpload'
 import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
@@ -27,7 +28,7 @@ export default function ImageProcessor() {
   const [suggestedCorners, setSuggestedCorners] = useState<Point[] | null>(null)
   const [phase, setPhase] = useState<Phase>('upload')
 
-  const { cvLoaded, suggestCorners, processImage } = useOpenCV()
+  const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
   const handleImageUpload = async (imageDataUrl: string) => {
     setOriginalImage(imageDataUrl)
@@ -56,7 +57,7 @@ export default function ImageProcessor() {
       setPhase('result')
     } catch (error) {
       console.error('Error processing image with corners:', error)
-      alert('うまくいかなかったみたい。かどの位置をなおして もう一回ためしてね。')
+      showToast('うまくいかなかったみたい。かどの位置をなおして もう一回ためしてね。', 'error')
       setPhase('adjust')
     }
   }
@@ -76,7 +77,15 @@ export default function ImageProcessor() {
     <div className="space-y-4">
       {phase !== 'upload' && <StepIndicator current={currentStep} labels={[...PHASE_LABELS]} />}
 
-      {phase === 'upload' && <ImageUpload onImageUpload={handleImageUpload} cvLoaded={cvLoaded} />}
+      {phase === 'upload' && (
+        <ImageUpload
+          onImageUpload={handleImageUpload}
+          cvLoaded={cvLoaded}
+          loadState={loadState}
+          loadError={loadError}
+          onRetry={retryLoad}
+        />
+      )}
 
       {phase === 'detecting' && <LoadingIndicator message="よみこみちゅう..." />}
 

@@ -2,9 +2,14 @@
 
 import { useRef } from 'react'
 
+type LoadState = 'loading' | 'ready' | 'error'
+
 interface ImageUploadProps {
   onImageUpload: (imageDataUrl: string) => void
   cvLoaded: boolean
+  loadState: LoadState
+  loadError: string | null
+  onRetry: () => void
 }
 
 /**
@@ -16,7 +21,13 @@ function isMobileDevice(): boolean {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
 }
 
-export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProps) {
+export default function ImageUpload({
+  onImageUpload,
+  cvLoaded,
+  loadState,
+  loadError,
+  onRetry,
+}: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const useCaptureAttr = isMobileDevice()
 
@@ -58,44 +69,92 @@ export default function ImageUpload({ onImageUpload, cvLoaded }: ImageUploadProp
             '0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.1), 0 1px 3px rgba(60,36,21,0.07)',
         }}
       >
-        {/* Camera shutter button */}
-        <button
-          onClick={handleButtonClick}
-          disabled={!cvLoaded}
-          className="btn-shutter flex flex-col items-center gap-4 px-10 py-8"
-        >
-          {cvLoaded ? (
-            <CameraIcon />
-          ) : (
+        {loadState === 'error' ? (
+          /* Error state with retry */
+          <div className="flex flex-col items-center gap-4 px-4 py-4">
             <div
-              className="animate-spin-smooth h-12 w-12 rounded-full"
+              className="flex h-14 w-14 items-center justify-center rounded-full"
               style={{
-                border: '3px solid rgba(60,36,21,0.15)',
-                borderTopColor: 'var(--accent)',
-                borderRightColor: 'var(--golden)',
+                background: 'linear-gradient(145deg, #FFF0EC, #FFE4DC)',
+                border: '2px solid #D4885A',
+                boxShadow: '0 2px 8px rgba(60,36,21,0.12)',
               }}
-            />
-          )}
+            >
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#8B3E1A"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
 
-          <span className="text-base font-bold tracking-wide" style={{ color: 'var(--espresso)' }}>
-            {cvLoaded ? 'しゃしんを とる' : 'じゅんびちゅう...'}
-          </span>
-        </button>
+            <div className="text-center">
+              <p className="text-sm font-bold" style={{ color: '#8B3E1A' }}>
+                よみこめなかったよ
+              </p>
+              <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
+                {loadError || 'ネットワーク接続を確認してね'}
+              </p>
+            </div>
 
-        {/* Instruction text styled like menu footnote */}
-        <div
-          className="rounded-xl px-4 py-2.5 text-center"
-          style={{
-            background: 'rgba(245,197,24,0.12)',
-            border: '1px solid rgba(212,160,16,0.3)',
-          }}
-        >
-          <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
-            間違いさがしの紙を
-            <br />
-            まっすぐ撮ってね
-          </p>
-        </div>
+            <button onClick={onRetry} className="btn-action px-8 py-3 text-sm">
+              もう一回ためす
+            </button>
+          </div>
+        ) : (
+          /* Normal state: loading or ready */
+          <>
+            {/* Camera shutter button */}
+            <button
+              onClick={handleButtonClick}
+              disabled={!cvLoaded}
+              className="btn-shutter flex flex-col items-center gap-4 px-10 py-8"
+            >
+              {cvLoaded ? (
+                <CameraIcon />
+              ) : (
+                <div
+                  className="animate-spin-smooth h-12 w-12 rounded-full"
+                  style={{
+                    border: '3px solid rgba(60,36,21,0.15)',
+                    borderTopColor: 'var(--accent)',
+                    borderRightColor: 'var(--golden)',
+                  }}
+                />
+              )}
+
+              <span
+                className="text-base font-bold tracking-wide"
+                style={{ color: 'var(--espresso)' }}
+              >
+                {cvLoaded ? 'しゃしんを とる' : 'じゅんびちゅう...'}
+              </span>
+            </button>
+
+            {/* Instruction text styled like menu footnote */}
+            <div
+              className="rounded-xl px-4 py-2.5 text-center"
+              style={{
+                background: 'rgba(245,197,24,0.12)',
+                border: '1px solid rgba(212,160,16,0.3)',
+              }}
+            >
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
+                間違いさがしの紙を
+                <br />
+                まっすぐ撮ってね
+              </p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
