@@ -13,8 +13,9 @@ interface ImageComparisonProps {
 }
 
 export default function ImageComparison({ leftImage, rightImage }: ImageComparisonProps) {
-  const [showLeft, setShowLeft] = useState(true)
   const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [isHolding, setIsHolding] = useState(false)
   const isDraggingRef = useRef(false)
   const startRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
 
@@ -23,7 +24,8 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
       startRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
       isDraggingRef.current = false
-      setShowLeft(false) // show right immediately (tap behavior)
+      setIsDragging(false)
+      setIsHolding(true) // left goes fully transparent → right shows through
     },
     [offset]
   )
@@ -37,7 +39,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
 
     if (!isDraggingRef.current && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
       isDraggingRef.current = true
-      setShowLeft(true) // switch back to left for drag adjustment
+      setIsDragging(true) // left becomes semi-transparent → both visible
     }
 
     if (isDraggingRef.current) {
@@ -49,18 +51,27 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   }, [])
 
   const handlePointerUp = useCallback(() => {
-    if (!isDraggingRef.current) {
-      setShowLeft(true) // was a tap — back to left
-    }
     startRef.current = null
     isDraggingRef.current = false
+    setIsDragging(false)
+    setIsHolding(false) // left returns to full opacity
   }, [])
 
   const hasOffset = offset.x !== 0 || offset.y !== 0
 
+  // Left opacity: normal=1, tap-hold=0 (right shows through), drag=0.5 (both visible)
+  const leftOpacity = isDragging ? 0.5 : isHolding ? 0 : 1
+
   const leftColor = '#6B7F3E'
   const rightColor = '#B05228'
-  const activeColor = showLeft ? leftColor : rightColor
+  const showingRight = isHolding && !isDragging
+  const activeColor = showingRight ? rightColor : leftColor
+
+  const imgConstraint: React.CSSProperties = {
+    maxWidth: '100%',
+    maxHeight: 'calc(100dvh - 280px)',
+    objectFit: 'contain' as const,
+  }
 
   return (
     <div className="animate-fade-in space-y-3">
@@ -77,13 +88,17 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
           className="rounded-full px-3 py-0.5 text-xs font-bold text-white"
           style={{ background: activeColor }}
         >
-          {showLeft ? 'ひだり' : 'みぎ'}
+          {showingRight ? 'みぎ' : 'ひだり'}
         </span>
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium" style={{ color: activeColor }}>
-            {showLeft ? 'タップでみぎ / ドラッグでずらす' : 'はなすと もどるよ'}
+            {isDragging
+              ? 'ずらしちゅう...'
+              : showingRight
+                ? 'はなすと もどるよ'
+                : 'タップでみぎ / ドラッグでずらす'}
           </p>
-          {hasOffset && (
+          {hasOffset && !isDragging && (
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -98,7 +113,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
         </div>
       </div>
 
-      {/* Image panel — fits within viewport (both width and height constrained) */}
+      {/* Image panel — right always behind, left overlaid on top */}
       <div
         className="relative flex touch-none select-none items-center justify-center overflow-hidden"
         style={{
@@ -108,35 +123,27 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
           background: 'var(--parchment)',
           transition: 'border-color 0.2s ease',
           maxHeight: 'calc(100dvh - 280px)',
-          cursor: showLeft ? 'grab' : 'default',
+          cursor: isDragging ? 'grabbing' : 'grab',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
+        {/* Right image — always present, behind left */}
+        <img src={rightImage} alt="みぎの絵" draggable={false} style={imgConstraint} />
+
+        {/* Left image — overlaid on top, opacity changes with interaction */}
         <img
           src={leftImage}
           alt="ひだりの絵"
           draggable={false}
           style={{
-            display: showLeft ? 'block' : 'none',
-            maxWidth: '100%',
-            maxHeight: 'calc(100dvh - 280px)',
-            objectFit: 'contain',
+            ...imgConstraint,
+            position: 'absolute',
+            opacity: leftOpacity,
             transform: `translate(${offset.x}px, ${offset.y}px)`,
-          }}
-        />
-
-        <img
-          src={rightImage}
-          alt="みぎの絵"
-          draggable={false}
-          style={{
-            display: showLeft ? 'none' : 'block',
-            maxWidth: '100%',
-            maxHeight: 'calc(100dvh - 280px)',
-            objectFit: 'contain',
+            transition: isDragging ? 'none' : 'opacity 0.15s ease',
           }}
         />
       </div>
