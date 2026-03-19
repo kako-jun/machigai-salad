@@ -68,7 +68,8 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const activeColor = showingRight ? rightColor : leftColor
 
   const imgConstraint: React.CSSProperties = {
-    maxWidth: '100%',
+    width: '100%',
+    height: '100%',
     maxHeight: 'calc(100dvh - 280px)',
     objectFit: 'contain' as const,
   }
@@ -122,6 +123,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
           boxShadow: `0 4px 16px rgba(60,36,21,0.12)`,
           background: 'var(--parchment)',
           transition: 'border-color 0.2s ease',
+          minHeight: 280,
           maxHeight: 'calc(100dvh - 280px)',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
