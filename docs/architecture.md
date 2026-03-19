@@ -37,9 +37,14 @@ machigai-salad/
 │   ├── architecture.md        # アーキテクチャ（このファイル）
 │   ├── design.md              # 設計ドキュメント
 │   ├── todo.md                # 開発TODO
-│   └── changelog.md           # 変更履歴
+│   ├── changelog.md           # 変更履歴
+│   └── ...                    # その他（features, platforms, roadmap等）
 ├── public/                     # 静的アセット
-├── .github/workflows/          # GitHub Actions
+│   ├── manifest.webmanifest   # PWAマニフェスト
+│   ├── sw.js                  # Service Worker
+│   ├── favicon.webp           # ブラウザタブアイコン
+│   ├── apple-touch-icon.webp  # iOS用アイコン
+│   └── static/                # PWAアイコン、OGP画像、QRコード、バナー
 ├── CLAUDE.md                   # 開発者向けガイド
 ├── next.config.ts             # Next.js設定
 ├── tailwind.config.ts         # Tailwind設定
@@ -168,6 +173,26 @@ export interface Mat {
 src.delete()
 corrected.delete()
 ```
+
+## PWA
+
+### マニフェスト (`public/manifest.webmanifest`)
+
+- `display: standalone` でネイティブアプリ風の全画面表示
+- `orientation: portrait` で縦向き固定
+- テーマカラー・背景色は `#fff8e7`（アプリのクリーム色背景と統一）
+- アイコン: 192x192 / 512x512（webp、maskable対応）
+
+### Service Worker (`public/sw.js`)
+
+- stale-while-revalidate戦略: キャッシュがあればキャッシュを返しつつ、バックグラウンドで更新
+- 旧バージョンのキャッシュを自動削除
+- `skipWaiting` + `clients.claim` で即座に有効化
+
+### OGP
+
+- `layout.tsx` で Open Graph / Twitter Card メタタグを設定
+- OGP画像: `public/static/ogp.webp`（1200x630）
 
 ## デプロイ
 

@@ -11,6 +11,12 @@ export default function Home() {
           {/* Decorative top stripe */}
           <div className="menu-stripe mb-3" />
 
+          {/* Renaissance-style banner */}
+          <div className="mb-3 overflow-hidden rounded">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/static/banner.webp" alt="" className="w-full" style={{ display: 'block' }} />
+          </div>
+
           <div className="flex flex-col items-center gap-1.5">
             <h1
               className="text-xl font-extrabold tracking-wide"
@@ -53,6 +59,21 @@ export default function Home() {
                 リンク先の商品でなくても、ここから買い物するだけで支援になるよ
               </span>
             </a>
+
+            {/* QR Code */}
+            <div className="flex flex-col items-center gap-1.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/static/qr.webp"
+                alt="QR code"
+                width={120}
+                height={120}
+                className="rounded"
+              />
+              <span className="text-xs" style={{ color: 'var(--muted)' }}>
+                このアプリを共有
+              </span>
+            </div>
 
             <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--muted)' }}>
               <a

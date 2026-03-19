@@ -9,7 +9,8 @@
 - **完全クライアントサイド**: すべてブラウザ内で完結
 - **プライバシー重視**: 画像は外部送信しない
 - **コストゼロ**: 外部APIや従量課金サービス不使用
-- **静的ホスティング**: GitHub Pages / Cloudflare Pages
+- **静的ホスティング**: Cloudflare Pages
+- **PWA対応**: ホーム画面にインストール可能、Service Workerでオフラインキャッシュ
 
 ## クイックスタート
 
@@ -28,6 +29,7 @@ components/    # Reactコンポーネント
 hooks/         # カスタムフック（useOpenCV）
 lib/opencv/    # 画像処理ユーティリティ
 types/         # TypeScript型定義
+public/        # 静的アセット（PWAアイコン、OGP画像、QRコード等）
 docs/          # 詳細ドキュメント
 ```
 
@@ -39,6 +41,7 @@ docs/          # 詳細ドキュメント
 | `ImageUpload.tsx`            | 画像アップロードUI                                   |
 | `PaperCornersAdjustment.tsx` | 角の調整UI（ルーペ拡大鏡付き、DPR対応）              |
 | `ImageComparison.tsx`        | 左右画像比較UI（ドラッグ微調整・半透明オーバーレイ） |
+| `ServiceWorkerRegister.tsx`  | Service Worker登録（PWA）                            |
 
 ## 画像処理フロー
 

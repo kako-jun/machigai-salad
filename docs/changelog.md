@@ -42,10 +42,21 @@
 - イベント処理をPointerEventsに統一（mouse/touch分離を廃止）
 - `useCallback`適用（getCanvasPoint, findCornerAtPoint）
 
+- **PWA化**
+  - `manifest.webmanifest` + Service Worker（stale-while-revalidate戦略）
+  - `display: standalone`、テーマカラー `#fff8e7`（アプリ背景色と統一）
+  - OGPメタタグ（Open Graph + Twitter Card）
+  - `ServiceWorkerRegister`コンポーネントで自動登録
+
+- **ヘッダバナー**
+  - ルネサンス絵画風の横長装飾画像をヘッダに追加
+
+- **フッタQRコード**
+  - アプリのURLをQRコードで共有できるように
+
 ### 追加予定
 
 - 差分の自動検出機能
-- PWA対応
 - 画像保存機能
 
 ## [0.2.0] - 2025-01-XX
@@ -160,8 +171,6 @@
 
 ### v0.3.0（予定）
 
-- PWA対応
-- オフライン動作
 - 画像保存機能
 - 差分の自動検出（実験的）
 

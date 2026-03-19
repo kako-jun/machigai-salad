@@ -1,0 +1,25 @@
+{
+  "name": "小エビの間違いサラダ",
+  "short_name": "間違いサラダ",
+  "description": "間違いさがし おたすけツール",
+  "theme_color": "#fff8e7",
+  "background_color": "#fff8e7",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/static/pwa-icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/static/pwa-icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "maskable any"
+    }
+  ]
+}
