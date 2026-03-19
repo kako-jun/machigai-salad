@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point } from '@/types'
+
+/** Minimum canvas dimension in CSS pixels — tiny images are scaled up to this */
+const MIN_CANVAS_DIM = 280
 
 interface PaperCornersAdjustmentProps {
   imageDataUrl: string
@@ -24,6 +27,177 @@ function getDefaultCorners(imageSize: { width: number; height: number }): Point[
   ]
 }
 
+/** Trace a quadrilateral path from corners (shared by overlay, clip, border) */
+function traceCornerPath(ctx: CanvasRenderingContext2D, corners: Point[], scale: number) {
+  ctx.beginPath()
+  corners.forEach((corner, i) => {
+    const x = corner.x * scale
+    const y = corner.y * scale
+    if (i === 0) ctx.moveTo(x, y)
+    else ctx.lineTo(x, y)
+  })
+  ctx.closePath()
+}
+
+/** Module-level draw function — no component closure dependencies */
+function drawCanvas(
+  canvas: HTMLCanvasElement,
+  img: HTMLImageElement,
+  corners: Point[],
+  scale: number,
+  activeIndex: number | null,
+  dpr: number
+) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const cssW = canvas.width / dpr
+  const cssH = canvas.height / dpr
+
+  // Apply DPR transform — all coordinates below are in CSS-pixel space
+  ctx.save()
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+  ctx.clearRect(0, 0, cssW, cssH)
+  ctx.drawImage(img, 0, 0, cssW, cssH)
+
+  // Semi-transparent overlay outside the selected region
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+  ctx.fillRect(0, 0, cssW, cssH)
+
+  // Cut out the selected region
+  ctx.save()
+  ctx.globalCompositeOperation = 'destination-out'
+  traceCornerPath(ctx, corners, scale)
+  ctx.fill()
+  ctx.restore()
+
+  // Redraw image inside the region
+  ctx.save()
+  traceCornerPath(ctx, corners, scale)
+  ctx.clip()
+  ctx.drawImage(img, 0, 0, cssW, cssH)
+  ctx.restore()
+
+  // Draw border lines
+  ctx.strokeStyle = 'rgba(245, 197, 24, 0.85)'
+  ctx.lineWidth = 2.5
+  traceCornerPath(ctx, corners, scale)
+  ctx.stroke()
+
+  // Draw corner handles
+  corners.forEach((corner, index) => {
+    const x = corner.x * scale
+    const y = corner.y * scale
+    const isActive = activeIndex === index
+
+    // Outer ring when active
+    if (isActive) {
+      ctx.strokeStyle = 'rgba(245, 197, 24, 0.4)'
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.arc(x, y, 18, 0, 2 * Math.PI)
+      ctx.stroke()
+    }
+
+    // Handle dot
+    ctx.fillStyle = isActive ? '#D4A010' : '#F5C518'
+    ctx.beginPath()
+    ctx.arc(x, y, isActive ? 10 : 8, 0, 2 * Math.PI)
+    ctx.fill()
+
+    // White border
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = 2.5
+    ctx.beginPath()
+    ctx.arc(x, y, isActive ? 10 : 8, 0, 2 * Math.PI)
+    ctx.stroke()
+  })
+
+  // Magnifier loupe — shown only while dragging
+  if (activeIndex !== null) {
+    const corner = corners[activeIndex]
+    const cx = corner.x * scale
+    const cy = corner.y * scale
+
+    const LOUPE_RADIUS = 55
+    const LOUPE_ZOOM = 3
+    const LOUPE_MARGIN = LOUPE_RADIUS + 12
+
+    // Position loupe in the diagonally opposite quadrant
+    const midX = cssW / 2
+    const midY = cssH / 2
+    const loupeX = cx < midX ? cssW - LOUPE_MARGIN : LOUPE_MARGIN
+    const loupeY = cy < midY ? cssH - LOUPE_MARGIN : LOUPE_MARGIN
+
+    // Source region centered on the corner (image coordinates)
+    const srcHalf = LOUPE_RADIUS / LOUPE_ZOOM / scale
+    const srcFullX = corner.x - srcHalf
+    const srcFullY = corner.y - srcHalf
+    const srcFullSize = srcHalf * 2
+
+    // Clamp source to image bounds on all four edges
+    const clampedX = Math.max(0, srcFullX)
+    const clampedY = Math.max(0, srcFullY)
+    const clampedW = Math.min(img.width, srcFullX + srcFullSize) - clampedX
+    const clampedH = Math.min(img.height, srcFullY + srcFullSize) - clampedY
+
+    // Destination: offset proportionally to how much was clipped from each edge
+    const dstMag = LOUPE_ZOOM * scale
+    const dstX = loupeX - LOUPE_RADIUS + (clampedX - srcFullX) * dstMag
+    const dstY = loupeY - LOUPE_RADIUS + (clampedY - srcFullY) * dstMag
+    const dstW = clampedW * dstMag
+    const dstH = clampedH * dstMag
+
+    // Drop shadow
+    ctx.save()
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+    ctx.shadowBlur = 12
+    ctx.shadowOffsetY = 2
+    ctx.beginPath()
+    ctx.arc(loupeX, loupeY, LOUPE_RADIUS, 0, 2 * Math.PI)
+    ctx.fillStyle = '#FFF8E7'
+    ctx.fill()
+    ctx.restore()
+
+    // Clip to circle and draw magnified image
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(loupeX, loupeY, LOUPE_RADIUS, 0, 2 * Math.PI)
+    ctx.clip()
+
+    ctx.drawImage(img, clampedX, clampedY, clampedW, clampedH, dstX, dstY, dstW, dstH)
+
+    // Crosshair at loupe center (always marks the corner position)
+    ctx.strokeStyle = 'rgba(245, 197, 24, 0.9)'
+    ctx.lineWidth = 1.5
+    const CROSS_SIZE = 10
+    ctx.beginPath()
+    ctx.moveTo(loupeX - CROSS_SIZE, loupeY)
+    ctx.lineTo(loupeX + CROSS_SIZE, loupeY)
+    ctx.moveTo(loupeX, loupeY - CROSS_SIZE)
+    ctx.lineTo(loupeX, loupeY + CROSS_SIZE)
+    ctx.stroke()
+
+    ctx.restore()
+
+    // Loupe border ring
+    ctx.strokeStyle = 'rgba(245, 197, 24, 0.85)'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(loupeX, loupeY, LOUPE_RADIUS, 0, 2 * Math.PI)
+    ctx.stroke()
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.arc(loupeX, loupeY, LOUPE_RADIUS + 2, 0, 2 * Math.PI)
+    ctx.stroke()
+  }
+
+  ctx.restore() // restore the DPR transform
+}
+
 export default function PaperCornersAdjustment({
   imageDataUrl,
   initialCorners,
@@ -33,153 +207,82 @@ export default function PaperCornersAdjustment({
 }: PaperCornersAdjustmentProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loadedImageRef = useRef<HTMLImageElement | null>(null)
+  const dprRef = useRef(1)
   const effectiveInitialCorners = initialCorners ?? getDefaultCorners(imageSize)
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
 
-  // 画像の読み込みとキャンバスサイズ設定（imageDataUrl が変わった時のみ）
+  // 画像の読み込みとキャンバスサイズ設定
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const img = new Image()
     img.onload = () => {
+      const dpr = window.devicePixelRatio || 1
+      dprRef.current = dpr
+
       const maxWidth = Math.min(800, window.innerWidth - 32)
       const maxHeight = Math.min(600, window.innerHeight - 200)
-      const scaleX = maxWidth / img.width
-      const scaleY = maxHeight / img.height
-      const newScale = Math.min(scaleX, scaleY, 1)
+      const fitScale = Math.min(maxWidth / img.width, maxHeight / img.height)
+      // Upscale tiny images so the canvas is at least MIN_CANVAS_DIM on the longer side
+      const minScale = MIN_CANVAS_DIM / Math.max(img.width, img.height)
+      const newScale = Math.max(Math.min(fitScale, 1), minScale)
+
+      const cssW = img.width * newScale
+      const cssH = img.height * newScale
+
+      // Set canvas backing store to device-pixel resolution
+      canvas.width = cssW * dpr
+      canvas.height = cssH * dpr
+      canvas.style.width = `${cssW}px`
+      canvas.style.height = `${cssH}px`
 
       loadedImageRef.current = img
-      canvas.width = img.width * newScale
-      canvas.height = img.height * newScale
       setScale(newScale)
+
+      // Direct initial draw — avoids race when newScale equals the previous scale value
+      drawCanvas(canvas, img, effectiveInitialCorners, newScale, null, dpr)
     }
     img.src = imageDataUrl
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageDataUrl])
 
-  // corners・draggingIndex・scale が変わったときに再描画
+  // Redraw on state changes (corners dragged, scale updated)
   useEffect(() => {
+    const canvas = canvasRef.current
     const img = loadedImageRef.current
-    if (!img) return
-    drawCanvas(img, corners, scale, draggingIndex)
+    if (!canvas || !img) return
+    drawCanvas(canvas, img, corners, scale, draggingIndex, dprRef.current)
   }, [corners, draggingIndex, scale])
 
-  const drawCanvas = (
-    img: HTMLImageElement,
-    corners: Point[],
-    scale: number,
-    activeIndex: number | null
-  ) => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-
-    // Semi-transparent overlay outside the selected region
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Cut out the selected region
-    ctx.save()
-    ctx.globalCompositeOperation = 'destination-out'
-    ctx.beginPath()
-    corners.forEach((corner, index) => {
-      const x = corner.x * scale
-      const y = corner.y * scale
-      if (index === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.closePath()
-    ctx.fill()
-    ctx.restore()
-
-    // Redraw image inside the region
-    ctx.save()
-    ctx.beginPath()
-    corners.forEach((corner, index) => {
-      const x = corner.x * scale
-      const y = corner.y * scale
-      if (index === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.closePath()
-    ctx.clip()
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-    ctx.restore()
-
-    // Draw border lines
-    ctx.strokeStyle = 'rgba(245, 197, 24, 0.85)'
-    ctx.lineWidth = 2.5
-    ctx.beginPath()
-    corners.forEach((corner, index) => {
-      const x = corner.x * scale
-      const y = corner.y * scale
-      if (index === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    })
-    ctx.closePath()
-    ctx.stroke()
-
-    // Draw corner handles
-    corners.forEach((corner, index) => {
-      const x = corner.x * scale
-      const y = corner.y * scale
-      const isActive = activeIndex === index
-
-      // Outer ring when active
-      if (isActive) {
-        ctx.strokeStyle = 'rgba(245, 197, 24, 0.4)'
-        ctx.lineWidth = 2.5
-        ctx.beginPath()
-        ctx.arc(x, y, 18, 0, 2 * Math.PI)
-        ctx.stroke()
+  const getCanvasPoint = useCallback(
+    (clientX: number, clientY: number): Point => {
+      const canvas = canvasRef.current
+      if (!canvas) return { x: 0, y: 0 }
+      // getBoundingClientRect returns CSS pixels — no DPR adjustment needed
+      const rect = canvas.getBoundingClientRect()
+      return {
+        x: (clientX - rect.left) / scale,
+        y: (clientY - rect.top) / scale,
       }
+    },
+    [scale]
+  )
 
-      // Handle dot
-      ctx.fillStyle = isActive ? '#D4A010' : '#F5C518'
-      ctx.beginPath()
-      ctx.arc(x, y, isActive ? 10 : 8, 0, 2 * Math.PI)
-      ctx.fill()
-
-      // White border
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2.5
-      ctx.beginPath()
-      ctx.arc(x, y, isActive ? 10 : 8, 0, 2 * Math.PI)
-      ctx.stroke()
-    })
-  }
-
-  const getCanvasPoint = (clientX: number, clientY: number): Point => {
-    const canvas = canvasRef.current
-    if (!canvas) return { x: 0, y: 0 }
-
-    const rect = canvas.getBoundingClientRect()
-    const x = (clientX - rect.left) / scale
-    const y = (clientY - rect.top) / scale
-
-    return { x, y }
-  }
-
-  const findCornerAtPoint = (point: Point): number | null => {
-    const threshold = 25 / scale
-    for (let i = 0; i < corners.length; i++) {
-      const corner = corners[i]
-      const dx = corner.x - point.x
-      const dy = corner.y - point.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      if (distance < threshold) {
-        return i
+  const findCornerAtPoint = useCallback(
+    (point: Point): number | null => {
+      const threshold = 25 / scale
+      for (let i = 0; i < corners.length; i++) {
+        const dx = corners[i].x - point.x
+        const dy = corners[i].y - point.y
+        if (Math.sqrt(dx * dx + dy * dy) < threshold) return i
       }
-    }
-    return null
-  }
+      return null
+    },
+    [corners, scale]
+  )
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const point = getCanvasPoint(e.clientX, e.clientY)
