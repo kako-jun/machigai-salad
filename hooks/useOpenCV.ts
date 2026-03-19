@@ -6,7 +6,6 @@ import {
   detectPaperContour,
   orderPoints,
   applyPerspectiveTransform,
-  applyColorCorrection,
   splitImage,
 } from '@/lib/opencv'
 
@@ -227,7 +226,6 @@ export function useOpenCV(): UseOpenCVReturn {
         img.onload = () => {
           let src = null
           let warped = null
-          let corrected = null
           let leftMat = null
           let rightMat = null
           try {
@@ -246,13 +244,8 @@ export function useOpenCV(): UseOpenCVReturn {
             src.delete()
             src = null
 
-            // 色調補正
-            corrected = applyColorCorrection(warped, cv)
-            warped.delete()
-            warped = null
-
-            // 左右分割
-            ;[leftMat, rightMat] = splitImage(corrected, cv)
+            // 左右分割（色は加工しない）
+            ;[leftMat, rightMat] = splitImage(warped, cv)
 
             // Canvasに出力
             const leftCanvas = document.createElement('canvas')
@@ -264,7 +257,7 @@ export function useOpenCV(): UseOpenCVReturn {
             const rightImage = rightCanvas.toDataURL()
 
             // クリーンアップ
-            corrected.delete()
+            warped.delete()
             leftMat.delete()
             rightMat.delete()
 
@@ -278,10 +271,6 @@ export function useOpenCV(): UseOpenCVReturn {
             if (leftMat)
               try {
                 leftMat.delete()
-              } catch (_) {}
-            if (corrected)
-              try {
-                corrected.delete()
               } catch (_) {}
             if (warped)
               try {

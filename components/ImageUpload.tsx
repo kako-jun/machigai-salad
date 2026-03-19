@@ -106,7 +106,7 @@ export default function ImageUpload({
             </div>
 
             <button onClick={onRetry} className="btn-action px-8 py-3 text-sm">
-              もう一回ためす
+              もう1回ためす
             </button>
           </div>
         ) : (

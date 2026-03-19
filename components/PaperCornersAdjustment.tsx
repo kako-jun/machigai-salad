@@ -37,7 +37,6 @@ export default function PaperCornersAdjustment({
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
-  const hasAutoDetection = initialCorners !== null
 
   // 画像の読み込みとキャンバスサイズ設定（imageDataUrl が変わった時のみ）
   useEffect(() => {
@@ -246,53 +245,54 @@ export default function PaperCornersAdjustment({
     <div className="animate-fade-in space-y-4">
       {/* Instruction tip styled like a menu note */}
       <div
-        className="rounded-xl px-4 py-2.5 text-center"
+        className="flex items-center justify-between rounded-xl px-4 py-2.5"
         style={{
-          background: hasAutoDetection
-            ? 'linear-gradient(90deg, rgba(107,127,62,0.1), rgba(107,127,62,0.06))'
-            : 'rgba(245,197,24,0.1)',
-          border: hasAutoDetection
-            ? '1px solid rgba(107,127,62,0.3)'
-            : '1px solid rgba(212,160,16,0.3)',
+          background: 'rgba(245,197,24,0.1)',
+          border: '1px solid rgba(212,160,16,0.3)',
         }}
       >
         <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
-          {hasAutoDetection
-            ? '自どうで みつけたよ。ずれてたら なおしてね'
-            : 'かどの まるを うごかして 紙にあわせてね'}
+          かどの まるを うごかして 紙にあわせてね
         </p>
+        <button
+          onClick={handleReset}
+          className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-xs"
+          style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+          title="かどの位置をもどす"
+        >
+          リセット
+        </button>
       </div>
 
       {/* Canvas with placemat-style frame */}
-      <div
-        className="flex justify-center p-1"
-        style={{
-          background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
-          border: '2px solid var(--border)',
-          borderRadius: 16,
-          boxShadow:
-            '0 1px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.12)',
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          className="cursor-pointer"
-          style={{ touchAction: 'none', borderRadius: 10 }}
-        />
+      <div className="flex justify-center">
+        <div
+          className="inline-flex p-1"
+          style={{
+            background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
+            border: '2px solid var(--border)',
+            borderRadius: 16,
+            boxShadow:
+              '0 1px 0 rgba(255,255,255,0.8) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.12)',
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="cursor-pointer"
+            style={{ touchAction: 'none', borderRadius: 10 }}
+          />
+        </div>
       </div>
 
       {/* Button row */}
       <div className="flex gap-2">
-        <button onClick={handleReset} className="btn-ghost flex-1 px-4 py-3 text-sm">
-          もどす
-        </button>
         <button onClick={onCancel} className="btn-ghost flex-1 px-4 py-3 text-sm">
           やめる
         </button>

@@ -57,7 +57,7 @@ export default function ImageProcessor() {
       setPhase('result')
     } catch (error) {
       console.error('Error processing image with corners:', error)
-      showToast('うまくいかなかったみたい。かどの位置をなおして もう一回ためしてね。', 'error')
+      showToast('うまくいかなかったみたい。かどの位置をなおして もう1回ためしてね。', 'error')
       setPhase('adjust')
     }
   }
@@ -212,7 +212,7 @@ function ResetButton({ onClick }: { onClick: () => void }) {
   return (
     <div className="pt-3 text-center">
       <button onClick={onClick} className="btn-ghost px-7 py-3 text-sm">
-        もう一回やる
+        もう1回やる
       </button>
     </div>
   )
