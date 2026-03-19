@@ -18,6 +18,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const [isHolding, setIsHolding] = useState(false)
   const isDraggingRef = useRef(false)
   const startRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
+  const holdTimerRef = useRef<number>(0)
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -25,7 +26,9 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
       startRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
       isDraggingRef.current = false
       setIsDragging(false)
-      setIsHolding(true) // left goes fully transparent → right shows through
+      // Defer hold detection — if drag starts first, the timer is cancelled
+      window.clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = window.setTimeout(() => setIsHolding(true), 120)
     },
     [offset]
   )
@@ -39,6 +42,8 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
 
     if (!isDraggingRef.current && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
       isDraggingRef.current = true
+      window.clearTimeout(holdTimerRef.current) // cancel hold — this is a drag
+      setIsHolding(false)
       setIsDragging(true) // left becomes semi-transparent → both visible
     }
 
@@ -51,10 +56,11 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   }, [])
 
   const handlePointerUp = useCallback(() => {
+    window.clearTimeout(holdTimerRef.current)
     startRef.current = null
     isDraggingRef.current = false
     setIsDragging(false)
-    setIsHolding(false) // left returns to full opacity
+    setIsHolding(false)
   }, [])
 
   const hasOffset = offset.x !== 0 || offset.y !== 0
