@@ -64,40 +64,6 @@ body::before {
     0 8px 24px rgba(60, 36, 21, 0.06);
 }
 
-/* Embossed raised button — like a restaurant menu item */
-.btn-menu {
-  background: linear-gradient(180deg, #f8f0dc 0%, #edd98a 40%, #d4a810 100%);
-  border: 1px solid #b8890a;
-  border-radius: 12px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 -1px 0 rgba(120, 80, 0, 0.3) inset,
-    0 3px 8px rgba(60, 36, 21, 0.25),
-    0 1px 2px rgba(60, 36, 21, 0.15);
-  color: var(--espresso);
-  font-weight: 700;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-  transition: all 0.12s ease;
-}
-
-.btn-menu:hover {
-  background: linear-gradient(180deg, #fff5e0 0%, #f5c518 40%, #d4a810 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 -1px 0 rgba(120, 80, 0, 0.3) inset,
-    0 4px 12px rgba(60, 36, 21, 0.3),
-    0 1px 2px rgba(60, 36, 21, 0.2);
-}
-
-.btn-menu:active {
-  background: linear-gradient(180deg, #d4a810 0%, #edd98a 60%, #f8f0dc 100%);
-  box-shadow:
-    0 -1px 0 rgba(255, 255, 255, 0.4) inset,
-    0 1px 0 rgba(120, 80, 0, 0.3) inset,
-    0 1px 3px rgba(60, 36, 21, 0.2);
-  transform: translateY(1px);
-}
-
 /* Terracotta action button — like a restaurant bell / call button */
 .btn-action {
   background: linear-gradient(180deg, #e07040 0%, #cc6b3c 50%, #b05228 100%);
@@ -202,26 +168,6 @@ body::before {
   transform: none;
 }
 
-/* Placemat / comparison panel — paper mat texture */
-.placemat {
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(180, 130, 60, 0.025) 2px,
-      rgba(180, 130, 60, 0.025) 4px
-    ),
-    linear-gradient(145deg, #fffdf4 0%, #fff8e7 50%, #fdf3d8 100%);
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.8) inset,
-    0 -1px 0 rgba(180, 130, 60, 0.2) inset,
-    0 4px 16px rgba(60, 36, 21, 0.12),
-    0 1px 3px rgba(60, 36, 21, 0.08);
-}
-
 /* Step indicator badge — like menu item numbers */
 .step-badge-active {
   background: linear-gradient(160deg, #e07040, #b05228);
@@ -275,16 +221,6 @@ body::before {
   }
 }
 
-@keyframes pulse-subtle {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-}
-
 @keyframes spin-smooth {
   from {
     transform: rotate(0deg);
@@ -294,41 +230,10 @@ body::before {
   }
 }
 
-@keyframes bounce-in {
-  0% {
-    transform: scale(0.9);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.02);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
 .animate-fade-in {
   animation: fade-in 0.35s ease-out;
 }
 
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s ease-in-out infinite;
-}
-
 .animate-spin-smooth {
   animation: spin-smooth 0.8s linear infinite;
-}
-
-.animate-bounce-in {
-  animation: bounce-in 0.4s ease-out;
 }

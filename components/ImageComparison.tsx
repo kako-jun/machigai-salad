@@ -17,18 +17,18 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const [isDragging, setIsDragging] = useState(false)
   const [isHolding, setIsHolding] = useState(false)
   const isDraggingRef = useRef(false)
+  const offsetRef = useRef(offset)
+  offsetRef.current = offset
   const startRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-      startRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
-      isDraggingRef.current = false
-      setIsDragging(false)
-      setIsHolding(true) // start fading toward 0 immediately
-    },
-    [offset]
-  )
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    const cur = offsetRef.current
+    startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
+    isDraggingRef.current = false
+    setIsDragging(false)
+    setIsHolding(true) // start fading toward 0 immediately
+  }, [])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const start = startRef.current
@@ -123,14 +123,18 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
           boxShadow: `0 4px 16px rgba(60,36,21,0.12)`,
           background: 'var(--parchment)',
           transition: 'border-color 0.2s ease',
-          minHeight: 280,
+          minHeight: 'min(280px, calc(100dvh - 280px))',
           maxHeight: 'calc(100dvh - 280px)',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerLeave={useCallback(() => {
+          // Don't release during drag — setPointerCapture should prevent this,
+          // but some browsers fire pointerleave despite capture
+          if (!isDraggingRef.current) handlePointerUp()
+        }, [handlePointerUp])}
       >
         {/* Right image — always present, behind left */}
         <img src={rightImage} alt="みぎの絵" draggable={false} style={imgConstraint} />

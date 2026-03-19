@@ -4,12 +4,6 @@ export interface Point {
   y: number
 }
 
-// 画像サイズを表す型
-export interface ImageSize {
-  width: number
-  height: number
-}
-
 // OpenCV.jsのグローバル型定義
 declare global {
   interface Window {
@@ -32,9 +26,6 @@ export interface OpenCV {
   cvtColor: (src: Mat, dst: Mat, code: number) => void
   GaussianBlur: (src: Mat, dst: Mat, ksize: Size, sigmaX: number) => void
   Canny: (src: Mat, dst: Mat, threshold1: number, threshold2: number) => void
-  equalizeHist: (src: Mat, dst: Mat) => void
-  split: (src: Mat, channels: MatVector) => void
-  merge: (channels: MatVector, dst: Mat) => void
 
   // 輪郭
   findContours: (
@@ -58,7 +49,6 @@ export interface OpenCV {
 
   // 定数
   COLOR_RGBA2GRAY: number
-  COLOR_RGBA2RGB: number
   RETR_EXTERNAL: number
   CHAIN_APPROX_SIMPLE: number
   CV_32FC2: number

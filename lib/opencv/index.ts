@@ -1,2 +1,2 @@
 export { orderPoints, cornersToMat, detectPaperContour } from './paper-detection'
-export { applyPerspectiveTransform, applyColorCorrection, splitImage } from './image-transform'
+export { applyPerspectiveTransform, splitImage } from './image-transform'
