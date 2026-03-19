@@ -122,11 +122,7 @@ const M = cv.getPerspectiveTransform(srcPoints, dstPoints)
 cv.warpPerspective(src, warped, M, new cv.Size(maxWidth, maxHeight))
 ```
 
-### 3. 色調補正
-
-ヒストグラム均等化により照明条件の違いを補正。
-
-### 4. 左右分割
+### 3. 左右分割
 
 画像を中央で分割。
 
@@ -175,7 +171,9 @@ corrected.delete()
 
 ## デプロイ
 
-### GitHub Pages
+### Cloudflare Pages
 
-- `main`ブランチへのpushで自動デプロイ
-- ビルド環境変数: `GITHUB_PAGES=true`
+- GitHub連携で`main`ブランチへのpushで自動デプロイ
+- ビルドコマンド: `npm run build`
+- 出力ディレクトリ: `out`
+- カスタムドメイン: `machigai-salad.llll-ll.com`

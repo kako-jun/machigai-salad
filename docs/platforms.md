@@ -38,7 +38,7 @@
 ## カメラアクセスの要件
 
 カメラ機能を使うにはHTTPS接続が必要。
-GitHub Pages および Cloudflare Pages はどちらもHTTPSで配信されるため、問題ない。
+Cloudflare PagesはHTTPSで配信されるため、問題ない。
 
 ローカル開発環境（localhost）では、ブラウザがHTTPでもカメラを許可する場合がある。
 
@@ -75,7 +75,8 @@ OpenCV.js をCDNから取得するため、ネットワーク接続が必要。
 
 ## ホスティング
 
-| 環境                     | URL                                |
-| ------------------------ | ---------------------------------- |
-| テスト（GitHub Pages）   | mainブランチへのpushで自動デプロイ |
-| 本番（Cloudflare Pages） | 将来対応予定                       |
+| 環境             | URL                        |
+| ---------------- | -------------------------- |
+| Cloudflare Pages | machigai-salad.llll-ll.com |
+
+mainブランチへのpushでGitHub連携により自動デプロイ。
