@@ -14,7 +14,12 @@ export default function Home() {
           {/* Renaissance-style banner */}
           <div className="mb-3 overflow-hidden rounded">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/static/banner.webp" alt="" className="w-full" style={{ display: 'block' }} />
+            <img
+              src="/static/banner.webp"
+              alt="小エビの間違いサラダ バナー"
+              className="w-full"
+              style={{ display: 'block' }}
+            />
           </div>
 
           <div className="flex flex-col items-center gap-1.5">
