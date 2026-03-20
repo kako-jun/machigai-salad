@@ -44,15 +44,19 @@
 
 - **PWA化**
   - `manifest.webmanifest` + Service Worker（stale-while-revalidate戦略）
-  - `display: standalone`、テーマカラー `#fff8e7`（アプリ背景色と統一）
+  - `display: standalone`、テーマカラー `#FEF6DC`（アイコン背景色と統一）
   - OGPメタタグ（Open Graph + Twitter Card）
   - `ServiceWorkerRegister`コンポーネントで自動登録
+
+- **画像アセット全7点配置**
+  - バナー（800px幅）、OGP（1200x630）、PWAアイコン（192/512）、apple-touch-icon（180）、favicon（32）、QRコード（240、エスプレッソ茶に着色）
+  - 全画像webp形式で軽量化
 
 - **ヘッダバナー**
   - ルネサンス絵画風の横長装飾画像をヘッダに追加
 
 - **フッタQRコード**
-  - アプリのURLをQRコードで共有できるように
+  - アプリのURLをQRコードで共有できるように（アプリのテーマカラーで着色）
 
 ### 追加予定
 

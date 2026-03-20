@@ -180,7 +180,7 @@ corrected.delete()
 
 - `display: standalone` でネイティブアプリ風の全画面表示
 - `orientation: portrait` で縦向き固定
-- テーマカラー・背景色は `#fff8e7`（アプリのクリーム色背景と統一）
+- テーマカラー・背景色は `#FEF6DC`（アイコン背景色と統一、PWAスプラッシュが自然に繋がる）
 - アイコン: 192x192 / 512x512（webp、maskable対応）
 
 ### Service Worker (`public/sw.js`)

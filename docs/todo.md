@@ -206,5 +206,7 @@
 - ✅ 小画像の自動拡大 — 長辺280px未満を拡大表示
 - ✅ ビューポート制約 — 縦長/横長画像がはみ出さない
 - ✅ PWA化 — manifest.webmanifest + Service Worker + OGPメタタグ
-- ✅ QRコード共有 — フッタにQRコード表示
+- ✅ QRコード共有 — フッタにQRコード表示（アプリテーマカラーで着色）
 - ✅ ヘッダバナー — ルネサンス絵画風の横長装飾画像
+- ✅ 画像アセット全7点配置 — banner, ogp, pwa-icon-192/512, apple-touch-icon, favicon, qr（全webp）
+- ✅ PWA背景色統一 — アイコン背景色(#FEF6DC)に合わせてスプラッシュが自然に繋がる
