@@ -2,6 +2,7 @@
   "name": "小エビの間違いサラダ",
   "short_name": "間違いサラダ",
   "description": "間違いさがし おたすけツール",
+  "lang": "ja",
   "theme_color": "#FEF6DC",
   "background_color": "#FEF6DC",
   "display": "standalone",
