@@ -12,15 +12,6 @@ interface ImageUploadProps {
   onRetry: () => void
 }
 
-/**
- * モバイルデバイスかどうかを判定する
- * capture 属性はモバイルのみ有効にする（デスクトップでは選択肢がカメラのみに制限されるため）
- */
-function isMobileDevice(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-}
-
 export default function ImageUpload({
   onImageUpload,
   cvLoaded,
@@ -28,8 +19,8 @@ export default function ImageUpload({
   loadError,
   onRetry,
 }: ImageUploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const useCaptureAttr = isMobileDevice()
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -43,17 +34,29 @@ export default function ImageUpload({
     reader.readAsDataURL(file)
   }
 
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
+  const handleCameraClick = () => {
+    cameraInputRef.current?.click()
+  }
+
+  const handleGalleryClick = () => {
+    galleryInputRef.current?.click()
   }
 
   return (
     <div className="animate-fade-in flex flex-col items-center py-10">
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
-        {...(useCaptureAttr ? { capture: 'environment' } : {})}
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        disabled={!cvLoaded}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
         disabled={!cvLoaded}
@@ -114,7 +117,7 @@ export default function ImageUpload({
           <>
             {/* Camera shutter button */}
             <button
-              onClick={handleButtonClick}
+              onClick={handleCameraClick}
               disabled={!cvLoaded}
               className="btn-shutter flex flex-col items-center gap-4 px-10 py-8"
             >
@@ -139,6 +142,17 @@ export default function ImageUpload({
               </span>
             </button>
 
+            {/* Gallery pick button */}
+            <button
+              onClick={handleGalleryClick}
+              disabled={!cvLoaded}
+              className="flex items-center gap-1.5 py-2 transition-opacity hover:opacity-70"
+              style={{ color: 'var(--muted)' }}
+            >
+              <GalleryIcon />
+              <span className="text-sm">アルバムから えらぶ</span>
+            </button>
+
             {/* Instruction text styled like menu footnote */}
             <div
               className="rounded-xl px-4 py-2.5 text-center"
@@ -157,6 +171,25 @@ export default function ImageUpload({
         )}
       </div>
     </div>
+  )
+}
+
+function GalleryIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
   )
 }
 
