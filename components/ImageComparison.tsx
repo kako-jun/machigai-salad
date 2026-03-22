@@ -2,10 +2,12 @@
 
 import { useState, useRef, useCallback } from 'react'
 
-/** Minimum pointer movement (px) to distinguish drag from tap */
-const DRAG_THRESHOLD = 5
+/** Minimum pointer movement (px) to distinguish drag from hold */
+const DRAG_THRESHOLD = 20
 /** Maximum offset in each direction (px) */
 const MAX_OFFSET = 40
+/** Time (ms) to confirm hold — once confirmed, drag is disabled */
+const HOLD_CONFIRM_MS = 200
 
 interface ImageComparisonProps {
   leftImage: string
@@ -17,6 +19,8 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const [isDragging, setIsDragging] = useState(false)
   const [isHolding, setIsHolding] = useState(false)
   const isDraggingRef = useRef(false)
+  const isHoldConfirmedRef = useRef(false)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const offsetRef = useRef(offset)
   offsetRef.current = offset
   const startRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
@@ -26,20 +30,36 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
     const cur = offsetRef.current
     startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
     isDraggingRef.current = false
+    isHoldConfirmedRef.current = false
     setIsDragging(false)
-    setIsHolding(true) // start fading toward 0 immediately
+    setIsHolding(true)
+
+    // After HOLD_CONFIRM_MS without drag, lock into hold mode
+    holdTimerRef.current = setTimeout(() => {
+      if (!isDraggingRef.current) {
+        isHoldConfirmedRef.current = true
+      }
+    }, HOLD_CONFIRM_MS)
   }, [])
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const start = startRef.current
     if (!start) return
 
+    // Once hold is confirmed, ignore all movement
+    if (isHoldConfirmedRef.current) return
+
     const dx = e.clientX - start.x
     const dy = e.clientY - start.y
 
     if (!isDraggingRef.current && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
       isDraggingRef.current = true
-      setIsDragging(true) // redirect fade to 0.5 instead of 0
+      setIsDragging(true)
+      setIsHolding(false)
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current)
+        holdTimerRef.current = null
+      }
     }
 
     if (isDraggingRef.current) {
@@ -53,8 +73,13 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
   const handlePointerUp = useCallback(() => {
     startRef.current = null
     isDraggingRef.current = false
+    isHoldConfirmedRef.current = false
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
     setIsDragging(false)
-    setIsHolding(false) // fade back to 1
+    setIsHolding(false)
   }, [])
 
   const hasOffset = offset.x !== 0 || offset.y !== 0
@@ -130,6 +155,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onContextMenu={useCallback((e: React.MouseEvent) => e.preventDefault(), [])}
         onPointerLeave={useCallback(() => {
           // Don't release during drag — setPointerCapture should prevent this,
           // but some browsers fire pointerleave despite capture
