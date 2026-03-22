@@ -111,33 +111,32 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
         }}
       >
         <span
-          className="rounded-full px-3 py-0.5 text-xs font-bold text-white"
+          className="shrink-0 whitespace-nowrap rounded-full px-3 py-0.5 text-xs font-bold text-white"
           style={{ background: activeColor }}
         >
           {showingRight ? 'みぎ' : 'ひだり'}
         </span>
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-medium" style={{ color: activeColor }}>
-            {isDragging
-              ? 'ずらしちゅう...'
-              : showingRight
-                ? 'はなすと もどるよ'
-                : 'タップでみぎ / ドラッグでずらす'}
-          </p>
-          {hasOffset && !isDragging && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setOffset({ x: 0, y: 0 })
-              }}
-              className="rounded-lg px-2 py-0.5 text-xs"
-              style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
-            >
-              リセット
-            </button>
-          )}
-        </div>
+        <p className="whitespace-nowrap text-xs font-medium" style={{ color: activeColor }}>
+          {isDragging
+            ? 'ずらしちゅう...'
+            : showingRight
+              ? 'はなすと もどるよ'
+              : 'タップ→みぎ / ドラッグ→ずらす'}
+        </p>
       </div>
+
+      {/* Reset button — separate row so it doesn't squeeze the instruction strip */}
+      {hasOffset && !isDragging && !isHolding && (
+        <div className="flex justify-end px-2">
+          <button
+            onClick={() => setOffset({ x: 0, y: 0 })}
+            className="rounded-lg px-3 py-1 text-xs"
+            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+          >
+            位置をリセット
+          </button>
+        </div>
+      )}
 
       {/* Image panel — right always behind, left overlaid on top */}
       <div
