@@ -125,18 +125,19 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
         </p>
       </div>
 
-      {/* Reset button — separate row so it doesn't squeeze the instruction strip */}
-      {hasOffset && !isDragging && !isHolding && (
-        <div className="flex justify-end px-2">
-          <button
-            onClick={() => setOffset({ x: 0, y: 0 })}
-            className="rounded-lg px-3 py-1 text-xs"
-            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
-          >
-            位置をリセット
-          </button>
-        </div>
-      )}
+      {/* Reset button — always reserve space to prevent layout shift */}
+      <div
+        className="flex justify-end px-2"
+        style={{ visibility: hasOffset && !isDragging && !isHolding ? 'visible' : 'hidden' }}
+      >
+        <button
+          onClick={() => setOffset({ x: 0, y: 0 })}
+          className="rounded-lg px-3 py-1 text-xs"
+          style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+        >
+          位置をリセット
+        </button>
+      </div>
 
       {/* Image panel — right always behind, left overlaid on top */}
       <div
