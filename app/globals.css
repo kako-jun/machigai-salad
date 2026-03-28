@@ -211,6 +211,18 @@ body::before {
   border-radius: 2px;
 }
 
+.menu-stripe-olive {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--olive) 0px,
+    var(--olive) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  height: 3px;
+  border-radius: 2px;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
