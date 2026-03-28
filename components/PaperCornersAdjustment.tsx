@@ -88,6 +88,23 @@ function drawCanvas(
   traceCornerPath(ctx, corners, scale)
   ctx.stroke()
 
+  // Draw center dividing line (left/right split preview)
+  // corners: [topLeft, topRight, bottomRight, bottomLeft]
+  const topMidX = ((corners[0].x + corners[1].x) / 2) * scale
+  const topMidY = ((corners[0].y + corners[1].y) / 2) * scale
+  const bottomMidX = ((corners[3].x + corners[2].x) / 2) * scale
+  const bottomMidY = ((corners[3].y + corners[2].y) / 2) * scale
+  ctx.save()
+  ctx.setLineDash([6, 4])
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(topMidX, topMidY)
+  ctx.lineTo(bottomMidX, bottomMidY)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.restore()
+
   // Draw corner handles
   corners.forEach((corner, index) => {
     const x = corner.x * scale
