@@ -102,8 +102,8 @@ function drawTexturedTriangle(
   ctx.closePath()
   ctx.clip()
 
-  // Apply affine transform and draw the full image
-  ctx.setTransform(a, b, c, d, e, f)
+  // Compound with parent transform (preserves DPR scaling)
+  ctx.transform(a, b, c, d, e, f)
   ctx.drawImage(img, 0, 0, imgW, imgH)
 
   ctx.restore()
