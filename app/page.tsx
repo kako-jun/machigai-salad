@@ -63,7 +63,28 @@ export default function Home() {
               rel="noopener noreferrer"
               className="btn-ghost flex w-full flex-col items-center gap-1 px-5 py-3 text-center"
             >
-              <span className="text-sm font-medium" style={{ color: 'var(--espresso-light)' }}>
+              <span
+                className="flex items-center gap-1.5 text-sm font-medium"
+                style={{ color: 'var(--espresso-light)' }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5.8 11.3 2 22l10.7-3.8" />
+                  <path d="M4 3h.01" />
+                  <path d="M22 8h.01" />
+                  <path d="M15 2h.01" />
+                  <path d="M22 20h.01" />
+                  <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
+                  <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.63-.69 1.08-1.36.98c-.65-.09-1.14-.64-1.14-1.26V12a1 1 0 0 0-1-1h-.38a1.97 1.97 0 0 1-1.79-2.77L9 6.88" />
+                </svg>
                 {t('amazonSupport')}
               </span>
               <span className="whitespace-pre-line text-xs" style={{ color: 'var(--muted)' }}>
