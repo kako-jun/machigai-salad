@@ -1,19 +1,57 @@
 import type { Point, OpenCV, Mat } from '@/types'
 
-// Cannyエッジ検出のしきい値ペア
-const CANNY_THRESHOLD_PAIRS = [
-  [30, 100],
-  [50, 150],
-  [75, 200],
-] as const
+export type DetectionSensitivity = 'strict' | 'normal' | 'loose'
 
-// 四角形近似のepsilon値
-const APPROX_EPSILON_VALUES = [0.02, 0.03, 0.04] as const
+const SENSITIVITY_CONFIGS: Record<
+  DetectionSensitivity,
+  {
+    cannyPairs: readonly (readonly [number, number])[]
+    epsilons: readonly number[]
+    minAreaRatio: number
+    earlyStopRatio: number
+    blurSize: number
+  }
+> = {
+  strict: {
+    cannyPairs: [
+      [50, 150],
+      [75, 200],
+    ],
+    epsilons: [0.02, 0.03],
+    minAreaRatio: 0.1,
+    earlyStopRatio: 0.25,
+    blurSize: 5,
+  },
+  normal: {
+    cannyPairs: [
+      [30, 100],
+      [50, 150],
+      [75, 200],
+    ],
+    epsilons: [0.02, 0.03, 0.04],
+    minAreaRatio: 0.05,
+    earlyStopRatio: 0.2,
+    blurSize: 5,
+  },
+  loose: {
+    cannyPairs: [
+      [15, 60],
+      [30, 100],
+      [50, 150],
+      [75, 200],
+    ],
+    epsilons: [0.02, 0.03, 0.04, 0.06],
+    minAreaRatio: 0.02,
+    earlyStopRatio: 0.1,
+    blurSize: 7,
+  },
+}
 
-// 最小検出面積（画像全体に対する割合）
-const MIN_AREA_RATIO = 0.05
-// 早期終了面積（画像全体に対する割合）
-const EARLY_STOP_AREA_RATIO = 0.2
+// デフォルト値（後方互換）
+const CANNY_THRESHOLD_PAIRS = SENSITIVITY_CONFIGS.normal.cannyPairs
+const APPROX_EPSILON_VALUES = SENSITIVITY_CONFIGS.normal.epsilons
+const MIN_AREA_RATIO = SENSITIVITY_CONFIGS.normal.minAreaRatio
+const EARLY_STOP_AREA_RATIO = SENSITIVITY_CONFIGS.normal.earlyStopRatio
 
 /**
  * 4つの角を左上、右上、右下、左下の順に並べ替える
@@ -55,20 +93,26 @@ export function cornersToMat(corners: Point[], cv: OpenCV): Mat {
 /**
  * 画像から紙の輪郭を検出する
  */
-export function detectPaperContour(src: Mat, cv: OpenCV): Mat | null {
+export function detectPaperContour(
+  src: Mat,
+  cv: OpenCV,
+  sensitivity: DetectionSensitivity = 'normal'
+): Mat | null {
+  const config = SENSITIVITY_CONFIGS[sensitivity]
+
   // グレースケール変換
   const gray = new cv.Mat()
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY)
 
   // ガウシアンブラーでノイズ除去
   const blurred = new cv.Mat()
-  cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
+  cv.GaussianBlur(gray, blurred, new cv.Size(config.blurSize, config.blurSize), 0)
 
   let bestContour: Mat | null = null
   let maxArea = 0
   const imageArea = src.rows * src.cols
 
-  for (const [low, high] of CANNY_THRESHOLD_PAIRS) {
+  for (const [low, high] of config.cannyPairs) {
     // Cannyエッジ検出
     const edges = new cv.Mat()
     cv.Canny(blurred, edges, low, high)
@@ -84,14 +128,14 @@ export function detectPaperContour(src: Mat, cv: OpenCV): Mat | null {
       const area = cv.contourArea(contour)
 
       // 小さすぎる輪郭はスキップ
-      if (area < imageArea * MIN_AREA_RATIO) {
+      if (area < imageArea * config.minAreaRatio) {
         contour.delete()
         continue
       }
 
       // 複数のepsilonで四角形近似を試行
       const peri = cv.arcLength(contour, true)
-      for (const epsilon of APPROX_EPSILON_VALUES) {
+      for (const epsilon of config.epsilons) {
         const approx = new cv.Mat()
         cv.approxPolyDP(contour, approx, epsilon * peri, true)
 
@@ -112,7 +156,7 @@ export function detectPaperContour(src: Mat, cv: OpenCV): Mat | null {
     hierarchy.delete()
 
     // 十分大きな候補が見つかったら早期終了
-    if (bestContour && maxArea > imageArea * EARLY_STOP_AREA_RATIO) {
+    if (bestContour && maxArea > imageArea * config.earlyStopRatio) {
       break
     }
   }

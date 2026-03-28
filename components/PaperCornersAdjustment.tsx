@@ -15,6 +15,8 @@ interface PaperCornersAdjustmentProps {
   imageSize: { width: number; height: number }
   onApply: (corners: Point[]) => void
   onCancel: () => void
+  /** 感度を変えて再検出する。結果のcornersまたはnullを返す */
+  onRedetect?: (sensitivity: string) => Promise<Point[] | null>
 }
 
 function getDefaultCorners(imageSize: { width: number; height: number }): Point[] {
@@ -199,14 +201,22 @@ function drawCanvas(
   ctx.restore() // restore the DPR transform
 }
 
+const SENSITIVITY_CYCLE = ['strict', 'normal', 'loose'] as const
+const SENSITIVITY_LABELS: Record<string, { ja: string; en: string }> = {
+  strict: { ja: 'きびしめ', en: 'Strict' },
+  normal: { ja: 'ふつう', en: 'Normal' },
+  loose: { ja: 'あまめ', en: 'Loose' },
+}
+
 export default function PaperCornersAdjustment({
   imageDataUrl,
   initialCorners,
   imageSize,
   onApply,
   onCancel,
+  onRedetect,
 }: PaperCornersAdjustmentProps) {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loadedImageRef = useRef<HTMLImageElement | null>(null)
   const dprRef = useRef(1)
@@ -214,6 +224,8 @@ export default function PaperCornersAdjustment({
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
+  const [sensitivityIndex, setSensitivityIndex] = useState(0)
+  const [detecting, setDetecting] = useState(false)
 
   // 画像の読み込みとキャンバスサイズ設定
   useEffect(() => {
@@ -338,8 +350,20 @@ export default function PaperCornersAdjustment({
     setDraggingIndex(null)
   }
 
-  const handleReset = () => {
-    setCorners(effectiveInitialCorners)
+  const handleRedetect = async () => {
+    if (!onRedetect || detecting) return
+    const nextIndex = (sensitivityIndex + 1) % SENSITIVITY_CYCLE.length
+    setSensitivityIndex(nextIndex)
+    const sensitivity = SENSITIVITY_CYCLE[nextIndex]
+    setDetecting(true)
+    try {
+      const result = await onRedetect(sensitivity)
+      if (result) {
+        setCorners(result)
+      }
+    } finally {
+      setDetecting(false)
+    }
   }
 
   const handleApply = () => {
@@ -359,14 +383,18 @@ export default function PaperCornersAdjustment({
         <p className="whitespace-pre-line text-sm font-medium" style={{ color: 'var(--muted)' }}>
           {t('cornersInstruction')}
         </p>
-        <button
-          onClick={handleReset}
-          className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-xs"
-          style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
-          title={t('cornersResetTitle')}
-        >
-          {t('cornersReset')}
-        </button>
+        {onRedetect && (
+          <button
+            onClick={handleRedetect}
+            disabled={detecting}
+            className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-xs"
+            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+          >
+            {detecting
+              ? '...'
+              : `${t('redetect')}（${SENSITIVITY_LABELS[SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]][lang]}）`}
+          </button>
+        )}
       </div>
 
       {/* Canvas with placemat-style frame */}

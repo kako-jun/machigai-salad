@@ -8,6 +8,7 @@ import {
   applyPerspectiveTransform,
   splitImage,
 } from '@/lib/opencv'
+import type { DetectionSensitivity } from '@/lib/opencv'
 
 const OPENCV_CDN_URLS = [
   'https://docs.opencv.org/4.9.0/opencv.js',
@@ -23,7 +24,10 @@ interface UseOpenCVReturn {
   loadState: LoadState
   loadError: string | null
   retryLoad: () => void
-  suggestCorners: (imageDataUrl: string) => Promise<Point[] | null>
+  suggestCorners: (
+    imageDataUrl: string,
+    sensitivity?: DetectionSensitivity
+  ) => Promise<Point[] | null>
   processImage: (imageDataUrl: string, corners: Point[]) => Promise<ProcessedImages>
 }
 
@@ -154,7 +158,7 @@ export function useOpenCV(): UseOpenCVReturn {
    * 検出に失敗した場合はnullを返す。呼び出し側はnullでもフローを止めない
    */
   const suggestCorners = useCallback(
-    async (imageDataUrl: string): Promise<Point[] | null> => {
+    async (imageDataUrl: string, sensitivity?: DetectionSensitivity): Promise<Point[] | null> => {
       if (!cvLoaded) {
         await waitForCvLoaded()
       }
@@ -174,7 +178,7 @@ export function useOpenCV(): UseOpenCVReturn {
             ctx.drawImage(img, 0, 0)
 
             src = cv.imread(canvas)
-            paperContour = detectPaperContour(src, cv)
+            paperContour = detectPaperContour(src, cv, sensitivity)
 
             if (paperContour) {
               const corners = orderPoints(paperContour)
