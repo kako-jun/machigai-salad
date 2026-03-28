@@ -47,6 +47,8 @@ export default function ImageProcessor() {
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
   const currentWarpRef = useRef<CornerOffsets | undefined>(undefined)
   const restoredWarpRef = useRef<CornerOffsets | undefined>(undefined)
+  const currentCenterRef = useRef<Point | undefined>(undefined)
+  const restoredCenterRef = useRef<Point | undefined>(undefined)
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
@@ -147,6 +149,7 @@ export default function ImageProcessor() {
       const blob = await generateToggleGif(leftImage, rightImage, 1000, {
         offset: currentOffsetRef.current,
         warpCorners: currentWarpRef.current,
+        centerOffset: currentCenterRef.current,
       })
       const file = new File([blob], 'machigai-salad.gif', { type: 'image/gif' })
 
@@ -182,7 +185,13 @@ export default function ImageProcessor() {
       corners: lastCornersRef.current,
       offset: currentOffsetRef.current,
       imageSize,
-      warpCorners: currentWarpRef.current,
+      warpCorners: currentWarpRef.current ?? [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+      ],
+      centerOffset: currentCenterRef.current ?? { x: 0, y: 0 },
     }
     // Overwrite existing entry for the same image, or create new
     const existing = currentSaveIdRef.current
@@ -209,6 +218,8 @@ export default function ImageProcessor() {
     currentOffsetRef.current = entry.offset
     restoredWarpRef.current = entry.warpCorners
     currentWarpRef.current = entry.warpCorners
+    restoredCenterRef.current = entry.centerOffset
+    currentCenterRef.current = entry.centerOffset
     setPhase('processing')
 
     try {
@@ -272,6 +283,10 @@ export default function ImageProcessor() {
             initialWarpCorners={restoredWarpRef.current}
             onWarpChange={(w) => {
               currentWarpRef.current = w
+            }}
+            initialCenterOffset={restoredCenterRef.current}
+            onCenterChange={(c) => {
+              currentCenterRef.current = c
             }}
             onBackToAdjust={handleBackToAdjust}
           />

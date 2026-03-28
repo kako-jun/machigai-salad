@@ -1,6 +1,7 @@
 /** Pure utility functions for image processing (no React dependency) */
 
 import type { CornerOffsets } from '@/types'
+import { drawMeshWarp } from './mesh-warp'
 
 /** Maximum image dimension (longest side) in physical pixels */
 const MAX_IMAGE_DIM = 2400
@@ -57,6 +58,7 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
 interface GifOptions {
   offset?: { x: number; y: number }
   warpCorners?: CornerOffsets
+  centerOffset?: { x: number; y: number }
 }
 
 /**
@@ -111,16 +113,32 @@ export function generateToggleGif(
             dither: 'FloydSteinberg',
           })
 
-          // Frame 1: left image with offset (what user sees normally)
+          // Frame 1: right image + left image with mesh warp
           ctx.drawImage(rightImg, 0, 0, gw, gh)
-          ctx.save()
-          ctx.translate(ox, oy)
-          // Apply perspective warp if provided
-          if (options?.warpCorners) {
-            applyPerspectiveToCanvas(ctx, gw, gh, options.warpCorners, scale)
+          const warpCorners = options?.warpCorners
+          const centerOff = options?.centerOffset
+          const hasWarp =
+            warpCorners?.some((c) => c.x !== 0 || c.y !== 0) ||
+            (centerOff && (centerOff.x !== 0 || centerOff.y !== 0))
+          if (hasWarp && warpCorners) {
+            drawMeshWarp(ctx, leftImg, gw, gh, {
+              cornerOffsets: warpCorners.map((c) => ({
+                x: c.x * scale,
+                y: c.y * scale,
+              })) as unknown as CornerOffsets,
+              centerOffset: centerOff
+                ? { x: centerOff.x * scale, y: centerOff.y * scale }
+                : { x: 0, y: 0 },
+              offset: { x: ox, y: oy },
+              imgLeft: 0,
+              imgTop: 0,
+            })
+          } else {
+            ctx.save()
+            ctx.translate(ox, oy)
+            ctx.drawImage(leftImg, 0, 0, gw, gh)
+            ctx.restore()
           }
-          ctx.drawImage(leftImg, 0, 0, gw, gh)
-          ctx.restore()
           gif.addFrame(ctx, { delay, copy: true })
 
           // Frame 2: right image only (what user sees when holding)
@@ -139,35 +157,4 @@ export function generateToggleGif(
       }
     )
   })
-}
-
-/**
- * Approximate perspective warp using canvas 2D setTransform (affine approximation).
- * For small corner offsets (±30px) this is visually close enough.
- */
-function applyPerspectiveToCanvas(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  corners: CornerOffsets,
-  scale: number
-) {
-  // Scale corner offsets
-  const c = corners.map((p) => ({ x: p.x * scale, y: p.y * scale }))
-
-  // Compute affine approximation from the 4 corner offsets
-  // Use top-left and top-right for horizontal skew, top-left and bottom-left for vertical
-  const avgDx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4
-  const avgDy = (c[0].y + c[1].y + c[2].y + c[3].y) / 4
-
-  // Horizontal scale from left-right difference
-  const scaleX = 1 + (c[1].x - c[0].x + c[2].x - c[3].x) / (2 * w)
-  // Vertical scale from top-bottom difference
-  const scaleY = 1 + (c[3].y - c[0].y + c[2].y - c[1].y) / (2 * h)
-  // Horizontal skew
-  const skewX = (c[3].x - c[0].x + c[2].x - c[1].x) / (2 * h)
-  // Vertical skew
-  const skewY = (c[1].y - c[0].y + c[2].y - c[3].y) / (2 * w)
-
-  ctx.transform(scaleX, skewY, skewX, scaleY, avgDx, avgDy)
 }

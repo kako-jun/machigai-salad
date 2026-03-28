@@ -10,8 +10,16 @@ export interface SaveEntry {
   corners: Point[]
   offset: { x: number; y: number }
   imageSize: { width: number; height: number }
-  warpCorners?: CornerOffsets
+  warpCorners: CornerOffsets
+  centerOffset: Point
 }
+
+const ZERO_CORNERS: CornerOffsets = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+]
 
 function isValidEntry(s: unknown): s is SaveEntry {
   return (
@@ -24,13 +32,22 @@ function isValidEntry(s: unknown): s is SaveEntry {
   )
 }
 
+/** Ensure all fields exist (migrate old saves missing warpCorners/centerOffset) */
+function normalize(entry: SaveEntry): SaveEntry {
+  return {
+    ...entry,
+    warpCorners: entry.warpCorners ?? ZERO_CORNERS,
+    centerOffset: entry.centerOffset ?? { x: 0, y: 0 },
+  }
+}
+
 export function loadAllSaves(): SaveEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(isValidEntry)
+    return parsed.filter(isValidEntry).map(normalize)
   } catch {
     return []
   }
