@@ -66,9 +66,10 @@ export default function ImageComparison({
   const [offset, _setOffset] = useState(initialOffset ?? { x: 0, y: 0 })
   const onOffsetChangeRef = useRef(onOffsetChange)
   onOffsetChangeRef.current = onOffsetChange
+  const onDisplaySizeRef = useRef(onDisplaySize)
+  onDisplaySizeRef.current = onDisplaySize
   const setOffset = useCallback((o: { x: number; y: number }) => {
     _setOffset(o)
-    console.log('[setOffset]', o, 'callback:', typeof onOffsetChangeRef.current)
     onOffsetChangeRef.current?.(o)
   }, [])
   const [isDragging, setIsDragging] = useState(false)
@@ -173,7 +174,7 @@ export default function ImageComparison({
       top: contentTop,
     }
     setImgRect(newRect)
-    onDisplaySize?.(newRect)
+    onDisplaySizeRef.current?.(newRect)
   }, [])
 
   useEffect(() => {

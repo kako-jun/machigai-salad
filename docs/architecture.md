@@ -96,10 +96,14 @@ showCornersAdjustment: boolean   // 角調整UI表示フラグ
 
 ### ImageComparison
 
-左右の画像を切り替え表示。
+左右の画像を切り替え表示。canvas描画で5点メッシュワープ（4隅+中心）を適用。
 
-- タッチ/マウスダウン: 右の画像
-- タッチ/マウスアップ: 左の画像
+- 右画像は`<img>`要素（objectFit:contain）、左画像はcanvasで描画
+- `measureImg`で`objectFit:contain`内のコンテンツ矩形を`naturalWidth/Height`から算出
+- 長押し: 左画像を非表示（右画像が見える）
+- スライド: 左画像の位置微調整
+- 四隅・中心ハンドル: メッシュワープ調整
+- GIF生成: 比較canvasのピクセルを直接キャプチャ（再計算なし）
 
 ## 画像処理パイプライン
 

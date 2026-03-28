@@ -264,6 +264,10 @@ export default function ImageProcessor() {
 
   const handleLoad = async (entry: SaveEntry) => {
     setPopupOpen(false)
+    if (gifPreview) {
+      URL.revokeObjectURL(gifPreview.url)
+      setGifPreview(null)
+    }
     currentSaveIdRef.current = entry.id
 
     setOriginalImage(entry.originalImage)
