@@ -10,7 +10,7 @@ const dict = {
   // page.tsx — header
   appTitle: { ja: '小エビの間違いサラダ', en: 'Machigai Salad' },
   appSubtitle: { ja: '間違いさがし おたすけツール', en: 'Your spot-the-difference helper!' },
-  bannerAlt: { ja: '小エビの間違いサラダ バナー', en: 'Spot the Difference Salad banner' },
+  bannerAlt: { ja: '小エビの間違いサラダ バナー', en: 'Machigai Salad banner' },
 
   // page.tsx — footer
   amazonSupport: { ja: 'Amazon で応援する', en: 'Support on Amazon' },
@@ -82,6 +82,9 @@ const dict = {
   savesEmpty: { ja: 'まだないよ', en: 'Nothing here yet!' },
   deleteConfirm: { ja: 'ほんとうに けす？', en: 'Really delete?' },
   deleteBtn: { ja: 'けす', en: 'Delete' },
+
+  // VisitorCounter
+  visitsLabel: { ja: '回', en: 'visits' },
 
   // PWA install
   installPrompt: { ja: 'ホーム画面に追加する？', en: 'Add to home screen?' },

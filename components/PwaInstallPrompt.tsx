@@ -58,7 +58,6 @@ export default function PwaInstallPrompt() {
 
   return (
     <div
-      role="alert"
       className="animate-fade-in fixed bottom-4 left-4 right-4 z-50 mx-auto flex max-w-lg items-center gap-3 rounded-2xl px-5 py-3"
       style={{
         background: 'linear-gradient(145deg, #fffdf4, #fff8e7)',
