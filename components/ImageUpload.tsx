@@ -160,30 +160,31 @@ export default function ImageUpload({
               </span>
             </button>
 
-            {/* Gallery pick button */}
-            <button
-              onClick={handleGalleryClick}
-              disabled={!cvLoaded}
-              className="flex items-center gap-1.5 py-2 transition-opacity hover:opacity-70"
-              style={{ color: 'var(--muted)' }}
-            >
-              <GalleryIcon />
-              <span className="text-sm">{t('pickFromAlbum')}</span>
-            </button>
-
-            {/* Saved items link */}
-            {saveCount != null && saveCount > 0 && onOpenSaves && (
+            {/* Gallery + Saves group — visually equidistant from camera */}
+            <div className="flex flex-col items-center gap-3">
               <button
-                onClick={onOpenSaves}
+                onClick={handleGalleryClick}
+                disabled={!cvLoaded}
                 className="flex items-center gap-1.5 py-2 transition-opacity hover:opacity-70"
                 style={{ color: 'var(--muted)' }}
               >
-                <SaveIcon />
-                <span className="text-sm">
-                  {t('savedList')} ({saveCount})
-                </span>
+                <GalleryIcon />
+                <span className="text-sm">{t('pickFromAlbum')}</span>
               </button>
-            )}
+
+              {saveCount != null && saveCount > 0 && onOpenSaves && (
+                <button
+                  onClick={onOpenSaves}
+                  className="flex items-center gap-1.5 py-2 transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--muted)' }}
+                >
+                  <SaveIcon />
+                  <span className="text-sm">
+                    {t('savedList')} ({saveCount})
+                  </span>
+                </button>
+              )}
+            </div>
 
             {/* Instruction text styled like menu footnote */}
             <div

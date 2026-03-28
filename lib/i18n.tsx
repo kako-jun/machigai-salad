@@ -83,6 +83,11 @@ const dict = {
   deleteConfirm: { ja: 'ほんとうに けす？', en: 'Really delete?' },
   deleteBtn: { ja: 'けす', en: 'Delete' },
 
+  // PWA install
+  installPrompt: { ja: 'ホーム画面に追加できるよ', en: 'Add to your home screen!' },
+  installBtn: { ja: 'インストール', en: 'Install' },
+  installDismiss: { ja: 'あとで', en: 'Later' },
+
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },
 } as const

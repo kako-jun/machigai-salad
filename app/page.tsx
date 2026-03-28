@@ -3,6 +3,7 @@
 import { useI18n } from '@/lib/i18n'
 import ImageProcessor from '@/components/ImageProcessor'
 import LangToggle from '@/components/LangToggle'
+import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 
 export default function Home() {
   const { t } = useI18n()
@@ -60,13 +61,8 @@ export default function Home() {
               href="https://amzn.to/4uWSrNa"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full flex-col items-center gap-1 rounded-xl px-5 py-3 text-center"
-              style={{
-                color: 'var(--espresso-light)',
-                background: 'linear-gradient(145deg, var(--cream), var(--parchment))',
-                border: '1.5px solid rgba(212,160,16,0.4)',
-                boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 2px 4px rgba(60,36,21,0.1)',
-              }}
+              className="btn-ghost flex w-full flex-col items-center gap-1 px-5 py-3 text-center"
+              style={{ color: 'var(--espresso-light)' }}
             >
               <span className="text-sm font-medium">{t('amazonSupport')}</span>
               <span className="whitespace-pre-line text-xs" style={{ color: 'var(--muted)' }}>
@@ -116,6 +112,7 @@ export default function Home() {
           </div>
         </footer>
       </div>
+      <PwaInstallPrompt />
     </main>
   )
 }

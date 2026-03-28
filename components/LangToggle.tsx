@@ -19,7 +19,9 @@ export default function LangToggle() {
       >
         JA
       </button>
-      <span style={{ fontSize: 10, opacity: 0.5 }}>/</span>
+      <span className="mx-1" style={{ fontSize: 10, opacity: 0.5 }}>
+        /
+      </span>
       <button
         onClick={() => setLang('en')}
         className="rounded px-2 py-2"
