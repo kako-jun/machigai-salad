@@ -75,6 +75,9 @@ const dict = {
     en: 'You can keep up to 5.\nOldest ones go away when full!',
   },
   savesEmpty: { ja: 'まだないよ', en: 'Nothing here yet!' },
+
+  // Toast
+  toastClose: { ja: '閉じる', en: 'Close' },
 } as const
 
 type DictKey = keyof typeof dict
@@ -95,10 +98,14 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>('ja')
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'en' || stored === 'ja') {
-      setLangState(stored)
-    } else if (!navigator.language.startsWith('ja')) {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored === 'en' || stored === 'ja') {
+        setLangState(stored)
+        return
+      }
+    } catch {}
+    if (!navigator.language.startsWith('ja')) {
       setLangState('en')
     }
   }, [])
@@ -109,7 +116,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l)
-    localStorage.setItem(STORAGE_KEY, l)
+    try {
+      localStorage.setItem(STORAGE_KEY, l)
+    } catch {}
   }, [])
 
   const t = useCallback((key: DictKey) => dict[key][lang], [lang])

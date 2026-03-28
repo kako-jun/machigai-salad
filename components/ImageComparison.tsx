@@ -57,33 +57,36 @@ export default function ImageComparison({
     }, HOLD_CONFIRM_MS)
   }, [])
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const start = startRef.current
-    if (!start) return
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      const start = startRef.current
+      if (!start) return
 
-    // Once hold is confirmed, ignore all movement
-    if (isHoldConfirmedRef.current) return
+      // Once hold is confirmed, ignore all movement
+      if (isHoldConfirmedRef.current) return
 
-    const dx = e.clientX - start.x
-    const dy = e.clientY - start.y
+      const dx = e.clientX - start.x
+      const dy = e.clientY - start.y
 
-    if (!isDraggingRef.current && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
-      isDraggingRef.current = true
-      setIsDragging(true)
-      setIsHolding(false)
-      if (holdTimerRef.current) {
-        clearTimeout(holdTimerRef.current)
-        holdTimerRef.current = null
+      if (!isDraggingRef.current && dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+        isDraggingRef.current = true
+        setIsDragging(true)
+        setIsHolding(false)
+        if (holdTimerRef.current) {
+          clearTimeout(holdTimerRef.current)
+          holdTimerRef.current = null
+        }
       }
-    }
 
-    if (isDraggingRef.current) {
-      setOffset({
-        x: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, start.ox + dx)),
-        y: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, start.oy + dy)),
-      })
-    }
-  }, [])
+      if (isDraggingRef.current) {
+        setOffset({
+          x: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, start.ox + dx)),
+          y: Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, start.oy + dy)),
+        })
+      }
+    },
+    [setOffset]
+  )
 
   const handlePointerUp = useCallback(() => {
     startRef.current = null

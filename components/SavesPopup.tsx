@@ -21,6 +21,16 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
     }
   }, [open])
 
+  // Escape key to close
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open, onClose])
+
   if (!open) return null
 
   const handleDelete = (id: string) => {
@@ -33,6 +43,9 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(60,36,21,0.4)' }}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('savesTitle')}
     >
       <div
         className="mx-4 max-h-[70vh] w-full max-w-sm overflow-hidden rounded-2xl"

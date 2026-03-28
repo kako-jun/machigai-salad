@@ -18,22 +18,23 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Network-first strategy: always try network, fall back to cache when offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetched = fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone()
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
-          }
-          return response
-        })
-        .catch(() => cached)
-
-      return cached || fetched
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+        }
+        return response
+      })
+      .catch(() =>
+        caches
+          .match(event.request)
+          .then((cached) => cached || new Response('Offline', { status: 503 }))
+      )
   )
 })

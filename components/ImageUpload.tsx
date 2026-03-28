@@ -2,6 +2,7 @@
 
 import { useRef } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { showToast } from './Toast'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -32,6 +33,9 @@ export default function ImageUpload({
     reader.onload = (event) => {
       const imageDataUrl = event.target?.result as string
       onImageUpload(imageDataUrl)
+    }
+    reader.onerror = () => {
+      showToast(t('loadFailed'), 'error')
     }
     reader.readAsDataURL(file)
   }

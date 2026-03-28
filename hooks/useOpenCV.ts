@@ -11,7 +11,7 @@ import {
 
 const OPENCV_CDN_URLS = [
   'https://docs.opencv.org/4.9.0/opencv.js',
-  'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js',
+  'https://cdn.jsdelivr.net/gh/niconiconico-community/opencv.js@4.5.5/opencv.js',
 ]
 
 const LOAD_TIMEOUT_MS = 30000
@@ -250,16 +250,16 @@ export function useOpenCV(): UseOpenCVReturn {
             // Canvasに出力
             const leftCanvas = document.createElement('canvas')
             cv.imshow(leftCanvas, leftMat)
-            const leftImage = leftCanvas.toDataURL()
+            const leftImage = leftCanvas.toDataURL('image/webp', 0.85)
 
             const rightCanvas = document.createElement('canvas')
             cv.imshow(rightCanvas, rightMat)
-            const rightImage = rightCanvas.toDataURL()
+            const rightImage = rightCanvas.toDataURL('image/webp', 0.85)
 
-            // クリーンアップ
-            warped.delete()
+            // クリーンアップ — roi を先に delete、元 Mat を最後に
             leftMat.delete()
             rightMat.delete()
+            warped.delete()
 
             resolve({ leftImage, rightImage })
           } catch (error) {

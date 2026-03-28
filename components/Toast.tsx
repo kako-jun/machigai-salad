@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 export interface ToastMessage {
   id: number
@@ -31,6 +32,7 @@ const TOAST_DURATION_MS = 5000
  * Displays stacked toast notifications that auto-dismiss.
  */
 export default function ToastContainer() {
+  const { t } = useI18n()
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
   const addToast = useCallback((text: string, type: 'error' | 'info') => {
@@ -129,7 +131,7 @@ export default function ToastContainer() {
               e.stopPropagation()
               removeToast(toast.id)
             }}
-            aria-label="閉じる"
+            aria-label={t('toastClose')}
           >
             &times;
           </button>
