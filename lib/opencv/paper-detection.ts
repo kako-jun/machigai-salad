@@ -39,77 +39,36 @@ export function cornersToMat(corners: Point[], cv: OpenCV): Mat {
   ])
 }
 
-/**
- * Canny + findContours で最大の四角形を検出する（基本戦略）
- */
-function findBestQuad(
-  gray: Mat,
-  cv: OpenCV,
-  cannyPairs: readonly (readonly [number, number])[],
-  epsilons: readonly number[],
-  minAreaRatio: number,
-  earlyStopRatio: number,
+interface BoundingQuadOptions {
+  cannyPairs: [number, number][]
+  epsilons: number[]
+  minContourArea: number
+  minQuadArea: number
   blurSize: number
-): Mat | null {
-  const blurred = new cv.Mat()
-  cv.GaussianBlur(gray, blurred, new cv.Size(blurSize, blurSize), 0)
-
-  let bestContour: Mat | null = null
-  let maxArea = 0
-  const imageArea = gray.rows * gray.cols
-
-  for (const [low, high] of cannyPairs) {
-    const edges = new cv.Mat()
-    cv.Canny(blurred, edges, low, high)
-
-    const contours = new cv.MatVector()
-    const hierarchy = new cv.Mat()
-    cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    for (let i = 0; i < contours.size(); i++) {
-      const contour = contours.get(i)
-      const area = cv.contourArea(contour)
-
-      if (area < imageArea * minAreaRatio) {
-        contour.delete()
-        continue
-      }
-
-      const peri = cv.arcLength(contour, true)
-      for (const epsilon of epsilons) {
-        const approx = new cv.Mat()
-        cv.approxPolyDP(contour, approx, epsilon * peri, true)
-
-        if (approx.rows === 4 && area > maxArea) {
-          maxArea = area
-          if (bestContour) bestContour.delete()
-          bestContour = approx.clone()
-        }
-        approx.delete()
-      }
-      contour.delete()
-    }
-
-    edges.delete()
-    contours.delete()
-    hierarchy.delete()
-
-    if (bestContour && maxArea > imageArea * earlyStopRatio) {
-      break
-    }
-  }
-
-  blurred.delete()
-  return bestContour
+  maxVertices: number
 }
 
 /**
  * 複数の四角形候補を全て検出し、それらを包含する外接矩形を返す
  * 左右の絵が別々に検出される場合に、全体を囲む矩形を得る
  */
-function findBoundingQuad(gray: Mat, cv: OpenCV): Mat | null {
+function findBoundingQuad(gray: Mat, cv: OpenCV, opts?: BoundingQuadOptions): Mat | null {
+  const o = opts ?? {
+    cannyPairs: [
+      [10, 40],
+      [30, 100],
+      [50, 150],
+      [80, 200],
+    ],
+    epsilons: [0.02, 0.04, 0.08, 0.12],
+    minContourArea: 0.005,
+    minQuadArea: 0.01,
+    blurSize: 5,
+    maxVertices: 6,
+  }
+
   const blurred = new cv.Mat()
-  cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0)
+  cv.GaussianBlur(gray, blurred, new cv.Size(o.blurSize, o.blurSize), 0)
 
   const imageArea = gray.rows * gray.cols
   let minX = gray.cols
@@ -118,16 +77,7 @@ function findBoundingQuad(gray: Mat, cv: OpenCV): Mat | null {
   let maxY = 0
   let foundAny = false
 
-  // 複数の Canny 設定で四角形を探し、全ての角の座標を集約
-  const cannyPairs: [number, number][] = [
-    [10, 40],
-    [30, 100],
-    [50, 150],
-    [80, 200],
-  ]
-  const epsilons = [0.02, 0.04, 0.08, 0.12]
-
-  for (const [low, high] of cannyPairs) {
+  for (const [low, high] of o.cannyPairs) {
     const edges = new cv.Mat()
     cv.Canny(blurred, edges, low, high)
 
@@ -139,19 +89,17 @@ function findBoundingQuad(gray: Mat, cv: OpenCV): Mat | null {
       const contour = contours.get(i)
       const area = cv.contourArea(contour)
 
-      // ごく小さい輪郭は無視（ノイズ除去）
-      if (area < imageArea * 0.005) {
+      if (area < imageArea * o.minContourArea) {
         contour.delete()
         continue
       }
 
       const peri = cv.arcLength(contour, true)
-      for (const epsilon of epsilons) {
+      for (const epsilon of o.epsilons) {
         const approx = new cv.Mat()
         cv.approxPolyDP(contour, approx, epsilon * peri, true)
 
-        // 3〜6角形を四角形候補として受け入れる（台形なども拾う）
-        if (approx.rows >= 3 && approx.rows <= 6 && area > imageArea * 0.01) {
+        if (approx.rows >= 3 && approx.rows <= o.maxVertices && area > imageArea * o.minQuadArea) {
           for (let j = 0; j < approx.rows; j++) {
             const px = approx.data32S[j * 2]
             const py = approx.data32S[j * 2 + 1]
@@ -221,71 +169,46 @@ export function detectPaperContour(
 
   let result: Mat | null = null
 
+  // 全レベルで外接矩形戦略を使用。違いは閾値・頂点数上限・ブラー
   if (sensitivity === 'strict') {
-    result = findBestQuad(
-      gray,
-      cv,
-      [
+    result = findBoundingQuad(gray, cv, {
+      cannyPairs: [
+        [60, 180],
         [80, 220],
-        [100, 250],
       ],
-      [0.015, 0.02],
-      0.1,
-      0.25,
-      3
-    )
+      epsilons: [0.02, 0.04],
+      minContourArea: 0.03,
+      minQuadArea: 0.02,
+      blurSize: 3,
+      maxVertices: 4,
+    })
   } else if (sensitivity === 'normal') {
-    // 通常の検出
-    result = findBestQuad(
-      gray,
-      cv,
-      [
+    result = findBoundingQuad(gray, cv, {
+      cannyPairs: [
         [20, 80],
         [40, 130],
         [60, 180],
       ],
-      [0.02, 0.04, 0.06],
-      0.03,
-      0.15,
-      5
-    )
-
-    // 失敗したらブラーサイズを大きく変えて再試行
-    if (!result) {
-      result = findBestQuad(
-        gray,
-        cv,
-        [
-          [10, 50],
-          [20, 80],
-          [40, 130],
-        ],
-        [0.03, 0.06, 0.1],
-        0.02,
-        0.1,
-        11
-      )
-    }
+      epsilons: [0.02, 0.04, 0.08],
+      minContourArea: 0.01,
+      minQuadArea: 0.01,
+      blurSize: 5,
+      maxVertices: 6,
+    })
   } else {
-    // loose: 全ての四角形候補を集めて外接矩形を返す
-    result = findBoundingQuad(gray, cv)
-
-    // 外接矩形も失敗なら通常の甘い検出にフォールバック
-    if (!result) {
-      result = findBestQuad(
-        gray,
-        cv,
-        [
-          [5, 20],
-          [15, 50],
-          [30, 100],
-        ],
-        [0.05, 0.1, 0.15],
-        0.005,
-        0.03,
-        9
-      )
-    }
+    result = findBoundingQuad(gray, cv, {
+      cannyPairs: [
+        [5, 20],
+        [15, 50],
+        [30, 100],
+        [50, 150],
+      ],
+      epsilons: [0.03, 0.06, 0.1, 0.15],
+      minContourArea: 0.005,
+      minQuadArea: 0.005,
+      blurSize: 7,
+      maxVertices: 8,
+    })
   }
 
   gray.delete()
