@@ -59,6 +59,9 @@ interface GifOptions {
   offset: { x: number; y: number }
   warpCorners: CornerOffsets
   centerOffset: { x: number; y: number }
+  /** Displayed image size in CSS pixels (for correct offset scaling) */
+  displayWidth: number
+  displayHeight: number
 }
 
 /**
@@ -87,8 +90,11 @@ export function generateToggleGif(
     const gw = Math.round(w * scale)
     const gh = Math.round(h * scale)
 
-    const ox = options.offset.x * scale
-    const oy = options.offset.y * scale
+    // Scale factor for CSS-pixel values (offset, corners, center) → GIF pixels
+    const cssToGif = gw / options.displayWidth
+
+    const ox = options.offset.x * cssToGif
+    const oy = options.offset.y * cssToGif
 
     const canvas = document.createElement('canvas')
     canvas.width = gw
@@ -117,12 +123,12 @@ export function generateToggleGif(
           ctx.drawImage(rightImg, 0, 0, gw, gh)
           drawMeshWarp(ctx, leftImg, gw, gh, {
             cornerOffsets: options.warpCorners.map((c) => ({
-              x: c.x * scale,
-              y: c.y * scale,
+              x: c.x * cssToGif,
+              y: c.y * cssToGif,
             })) as unknown as CornerOffsets,
             centerOffset: {
-              x: options.centerOffset.x * scale,
-              y: options.centerOffset.y * scale,
+              x: options.centerOffset.x * cssToGif,
+              y: options.centerOffset.y * cssToGif,
             },
             offset: { x: ox, y: oy },
             imgLeft: 0,

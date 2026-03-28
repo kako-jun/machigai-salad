@@ -55,6 +55,8 @@ export default function ImageProcessor() {
   const restoredWarpRef = useRef<CornerOffsets | null>(null)
   const currentCenterRef = useRef<Point>({ x: 0, y: 0 })
   const restoredCenterRef = useRef<Point | null>(null)
+  /** Displayed image dimensions in CSS pixels (for GIF scaling) */
+  const displaySizeRef = useRef<{ w: number; h: number }>({ w: 1, h: 1 })
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
@@ -147,6 +149,7 @@ export default function ImageProcessor() {
     currentCenterRef.current = { x: 0, y: 0 }
     restoredCenterRef.current = null
     currentSaveIdRef.current = null
+    displaySizeRef.current = { w: 1, h: 1 }
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
@@ -156,6 +159,7 @@ export default function ImageProcessor() {
 
   const [sharing, setSharing] = useState(false)
   const [gifPreview, setGifPreview] = useState<{ url: string; blob: Blob } | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
@@ -166,6 +170,8 @@ export default function ImageProcessor() {
         offset: currentOffsetRef.current,
         warpCorners: currentWarpRef.current,
         centerOffset: currentCenterRef.current,
+        displayWidth: displaySizeRef.current.w,
+        displayHeight: displaySizeRef.current.h,
       })
       const url = URL.createObjectURL(blob)
       setGifPreview({ url, blob })
@@ -240,7 +246,8 @@ export default function ImageProcessor() {
     if (result) {
       currentSaveIdRef.current = result.id
       if (!updated) setSaveCount((c) => c + 1)
-      showToast(t('saved'), 'info')
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 1500)
     } else {
       showToast(t('saveFailed'), 'error')
     }
@@ -328,15 +335,35 @@ export default function ImageProcessor() {
             onCenterChange={(c) => {
               currentCenterRef.current = c
             }}
+            onDisplaySize={(s) => {
+              displaySizeRef.current = s
+            }}
             onBackToAdjust={handleBackToAdjust}
           />
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <button
               onClick={handleSave}
               className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
+              style={saveSuccess ? { color: '#2d8a4e', borderColor: '#2d8a4e' } : undefined}
             >
-              <SaveIcon size={16} />
-              {t('saveBtn')}
+              {saveSuccess ? (
+                <svg
+                  width={16}
+                  height={16}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2d8a4e"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <SaveIcon size={16} />
+              )}
+              {saveSuccess ? t('saved') : t('saveBtn')}
             </button>
             <button
               onClick={handleCreateGif}

@@ -36,6 +36,7 @@ interface ImageComparisonProps {
   onWarpChange?: (corners: CornerOffsets) => void
   initialCenterOffset?: Point
   onCenterChange?: (center: Point) => void
+  onDisplaySize?: (size: { w: number; h: number }) => void
   onBackToAdjust?: () => void
 }
 
@@ -54,6 +55,7 @@ export default function ImageComparison({
   onWarpChange,
   initialCenterOffset,
   onCenterChange,
+  onDisplaySize,
   onBackToAdjust,
 }: ImageComparisonProps) {
   const { t } = useI18n()
@@ -64,6 +66,7 @@ export default function ImageComparison({
   onOffsetChangeRef.current = onOffsetChange
   const setOffset = useCallback((o: { x: number; y: number }) => {
     _setOffset(o)
+    console.log('[setOffset]', o, 'callback:', typeof onOffsetChangeRef.current)
     onOffsetChangeRef.current?.(o)
   }, [])
   const [isDragging, setIsDragging] = useState(false)
@@ -136,12 +139,14 @@ export default function ImageComparison({
     if (!panel || !img) return
     const panelRect = panel.getBoundingClientRect()
     const imgR = img.getBoundingClientRect()
-    setImgRect({
+    const newRect = {
       w: imgR.width,
       h: imgR.height,
       left: imgR.left - panelRect.left,
       top: imgR.top - panelRect.top,
-    })
+    }
+    setImgRect(newRect)
+    onDisplaySize?.({ w: newRect.w, h: newRect.h })
   }, [])
 
   useEffect(() => {
