@@ -201,7 +201,7 @@ function findBoundingQuad(gray: Mat, cv: OpenCV): Mat | null {
   }
 
   // 外接矩形の4隅を Mat として返す
-  return cv.matFromArray(4, 1, cv.CV_32FC2, [minX, minY, maxX, minY, maxX, maxY, minX, maxY])
+  return cv.matFromArray(4, 1, cv.CV_32SC2, [minX, minY, maxX, minY, maxX, maxY, minX, maxY])
 }
 
 /**

@@ -52,6 +52,7 @@ export interface OpenCV {
   RETR_EXTERNAL: number
   CHAIN_APPROX_SIMPLE: number
   CV_32FC2: number
+  CV_32SC2: number
 }
 
 export interface Mat {
