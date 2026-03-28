@@ -50,7 +50,7 @@ function computeMatrix3d(w: number, h: number, corners: CornerOffsets): string {
   const sy = y0 - y1 + y2 - y3
 
   const det = dx1 * dy2 - dx2 * dy1
-  if (Math.abs(det) < 1e-10) return 'none'
+  if (Math.abs(det) < 1e-10) return `matrix3d(1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1)`
 
   const g = (sx * dy2 - dx2 * sy) / det
   const hh = (dx1 * sy - sx * dy1) / det
@@ -350,7 +350,8 @@ export default function ImageComparison({
         onContextMenu={useCallback((e: React.MouseEvent) => e.preventDefault(), [])}
         onPointerLeave={useCallback(() => {
           if (!isDraggingRef.current) handlePointerUp()
-        }, [handlePointerUp])}
+          handleCornerPointerUp()
+        }, [handlePointerUp, handleCornerPointerUp])}
       >
         {/* Right image — always present, behind left */}
         <img
