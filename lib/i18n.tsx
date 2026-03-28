@@ -56,7 +56,7 @@ const dict = {
   saveBtn: { ja: 'ほぞん', en: 'Save' },
   shareResult: { ja: 'アニメーションをつくる', en: 'Create animation' },
   gifPreviewShare: { ja: 'シェアする', en: 'Share' },
-  gifPreviewDownload: { ja: 'ほぞんする', en: 'Download' },
+  gifPreviewDownload: { ja: '画像をほぞん', en: 'Save image' },
   gifPreviewClose: { ja: 'とじる', en: 'Close' },
   shareResultTitle: { ja: 'クネクネ動いて見えるかな？', en: 'Can you see it wiggling?' },
   shareResultText: {
