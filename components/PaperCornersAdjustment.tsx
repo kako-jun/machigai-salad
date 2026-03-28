@@ -407,29 +407,28 @@ export default function PaperCornersAdjustment({
           <button
             onClick={handleRedetect}
             disabled={detecting}
-            className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-center text-xs leading-tight"
+            className="relative ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-center text-xs leading-tight"
             style={{
               color: 'var(--muted)',
               border: '1px solid var(--border-light)',
-              width: '8em',
             }}
           >
-            {detecting ? (
-              '...'
-            ) : (
-              <>
-                {t('redetect')}
-                <br />
-                <span style={{ opacity: 0.7 }}>
-                  （
-                  {
-                    SENSITIVITY_LABELS[
-                      SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]
-                    ][lang]
-                  }
-                  ）
-                </span>
-              </>
+            {/* 常にテキストを描画して幅を確保。検出中は非表示にして...を重ねる */}
+            <span style={{ visibility: detecting ? 'hidden' : 'visible' }}>
+              {t('redetect')}
+              <br />
+              <span style={{ opacity: 0.7 }}>
+                （
+                {
+                  SENSITIVITY_LABELS[
+                    SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]
+                  ][lang]
+                }
+                ）
+              </span>
+            </span>
+            {detecting && (
+              <span className="absolute inset-0 flex items-center justify-center">...</span>
             )}
           </button>
         )}
