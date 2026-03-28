@@ -241,7 +241,7 @@ export default function PaperCornersAdjustment({
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
-  const [sensitivityIndex, setSensitivityIndex] = useState(1) // 初期検出が'normal'(index 1)のため
+  const [sensitivityIndex, setSensitivityIndex] = useState(2) // 初期検出がnormal。次クリックでstrict(0)→normal(1)→loose(2)の順
   const [detecting, setDetecting] = useState(false)
 
   // 画像の読み込みとキャンバスサイズ設定
