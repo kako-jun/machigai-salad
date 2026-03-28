@@ -15,7 +15,7 @@ const dict = {
   // page.tsx — footer
   amazonSupport: { ja: 'Amazon で応援する', en: 'Support on Amazon' },
   amazonHint: {
-    ja: 'リンク先の商品でなくても、ここから買い物するだけで支援になるよ',
+    ja: 'リンク先の商品でなくても、ここからお買い物するだけで応援になるよ',
     en: 'Any purchase through this link\nhelps us out — thanks!',
   },
   shareApp: { ja: 'このアプリを共有', en: 'Share this app' },
