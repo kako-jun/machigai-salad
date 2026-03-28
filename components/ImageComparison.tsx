@@ -275,6 +275,13 @@ export default function ImageComparison({
     setDraggingCorner(null)
   }, [])
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => e.preventDefault(), [])
+
+  const handlePointerLeave = useCallback(() => {
+    if (!isDraggingRef.current) handlePointerUp()
+    handleCornerPointerUp()
+  }, [handlePointerUp, handleCornerPointerUp])
+
   const handleUndo = useCallback(() => {
     const snap = undoStackRef.current.pop()
     if (!snap) return
@@ -397,11 +404,8 @@ export default function ImageComparison({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onContextMenu={useCallback((e: React.MouseEvent) => e.preventDefault(), [])}
-        onPointerLeave={useCallback(() => {
-          if (!isDraggingRef.current) handlePointerUp()
-          handleCornerPointerUp()
-        }, [handlePointerUp, handleCornerPointerUp])}
+        onContextMenu={handleContextMenu}
+        onPointerLeave={handlePointerLeave}
       >
         {/* Right image — always present, behind left */}
         <img

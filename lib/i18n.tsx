@@ -87,6 +87,9 @@ const dict = {
   },
   redetect: { ja: 'もう1回けんしゅつ', en: 'Re-detect' },
   undo: { ja: 'もどす', en: 'Undo' },
+  sensitivityStrict: { ja: 'きびしめ', en: 'Strict' },
+  sensitivityNormal: { ja: 'ふつう', en: 'Normal' },
+  sensitivityLoose: { ja: 'あまめ', en: 'Loose' },
   cornersCancel: { ja: 'やめる', en: 'Cancel' },
   cornersOk: { ja: 'OK! すすむ', en: "OK! Let's go" },
 

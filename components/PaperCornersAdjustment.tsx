@@ -221,10 +221,13 @@ function drawCanvas(
 }
 
 const SENSITIVITY_CYCLE = ['strict', 'normal', 'loose'] as const
-const SENSITIVITY_LABELS: Record<string, { ja: string; en: string }> = {
-  strict: { ja: 'きびしめ', en: 'Strict' },
-  normal: { ja: 'ふつう', en: 'Normal' },
-  loose: { ja: 'あまめ', en: 'Loose' },
+const SENSITIVITY_I18N: Record<
+  string,
+  'sensitivityStrict' | 'sensitivityNormal' | 'sensitivityLoose'
+> = {
+  strict: 'sensitivityStrict',
+  normal: 'sensitivityNormal',
+  loose: 'sensitivityLoose',
 }
 
 export default function PaperCornersAdjustment({
@@ -235,7 +238,7 @@ export default function PaperCornersAdjustment({
   onCancel,
   onRedetect,
 }: PaperCornersAdjustmentProps) {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loadedImageRef = useRef<HTMLImageElement | null>(null)
   const dprRef = useRef(1)
@@ -441,11 +444,11 @@ export default function PaperCornersAdjustment({
               <br />
               <span style={{ opacity: 0.7 }}>
                 （
-                {
-                  SENSITIVITY_LABELS[
+                {t(
+                  SENSITIVITY_I18N[
                     SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]
-                  ][lang]
-                }
+                  ]
+                )}
                 ）
               </span>
             </span>

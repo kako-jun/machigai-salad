@@ -43,7 +43,9 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
         return
       }
       ctx.drawImage(img, 0, 0, newW, newH)
-      resolve(canvas.toDataURL('image/webp', 0.92))
+      // Prefer WebP, fall back to JPEG if browser doesn't support WebP canvas export
+      const webp = canvas.toDataURL('image/webp', 0.92)
+      resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.92))
     }
     img.onerror = reject
     img.src = dataUrl
