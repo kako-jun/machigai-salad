@@ -137,15 +137,40 @@ export default function ImageComparison({
 
   const measureImg = useCallback(() => {
     const panel = panelRef.current
-    const img = panel?.querySelector('img')
+    const img = panel?.querySelector('img') as HTMLImageElement | null
     if (!panel || !img) return
     const panelRect = panel.getBoundingClientRect()
-    const imgR = img.getBoundingClientRect()
+
+    // Compute the actual content rect within objectFit:contain
+    const elemW = img.clientWidth
+    const elemH = img.clientHeight
+    const naturalW = img.naturalWidth
+    const naturalH = img.naturalHeight
+    if (!naturalW || !naturalH) return
+
+    const naturalAspect = naturalW / naturalH
+    const elemAspect = elemW / elemH
+
+    let contentW: number, contentH: number, contentLeft: number, contentTop: number
+    if (naturalAspect > elemAspect) {
+      // Image wider than element → constrained by width
+      contentW = elemW
+      contentH = elemW / naturalAspect
+      contentLeft = img.getBoundingClientRect().left - panelRect.left
+      contentTop = img.getBoundingClientRect().top - panelRect.top + (elemH - contentH) / 2
+    } else {
+      // Image taller → constrained by height
+      contentH = elemH
+      contentW = elemH * naturalAspect
+      contentLeft = img.getBoundingClientRect().left - panelRect.left + (elemW - contentW) / 2
+      contentTop = img.getBoundingClientRect().top - panelRect.top
+    }
+
     const newRect = {
-      w: imgR.width,
-      h: imgR.height,
-      left: imgR.left - panelRect.left,
-      top: imgR.top - panelRect.top,
+      w: contentW,
+      h: contentH,
+      left: contentLeft,
+      top: contentTop,
     }
     setImgRect(newRect)
     onDisplaySize?.(newRect)
