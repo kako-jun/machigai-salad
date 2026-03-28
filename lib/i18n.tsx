@@ -58,8 +58,8 @@ const dict = {
   dragging: { ja: 'ずらしちゅう...', en: 'Moving...' },
   releaseToReturn: { ja: 'はなすと もどるよ', en: 'Let go to flip back' },
   holdInstruction: {
-    ja: '長おし→みぎの絵\nドラッグ→位置あわせ',
-    en: 'Hold → see right\nDrag → adjust position',
+    ja: '長おし→みぎの絵\nスライド→位置あわせ',
+    en: 'Hold → see right\nSlide → adjust position',
   },
   resetPosition: { ja: '位置をリセット', en: 'Reset position' },
 
