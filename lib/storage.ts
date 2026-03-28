@@ -10,6 +10,12 @@ export interface SaveEntry {
   corners: Point[]
   offset: { x: number; y: number }
   imageSize: { width: number; height: number }
+  warpCorners?: [
+    { x: number; y: number },
+    { x: number; y: number },
+    { x: number; y: number },
+    { x: number; y: number },
+  ]
 }
 
 function isValidEntry(s: unknown): s is SaveEntry {

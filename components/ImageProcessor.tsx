@@ -43,6 +43,24 @@ export default function ImageProcessor() {
   const lastCornersRef = useRef<Point[] | null>(null)
   const currentOffsetRef = useRef({ x: 0, y: 0 })
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
+  const currentWarpRef = useRef<
+    | [
+        { x: number; y: number },
+        { x: number; y: number },
+        { x: number; y: number },
+        { x: number; y: number },
+      ]
+    | undefined
+  >(undefined)
+  const restoredWarpRef = useRef<
+    | [
+        { x: number; y: number },
+        { x: number; y: number },
+        { x: number; y: number },
+        { x: number; y: number },
+      ]
+    | undefined
+  >(undefined)
 
   const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
@@ -98,6 +116,8 @@ export default function ImageProcessor() {
     setRightImage(null)
     currentOffsetRef.current = { x: 0, y: 0 }
     restoredOffsetRef.current = null
+    currentWarpRef.current = undefined
+    restoredWarpRef.current = undefined
     setSuggestedCorners(lastCornersRef.current)
     setPhase('adjust')
   }
@@ -111,6 +131,8 @@ export default function ImageProcessor() {
     lastCornersRef.current = null
     currentOffsetRef.current = { x: 0, y: 0 }
     restoredOffsetRef.current = null
+    currentWarpRef.current = undefined
+    restoredWarpRef.current = undefined
     setPhase('upload')
   }
 
@@ -121,6 +143,7 @@ export default function ImageProcessor() {
       corners: lastCornersRef.current,
       offset: currentOffsetRef.current,
       imageSize,
+      warpCorners: currentWarpRef.current,
     })
     if (result) {
       setSaveCount((c) => c + 1)
@@ -139,6 +162,8 @@ export default function ImageProcessor() {
     lastCornersRef.current = entry.corners
     restoredOffsetRef.current = entry.offset
     currentOffsetRef.current = entry.offset
+    restoredWarpRef.current = entry.warpCorners
+    currentWarpRef.current = entry.warpCorners
     setPhase('processing')
 
     try {
@@ -198,6 +223,10 @@ export default function ImageProcessor() {
             initialOffset={restoredOffsetRef.current ?? undefined}
             onOffsetChange={(o) => {
               currentOffsetRef.current = o
+            }}
+            initialWarpCorners={restoredWarpRef.current}
+            onWarpChange={(w) => {
+              currentWarpRef.current = w
             }}
             onBackToAdjust={handleBackToAdjust}
           />

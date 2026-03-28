@@ -1,20 +1,80 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
 
 /** Minimum pointer movement (px) to distinguish drag from hold */
 const DRAG_THRESHOLD = 25
 /** Maximum offset in each direction (px) */
 const MAX_OFFSET = 40
+/** Maximum corner warp offset (px) */
+const MAX_CORNER_OFFSET = 30
 /** Time (ms) to confirm hold — once confirmed, drag is disabled */
 const HOLD_CONFIRM_MS = 200
+/** Corner handle hit area radius (px) */
+const CORNER_HIT_RADIUS = 22
+
+type CornerOffsets = [
+  { x: number; y: number },
+  { x: number; y: number },
+  { x: number; y: number },
+  { x: number; y: number },
+]
+
+const ZERO_CORNERS: CornerOffsets = [
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+  { x: 0, y: 0 },
+]
+
+/**
+ * Compute CSS matrix3d for projective warp from rectangle to quad.
+ * Maps (0,0)-(w,0)-(w,h)-(0,h) to (0+c0)-(w+c1)-(w+c2)-(0+c3)
+ */
+function computeMatrix3d(w: number, h: number, corners: CornerOffsets): string {
+  const x0 = corners[0].x,
+    y0 = corners[0].y
+  const x1 = w + corners[1].x,
+    y1 = corners[1].y
+  const x2 = w + corners[2].x,
+    y2 = h + corners[2].y
+  const x3 = corners[3].x,
+    y3 = h + corners[3].y
+
+  const dx1 = x1 - x2
+  const dx2 = x3 - x2
+  const sx = x0 - x1 + x2 - x3
+  const dy1 = y1 - y2
+  const dy2 = y3 - y2
+  const sy = y0 - y1 + y2 - y3
+
+  const det = dx1 * dy2 - dx2 * dy1
+  if (Math.abs(det) < 1e-10) return 'none'
+
+  const g = (sx * dy2 - dx2 * sy) / det
+  const hh = (dx1 * sy - sx * dy1) / det
+
+  const a = (x1 - x0 + g * x1) / w
+  const b = (x3 - x0 + hh * x3) / h
+  const c = x0
+  const d = (y1 - y0 + g * y1) / w
+  const e = (y3 - y0 + hh * y3) / h
+  const f = y0
+  const gw = g / w
+  const hv = hh / h
+
+  // CSS matrix3d in column-major order
+  return `matrix3d(${a},${d},0,${gw}, ${b},${e},0,${hv}, 0,0,1,0, ${c},${f},0,1)`
+}
 
 interface ImageComparisonProps {
   leftImage: string
   rightImage: string
   initialOffset?: { x: number; y: number }
   onOffsetChange?: (offset: { x: number; y: number }) => void
+  initialWarpCorners?: CornerOffsets
+  onWarpChange?: (corners: CornerOffsets) => void
   onBackToAdjust?: () => void
 }
 
@@ -23,6 +83,8 @@ export default function ImageComparison({
   rightImage,
   initialOffset,
   onOffsetChange,
+  initialWarpCorners,
+  onWarpChange,
   onBackToAdjust,
 }: ImageComparisonProps) {
   const { t } = useI18n()
@@ -42,6 +104,50 @@ export default function ImageComparison({
   offsetRef.current = offset
   const startRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null)
 
+  // Corner warp state
+  const [cornerOffsets, _setCornerOffsets] = useState<CornerOffsets>(
+    initialWarpCorners ?? ZERO_CORNERS
+  )
+  const onWarpChangeRef = useRef(onWarpChange)
+  onWarpChangeRef.current = onWarpChange
+  const setCornerOffsets = useCallback((c: CornerOffsets) => {
+    _setCornerOffsets(c)
+    onWarpChangeRef.current?.(c)
+  }, [])
+  const [draggingCorner, setDraggingCorner] = useState<number | null>(null)
+  const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
+
+  // Image panel ref for measuring rendered image rect
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [imgRect, setImgRect] = useState<{
+    w: number
+    h: number
+    left: number
+    top: number
+  } | null>(null)
+
+  // Measure rendered image position within the panel
+  const measureImg = useCallback(() => {
+    const panel = panelRef.current
+    const img = panel?.querySelector('img')
+    if (!panel || !img) return
+    const panelRect = panel.getBoundingClientRect()
+    const imgR = img.getBoundingClientRect()
+    setImgRect({
+      w: imgR.width,
+      h: imgR.height,
+      left: imgR.left - panelRect.left,
+      top: imgR.top - panelRect.top,
+    })
+  }, [])
+
+  useEffect(() => {
+    measureImg()
+    window.addEventListener('resize', measureImg)
+    return () => window.removeEventListener('resize', measureImg)
+  }, [measureImg, leftImage])
+
+  // Image panel pointer handlers (hold/drag)
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     const cur = offsetRef.current
@@ -51,7 +157,6 @@ export default function ImageComparison({
     setIsDragging(false)
     setIsHolding(true)
 
-    // After HOLD_CONFIRM_MS without drag, lock into hold mode
     holdTimerRef.current = setTimeout(() => {
       if (!isDraggingRef.current) {
         isHoldConfirmedRef.current = true
@@ -63,8 +168,6 @@ export default function ImageComparison({
     (e: React.PointerEvent<HTMLDivElement>) => {
       const start = startRef.current
       if (!start) return
-
-      // Once hold is confirmed, ignore all movement
       if (isHoldConfirmedRef.current) return
 
       const dx = e.clientX - start.x
@@ -102,14 +205,54 @@ export default function ImageComparison({
     setIsHolding(false)
   }, [])
 
-  const [scale, setScale] = useState(1.0)
-  const hasOffset = offset.x !== 0 || offset.y !== 0
+  // Corner handle pointer handlers
+  const handleCornerPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>, index: number) => {
+      e.stopPropagation()
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      cornerStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        cx: cornerOffsets[index].x,
+        cy: cornerOffsets[index].y,
+      }
+      setDraggingCorner(index)
+    },
+    [cornerOffsets]
+  )
 
-  const [isScaling, setIsScaling] = useState(false)
-  // Left opacity: normal=1, tap-hold=0 (right shows through), drag/scaling=0.5
-  const leftOpacity = isDragging || isScaling ? 0.5 : isHolding ? 0 : 1
+  const handleCornerPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (draggingCorner === null || !cornerStartRef.current) return
+      e.stopPropagation()
+      const dx = e.clientX - cornerStartRef.current.x
+      const dy = e.clientY - cornerStartRef.current.y
+      const newOffsets = [...cornerOffsets] as unknown as CornerOffsets
+      newOffsets[draggingCorner] = {
+        x: Math.max(
+          -MAX_CORNER_OFFSET,
+          Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cx + dx)
+        ),
+        y: Math.max(
+          -MAX_CORNER_OFFSET,
+          Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cy + dy)
+        ),
+      }
+      setCornerOffsets(newOffsets)
+    },
+    [draggingCorner, cornerOffsets]
+  )
 
-  // Keep in sync with --left-color / --right-color in globals.css
+  const handleCornerPointerUp = useCallback(() => {
+    cornerStartRef.current = null
+    setDraggingCorner(null)
+  }, [])
+
+  const hasCornerWarp = cornerOffsets.some((c) => c.x !== 0 || c.y !== 0)
+
+  // Left opacity
+  const leftOpacity = isDragging || draggingCorner !== null ? 0.5 : isHolding ? 0 : 1
+
   const leftColor = '#6B7F3E'
   const rightColor = '#B05228'
   const showingRight = isHolding && !isDragging
@@ -121,6 +264,22 @@ export default function ImageComparison({
     maxHeight: 'calc(100dvh - var(--panel-margin))',
     objectFit: 'contain' as const,
   }
+
+  // Compute matrix3d transform for left image
+  const leftTransform =
+    imgRect && hasCornerWarp
+      ? `translate(${offset.x}px, ${offset.y}px) ${computeMatrix3d(imgRect.w, imgRect.h, cornerOffsets)}`
+      : `translate(${offset.x}px, ${offset.y}px)`
+
+  // Corner handle positions (relative to panel)
+  const cornerPositions = imgRect
+    ? [
+        { x: imgRect.left, y: imgRect.top },
+        { x: imgRect.left + imgRect.w, y: imgRect.top },
+        { x: imgRect.left + imgRect.w, y: imgRect.top + imgRect.h },
+        { x: imgRect.left, y: imgRect.top + imgRect.h },
+      ]
+    : null
 
   return (
     <div className="animate-fade-in space-y-3">
@@ -143,43 +302,27 @@ export default function ImageComparison({
           className="whitespace-pre-line text-right text-xs font-medium leading-snug"
           style={{ color: activeColor, minHeight: '2.75em' }}
         >
-          {isDragging ? t('dragging') : showingRight ? t('releaseToReturn') : t('holdInstruction')}
+          {isDragging
+            ? t('dragging')
+            : draggingCorner !== null
+              ? t('warpAdjusting')
+              : showingRight
+                ? t('releaseToReturn')
+                : t('holdInstruction')}
         </p>
       </div>
 
-      {/* Scale slider + back to adjust button */}
+      {/* Back to corner adjustment button */}
       <div
-        className="flex items-center gap-2 px-2"
-        style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
+        className="flex items-center justify-end gap-2 px-2"
+        style={{
+          visibility: !isDragging && !isHolding && draggingCorner === null ? 'visible' : 'hidden',
+        }}
       >
-        <span className="flex-shrink-0 text-xs" style={{ color: 'var(--muted)' }}>
-          {t('scaleAdjust')}
-        </span>
-        <input
-          type="range"
-          min="0.9"
-          max="1.1"
-          step="0.005"
-          value={scale}
-          onInput={(e) => {
-            setScale(parseFloat((e.target as HTMLInputElement).value))
-            setIsScaling(true)
-          }}
-          onChange={() => setIsScaling(false)}
-          onPointerUp={() => setIsScaling(false)}
-          className="flex-1"
-          style={{ accentColor: 'var(--olive)' }}
-        />
-        <span
-          className="text-xs tabular-nums"
-          style={{ color: 'var(--muted)', minWidth: '2.5em', textAlign: 'right' }}
-        >
-          {Math.round((scale - 1) * 100)}%
-        </span>
         {onBackToAdjust && (
           <button
             onClick={onBackToAdjust}
-            className="ml-1 flex-shrink-0 rounded-lg px-3 py-2 text-xs"
+            className="flex-shrink-0 rounded-lg px-3 py-2 text-xs"
             style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
           >
             {t('backToAdjust')}
@@ -189,6 +332,7 @@ export default function ImageComparison({
 
       {/* Image panel — right always behind, left overlaid on top */}
       <div
+        ref={panelRef}
         className="relative flex touch-none select-none items-center justify-center overflow-hidden"
         style={{
           borderRadius: 14,
@@ -205,15 +349,19 @@ export default function ImageComparison({
         onPointerUp={handlePointerUp}
         onContextMenu={useCallback((e: React.MouseEvent) => e.preventDefault(), [])}
         onPointerLeave={useCallback(() => {
-          // Don't release during drag — setPointerCapture should prevent this,
-          // but some browsers fire pointerleave despite capture
           if (!isDraggingRef.current) handlePointerUp()
         }, [handlePointerUp])}
       >
         {/* Right image — always present, behind left */}
-        <img src={rightImage} alt={t('right')} draggable={false} style={imgConstraint} />
+        <img
+          src={rightImage}
+          alt={t('right')}
+          draggable={false}
+          style={imgConstraint}
+          onLoad={measureImg}
+        />
 
-        {/* Left image — overlaid on top, opacity changes with interaction */}
+        {/* Left image — overlaid on top with optional perspective warp */}
         <img
           src={leftImage}
           alt={t('left')}
@@ -222,10 +370,49 @@ export default function ImageComparison({
             ...imgConstraint,
             position: 'absolute',
             opacity: leftOpacity,
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: imgRect ? `${imgRect.left}px ${imgRect.top}px` : '0 0',
+            transform: leftTransform,
             transition: 'opacity 0.15s ease',
           }}
         />
+
+        {/* Corner warp handles */}
+        {cornerPositions &&
+          !isHolding &&
+          cornerPositions.map((pos, i) => (
+            <div
+              key={i}
+              className="absolute"
+              style={{
+                left: pos.x + cornerOffsets[i].x + offset.x - CORNER_HIT_RADIUS,
+                top: pos.y + cornerOffsets[i].y + offset.y - CORNER_HIT_RADIUS,
+                width: CORNER_HIT_RADIUS * 2,
+                height: CORNER_HIT_RADIUS * 2,
+                cursor: 'move',
+                touchAction: 'none',
+                zIndex: draggingCorner === i ? 20 : 10,
+              }}
+              onPointerDown={(e) => handleCornerPointerDown(e, i)}
+              onPointerMove={handleCornerPointerMove}
+              onPointerUp={handleCornerPointerUp}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: draggingCorner === i ? 14 : 10,
+                  height: draggingCorner === i ? 14 : 10,
+                  borderRadius: '50%',
+                  background: draggingCorner === i ? leftColor : 'rgba(107,127,62,0.7)',
+                  border: '2px solid white',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  transition: 'width 0.1s, height 0.1s',
+                }}
+              />
+            </div>
+          ))}
       </div>
     </div>
   )
