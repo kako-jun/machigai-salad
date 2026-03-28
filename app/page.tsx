@@ -48,7 +48,7 @@ export default function Home() {
         <footer className="menu-card mt-6 px-5 py-4">
           <div className="flex flex-col items-center gap-4">
             <a
-              href="https://amzn.to/41dkZF1"
+              href="https://amzn.to/4uWSrNa"
               target="_blank"
               rel="noopener noreferrer"
               className="flex w-full flex-col items-center gap-1 rounded-xl px-5 py-3 text-center"
