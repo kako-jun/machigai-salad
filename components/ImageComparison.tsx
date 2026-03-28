@@ -115,8 +115,8 @@ export default function ImageComparison({
   const cornerOffsetsRef = useRef(cornerOffsets)
   cornerOffsetsRef.current = cornerOffsets
   const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
-  /** Previous corner offset during drag — for anti-slip on release */
-  const prevCornerOffsetRef = useRef<{ x: number; y: number } | null>(null)
+  /** Position history during corner drag — snap to ~100ms-ago position on release */
+  const cornerPosHistoryRef = useRef<Array<{ x: number; y: number; t: number }>>([])
 
   // Undo history: snapshot of {offset, cornerOffsets} before each drag (max 50)
   const undoStackRef = useRef<{ offset: { x: number; y: number }; corners: CornerOffsets }[]>([])
@@ -256,20 +256,23 @@ export default function ImageComparison({
       const idx = draggingCornerRef.current
       if (idx === null || !cornerStartRef.current) return
       e.stopPropagation()
-      prevCornerOffsetRef.current = { ...cornerOffsetsRef.current[idx] }
       const dx = e.clientX - cornerStartRef.current.x
       const dy = e.clientY - cornerStartRef.current.y
+      const newX = Math.max(
+        -MAX_CORNER_OFFSET,
+        Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cx + dx)
+      )
+      const newY = Math.max(
+        -MAX_CORNER_OFFSET,
+        Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cy + dy)
+      )
+
+      const hist = cornerPosHistoryRef.current
+      hist.push({ x: newX, y: newY, t: performance.now() })
+      if (hist.length > 20) hist.shift()
+
       const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
-      newOffsets[idx] = {
-        x: Math.max(
-          -MAX_CORNER_OFFSET,
-          Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cx + dx)
-        ),
-        y: Math.max(
-          -MAX_CORNER_OFFSET,
-          Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cy + dy)
-        ),
-      }
+      newOffsets[idx] = { x: newX, y: newY }
       setCornerOffsets(newOffsets)
     },
     [setCornerOffsets]
@@ -277,17 +280,22 @@ export default function ImageComparison({
 
   const handleCornerPointerUp = useCallback(() => {
     const idx = draggingCornerRef.current
-    if (idx !== null && prevCornerOffsetRef.current) {
-      const curr = cornerOffsetsRef.current[idx]
-      const prev = prevCornerOffsetRef.current
-      const dist = Math.hypot(curr.x - prev.x, curr.y - prev.y)
-      if (dist < 3) {
-        const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
-        newOffsets[idx] = prev
-        setCornerOffsets(newOffsets)
+    if (idx !== null) {
+      const hist = cornerPosHistoryRef.current
+      if (hist.length >= 2) {
+        const now = performance.now()
+        const LOOKBACK_MS = 200
+        for (let i = hist.length - 1; i >= 0; i--) {
+          if (now - hist[i].t >= LOOKBACK_MS) {
+            const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
+            newOffsets[idx] = { x: hist[i].x, y: hist[i].y }
+            setCornerOffsets(newOffsets)
+            break
+          }
+        }
       }
     }
-    prevCornerOffsetRef.current = null
+    cornerPosHistoryRef.current = []
     cornerStartRef.current = null
     draggingCornerRef.current = null
     setDraggingCorner(null)

@@ -6,7 +6,7 @@ import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
 import { getImageSize, resizeImage, generateToggleGif } from '@/lib/image-utils'
 import { showToast } from './Toast'
-import { addSave, loadAllSaves } from '@/lib/storage'
+import { addSave, updateSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
 import { SaveIcon, ShareResultIcon } from './icons'
 import ImageUpload from './ImageUpload'
@@ -47,10 +47,13 @@ export default function ImageProcessor() {
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
   const currentWarpRef = useRef<CornerOffsets | undefined>(undefined)
   const restoredWarpRef = useRef<CornerOffsets | undefined>(undefined)
+  /** Current save entry ID — overwrite this entry on subsequent saves until new image */
+  const currentSaveIdRef = useRef<string | null>(null)
 
   const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
   const handleImageUpload = async (imageDataUrl: string) => {
+    currentSaveIdRef.current = null
     setPhase('detecting')
 
     let size: { width: number; height: number }
@@ -174,15 +177,20 @@ export default function ImageProcessor() {
 
   const handleSave = () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
-    const result = addSave({
+    const data = {
       originalImage,
       corners: lastCornersRef.current,
       offset: currentOffsetRef.current,
       imageSize,
       warpCorners: currentWarpRef.current,
-    })
+    }
+    // Overwrite existing entry for the same image, or create new
+    const existing = currentSaveIdRef.current
+    const updated = existing ? updateSave(existing, data) : null
+    const result = updated ?? addSave(data)
     if (result) {
-      setSaveCount((c) => c + 1)
+      currentSaveIdRef.current = result.id
+      if (!updated) setSaveCount((c) => c + 1)
       showToast(t('saved'), 'info')
     } else {
       showToast(t('saveFailed'), 'error')
@@ -191,6 +199,7 @@ export default function ImageProcessor() {
 
   const handleLoad = async (entry: SaveEntry) => {
     setPopupOpen(false)
+    currentSaveIdRef.current = entry.id
 
     setOriginalImage(entry.originalImage)
     setImageSize(entry.imageSize)

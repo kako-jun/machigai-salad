@@ -215,6 +215,7 @@ corrected.delete()
 - 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners? }`
 - 加工済み画像は保存しない（復元時にcornersから再処理）
 - `crypto.randomUUID()` でID生成
+- 同じ画像セッション内の連続保存は上書き（`updateSave`）。新画像読込時にID解放→次回は新規作成
 
 ## 国際化 (i18n)
 

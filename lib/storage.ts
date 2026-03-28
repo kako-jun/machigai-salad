@@ -56,6 +56,20 @@ export function addSave(entry: Omit<SaveEntry, 'id' | 'savedAt'>): SaveEntry | n
   }
 }
 
+export function updateSave(id: string, data: Omit<SaveEntry, 'id' | 'savedAt'>): SaveEntry | null {
+  try {
+    const saves = loadAllSaves()
+    const idx = saves.findIndex((s) => s.id === id)
+    if (idx === -1) return null
+    const updated: SaveEntry = { ...data, id, savedAt: new Date().toISOString() }
+    saves[idx] = updated
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(saves))
+    return updated
+  } catch {
+    return null
+  }
+}
+
 export function deleteSave(id: string): boolean {
   try {
     const saves = loadAllSaves().filter((s) => s.id !== id)
