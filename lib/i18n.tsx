@@ -83,9 +83,6 @@ const dict = {
   deleteConfirm: { ja: 'ほんとうに けす？', en: 'Really delete?' },
   deleteBtn: { ja: 'けす', en: 'Delete' },
 
-  // VisitorCounter
-  visitsLabel: { ja: '回', en: 'visits' },
-
   // PWA install
   installPrompt: { ja: 'ホーム画面に追加する？', en: 'Add to home screen?' },
   installBtn: { ja: 'インストール', en: 'Install' },

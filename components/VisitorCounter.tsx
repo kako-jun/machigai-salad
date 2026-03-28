@@ -1,15 +1,11 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useI18n } from '@/lib/i18n'
-
 const COUNTER_ID = 'machigai-salad-0b39a12c'
 const MAX_POLL_ATTEMPTS = 50 // 5 seconds max
 
 export default function VisitorCounter() {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { t } = useI18n()
-
   useEffect(() => {
     // Load the nostalgic web component script (idempotent)
     if (!document.querySelector('script[src*="nostalgic"]')) {
@@ -49,8 +45,7 @@ export default function VisitorCounter() {
       style={{ color: 'var(--muted)', opacity: 0.6 }}
     >
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-        <nostalgic-counter id={COUNTER_ID} type="total" format="text"></nostalgic-counter>{' '}
-        {t('visitsLabel')}
+        <nostalgic-counter id={COUNTER_ID} type="total" format="text"></nostalgic-counter> visits
       </span>
       <span>v{buildDate}</span>
     </div>
