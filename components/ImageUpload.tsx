@@ -106,7 +106,7 @@ export default function ImageUpload({
                 {t('loadFailed')}
               </p>
               <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-                {loadError || t('checkNetwork')}
+                {t('checkNetwork')}
               </p>
             </div>
 

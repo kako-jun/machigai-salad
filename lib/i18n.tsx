@@ -103,6 +103,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
+
   const setLang = useCallback((l: Lang) => {
     setLangState(l)
     localStorage.setItem(STORAGE_KEY, l)
