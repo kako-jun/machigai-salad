@@ -100,6 +100,29 @@
   - i18nのlocalStorageアクセスをtry-catch保護（Safariプライベート対応）
   - roi Mat の delete順序修正（ダブルフリー防止）
 
+- **ToastアイコンをUnicode→SVG統一**
+  - error=警告円、info=チェック円のSVGアイコンに統一
+
+- **ハードコード色のCSS変数化をToastにも適用**
+
+- **landscape対応**
+  - `--panel-margin` CSS変数で画像パネルの高さ切替
+
+- **フッターにflex-wrap追加**
+  - 375px幅での折り返し対応
+
+- **「ほぞんしたやつ」をImageUpload内にアルバムと対等配置**
+  - SaveIcon付き
+
+- **操作説明のmin-height確保**
+  - 行数変化によるレイアウトシフト防止
+
+- **削除ボタンaria-label適切化**
+
+- **ファイルサイズ超過時のinputリセット**
+
+- **QRコードをオリーブ色に差替**
+
 ## [0.2.0] - 2025-01-XX
 
 ### 追加 ✨

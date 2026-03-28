@@ -202,3 +202,6 @@
 - ✅ 画像出力webp化 — toDataURL PNG→webp/0.85（容量削減）
 - ✅ アクセシビリティ改善 — モーダルESC/aria、Toast aria-label i18n
 - ✅ OpenCV CDN 4.x統一 — フォールバック1.2.1廃止
+- ✅ Toast SVGアイコン統一
+- ✅ landscape対応
+- ✅ QRコードオリーブ色化
