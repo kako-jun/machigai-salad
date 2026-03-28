@@ -36,7 +36,8 @@ interface ImageComparisonProps {
   onWarpChange?: (corners: CornerOffsets) => void
   initialCenterOffset?: Point
   onCenterChange?: (center: Point) => void
-  onDisplaySize?: (size: { w: number; h: number }) => void
+  onDisplaySize?: (size: { w: number; h: number; left: number; top: number }) => void
+  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void
   onBackToAdjust?: () => void
 }
 
@@ -56,6 +57,7 @@ export default function ImageComparison({
   initialCenterOffset,
   onCenterChange,
   onDisplaySize,
+  onCanvasReady,
   onBackToAdjust,
 }: ImageComparisonProps) {
   const { t } = useI18n()
@@ -146,7 +148,7 @@ export default function ImageComparison({
       top: imgR.top - panelRect.top,
     }
     setImgRect(newRect)
-    onDisplaySize?.({ w: newRect.w, h: newRect.h })
+    onDisplaySize?.(newRect)
   }, [])
 
   useEffect(() => {
@@ -542,7 +544,10 @@ export default function ImageComparison({
 
         {/* Left image — canvas with mesh warp (4 corners + center) */}
         <canvas
-          ref={leftCanvasRef}
+          ref={(el) => {
+            leftCanvasRef.current = el
+            onCanvasReady?.(el)
+          }}
           style={{
             position: 'absolute',
             inset: 0,

@@ -55,8 +55,15 @@ export default function ImageProcessor() {
   const restoredWarpRef = useRef<CornerOffsets | null>(null)
   const currentCenterRef = useRef<Point>({ x: 0, y: 0 })
   const restoredCenterRef = useRef<Point | null>(null)
-  /** Displayed image dimensions in CSS pixels (for GIF scaling) */
-  const displaySizeRef = useRef<{ w: number; h: number }>({ w: 1, h: 1 })
+  /** Displayed image rect in CSS pixels (for GIF canvas capture) */
+  const displayRectRef = useRef<{ w: number; h: number; left: number; top: number }>({
+    w: 1,
+    h: 1,
+    left: 0,
+    top: 0,
+  })
+  /** Reference to the comparison canvas (has the warped left image) */
+  const leftCanvasElRef = useRef<HTMLCanvasElement | null>(null)
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
@@ -149,7 +156,8 @@ export default function ImageProcessor() {
     currentCenterRef.current = { x: 0, y: 0 }
     restoredCenterRef.current = null
     currentSaveIdRef.current = null
-    displaySizeRef.current = { w: 1, h: 1 }
+    displayRectRef.current = { w: 1, h: 1, left: 0, top: 0 }
+    leftCanvasElRef.current = null
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
@@ -162,17 +170,18 @@ export default function ImageProcessor() {
   const [saveSuccess, setSaveSuccess] = useState(false)
 
   const handleCreateGif = async () => {
-    if (!leftImage || !rightImage || sharing) return
+    if (!rightImage || !leftCanvasElRef.current || sharing) return
     setSharing(true)
 
     try {
-      const blob = await generateToggleGif(leftImage, rightImage, 1000, {
-        offset: currentOffsetRef.current,
-        warpCorners: currentWarpRef.current,
-        centerOffset: currentCenterRef.current,
-        displayWidth: displaySizeRef.current.w,
-        displayHeight: displaySizeRef.current.h,
-      })
+      const blob = await generateToggleGif(
+        {
+          leftCanvas: leftCanvasElRef.current,
+          imgRect: displayRectRef.current,
+          rightDataUrl: rightImage,
+        },
+        1000
+      )
       const url = URL.createObjectURL(blob)
       setGifPreview({ url, blob })
     } catch (e: unknown) {
@@ -335,8 +344,11 @@ export default function ImageProcessor() {
             onCenterChange={(c) => {
               currentCenterRef.current = c
             }}
-            onDisplaySize={(s) => {
-              displaySizeRef.current = s
+            onDisplaySize={(rect) => {
+              displayRectRef.current = rect
+            }}
+            onCanvasReady={(el) => {
+              leftCanvasElRef.current = el
             }}
             onBackToAdjust={handleBackToAdjust}
           />

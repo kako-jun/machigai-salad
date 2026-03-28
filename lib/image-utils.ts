@@ -1,8 +1,5 @@
 /** Pure utility functions for image processing (no React dependency) */
 
-import type { CornerOffsets } from '@/types'
-import { drawMeshWarp } from './mesh-warp'
-
 /** Maximum image dimension (longest side) in physical pixels */
 const MAX_IMAGE_DIM = 2400
 
@@ -55,50 +52,42 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
   })
 }
 
-interface GifOptions {
-  offset: { x: number; y: number }
-  warpCorners: CornerOffsets
-  centerOffset: { x: number; y: number }
-  /** Displayed image size in CSS pixels (for correct offset scaling) */
-  displayWidth: number
-  displayHeight: number
+interface GifSource {
+  /** The comparison canvas element (already has the warped left image) */
+  leftCanvas: HTMLCanvasElement
+  /** Image rect within the canvas (CSS pixels, for cropping) */
+  imgRect: { w: number; h: number; left: number; top: number }
+  /** Right image data URL */
+  rightDataUrl: string
 }
 
 /**
- * Generate an animated GIF that toggles between left and right images.
- * Frame 1: right image + left image overlaid with offset/warp (what user sees normally)
- * Frame 2: right image only (what user sees when holding)
+ * Generate an animated GIF by capturing the comparison canvas directly.
+ * Frame 1: right image + left canvas (exactly what the user sees)
+ * Frame 2: right image only
  */
-export function generateToggleGif(
-  leftDataUrl: string,
-  rightDataUrl: string,
-  delay: number,
-  options: GifOptions
-): Promise<Blob> {
-  const loadImg = (src: string) =>
-    new Promise<HTMLImageElement>((res, rej) => {
-      const img = new Image()
-      img.onload = () => res(img)
-      img.onerror = rej
-      img.src = src
-    })
+export function generateToggleGif(source: GifSource, delay: number): Promise<Blob> {
+  const { leftCanvas, imgRect, rightDataUrl } = source
 
-  return Promise.all([loadImg(leftDataUrl), loadImg(rightDataUrl)]).then(([leftImg, rightImg]) => {
+  return new Promise<HTMLImageElement>((res, rej) => {
+    const img = new Image()
+    img.onload = () => res(img)
+    img.onerror = rej
+    img.src = rightDataUrl
+  }).then((rightImg) => {
     const w = rightImg.width
     const h = rightImg.height
     const scale = Math.min(1, GIF_MAX_DIM / Math.max(w, h))
     const gw = Math.round(w * scale)
     const gh = Math.round(h * scale)
 
-    // Scale from CSS display pixels to GIF pixels
-    const sx = gw / options.displayWidth
-    const sy = gh / options.displayHeight
-
     const canvas = document.createElement('canvas')
     canvas.width = gw
     canvas.height = gh
     const ctx = canvas.getContext('2d')
     if (!ctx) throw new Error('Canvas context unavailable')
+
+    const dpr = window.devicePixelRatio || 1
 
     return import('gif.js').then(
       // CJS interop: gif.js uses module.exports, webpack wraps it in .default
@@ -117,23 +106,23 @@ export function generateToggleGif(
             dither: 'FloydSteinberg',
           })
 
-          // Frame 1: right image + left image with mesh warp
-          // Draw right image as background
+          // Frame 1: right image + left canvas (pixel-perfect capture)
           ctx.drawImage(rightImg, 0, 0, gw, gh)
-          // Draw left image in CSS-pixel coordinate system, scaled to GIF
-          ctx.save()
-          ctx.scale(sx, sy)
-          drawMeshWarp(ctx, leftImg, options.displayWidth, options.displayHeight, {
-            cornerOffsets: options.warpCorners,
-            centerOffset: options.centerOffset,
-            offset: options.offset,
-            imgLeft: 0,
-            imgTop: 0,
-          })
-          ctx.restore()
+          // Crop the image area from the comparison canvas (DPR-scaled physical pixels)
+          ctx.drawImage(
+            leftCanvas,
+            imgRect.left * dpr,
+            imgRect.top * dpr,
+            imgRect.w * dpr,
+            imgRect.h * dpr,
+            0,
+            0,
+            gw,
+            gh
+          )
           gif.addFrame(ctx, { delay, copy: true })
 
-          // Frame 2: right image only (what user sees when holding)
+          // Frame 2: right image only
           ctx.clearRect(0, 0, gw, gh)
           ctx.drawImage(rightImg, 0, 0, gw, gh)
           gif.addFrame(ctx, { delay, copy: true })
