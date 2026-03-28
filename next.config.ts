@@ -4,17 +4,18 @@ import { join } from 'path'
 
 const BUILD_DATE = new Date().toISOString().split('T')[0]
 
-// Stamp build date into sw.js cache name so it auto-invalidates on each deploy
-const swPath = join(__dirname, 'public', 'sw.js')
-const swContent = readFileSync(swPath, 'utf-8')
-// Replace placeholder or previous build date (YYYY-MM-DD pattern)
-writeFileSync(
-  swPath,
-  swContent.replace(
-    /machigai-salad-(?:__BUILD_DATE__|\d{4}-\d{2}-\d{2})/,
-    `machigai-salad-${BUILD_DATE}`
+// Stamp build date into sw.js cache name (production only to avoid polluting git)
+if (process.env.NODE_ENV === 'production') {
+  const swPath = join(__dirname, 'public', 'sw.js')
+  const swContent = readFileSync(swPath, 'utf-8')
+  writeFileSync(
+    swPath,
+    swContent.replace(
+      /machigai-salad-(?:__BUILD_DATE__|\d{4}-\d{2}-\d{2})/,
+      `machigai-salad-${BUILD_DATE}`
+    )
   )
-)
+}
 
 const nextConfig: NextConfig = {
   output: 'export',

@@ -95,8 +95,12 @@ export function generateToggleGif(
     if (!ctx) throw new Error('Canvas context unavailable')
 
     return import('gif.js').then(
-      ({ default: GIF }) =>
-        new Promise<Blob>((resolve, reject) => {
+      // CJS interop: gif.js uses module.exports, webpack wraps it in .default
+      (mod) => {
+        const GIF = ((mod as Record<string, unknown>).default || mod) as new (
+          opts: Record<string, unknown>
+        ) => { addFrame: Function; on: Function; render: Function; abort: Function }
+        return new Promise<Blob>((resolve, reject) => {
           const gif = new GIF({
             workers: 2,
             quality: 1,
@@ -127,8 +131,12 @@ export function generateToggleGif(
           gif.on('finished', resolve)
           gif.render()
 
-          setTimeout(() => reject(new Error('GIF generation timed out')), 30000)
+          setTimeout(() => {
+            gif.abort()
+            reject(new Error('GIF generation timed out'))
+          }, 30000)
         })
+      }
     )
   })
 }

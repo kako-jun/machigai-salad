@@ -160,22 +160,25 @@ export default function ImageComparison({
   }, [measureImg, leftImage])
 
   // Image panel pointer handlers (hold/drag)
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
-    const cur = offsetRef.current
-    pushUndo()
-    startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
-    isDraggingRef.current = false
-    isHoldConfirmedRef.current = false
-    setIsDragging(false)
-    setIsHolding(true)
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      const cur = offsetRef.current
+      pushUndo()
+      startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
+      isDraggingRef.current = false
+      isHoldConfirmedRef.current = false
+      setIsDragging(false)
+      setIsHolding(true)
 
-    holdTimerRef.current = setTimeout(() => {
-      if (!isDraggingRef.current) {
-        isHoldConfirmedRef.current = true
-      }
-    }, HOLD_CONFIRM_MS)
-  }, [])
+      holdTimerRef.current = setTimeout(() => {
+        if (!isDraggingRef.current) {
+          isHoldConfirmedRef.current = true
+        }
+      }, HOLD_CONFIRM_MS)
+    },
+    [pushUndo]
+  )
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
