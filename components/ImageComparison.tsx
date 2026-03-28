@@ -22,7 +22,7 @@ const ZERO_CORNERS: CornerOffsets = [
   { x: 0, y: 0 },
   { x: 0, y: 0 },
   { x: 0, y: 0 },
-] as const as unknown as CornerOffsets
+]
 
 /**
  * Compute CSS matrix3d for projective warp from rectangle to quad.
@@ -243,7 +243,7 @@ export default function ImageComparison({
       draggingCornerRef.current = index
       setDraggingCorner(index)
     },
-    [setCornerOffsets]
+    [pushUndo]
   )
 
   const handleCornerPointerMove = useCallback(
