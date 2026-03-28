@@ -35,6 +35,7 @@ machigai-salad/
 ├── lib/                        # ユーティリティライブラリ
 │   ├── i18n.tsx               # 日英i18n（React Context + 辞書）
 │   ├── image-utils.ts         # 画像ユーティリティ（リサイズ、GIF生成）
+│   ├── mesh-warp.ts           # 5点メッシュワープ（4三角形アフィン変換）
 │   ├── storage.ts             # LocalStorage保存・復元
 │   └── opencv/                # OpenCV関連
 │       ├── index.ts           # エクスポート
@@ -212,7 +213,7 @@ corrected.delete()
 
 - キー: `machigai-salad-saves`（アプリ全体で1つ）
 - 値: `SaveEntry[]` のJSON配列
-- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners? }`
+- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners, centerOffset }`
 - 加工済み画像は保存しない（復元時にcornersから再処理）
 - `crypto.randomUUID()` でID生成
 - 同じ画像セッション内の連続保存は上書き（`updateSave`）。新画像読込時にID解放→次回は新規作成

@@ -146,13 +146,15 @@ export function generateToggleGif(
           ctx.drawImage(rightImg, 0, 0, gw, gh)
           gif.addFrame(ctx, { delay, copy: true })
 
-          gif.on('finished', resolve)
-          gif.render()
-
-          setTimeout(() => {
+          const timer = setTimeout(() => {
             gif.abort()
             reject(new Error('GIF generation timed out'))
           }, 30000)
+          gif.on('finished', (blob: Blob) => {
+            clearTimeout(timer)
+            resolve(blob)
+          })
+          gif.render()
         })
       }
     )

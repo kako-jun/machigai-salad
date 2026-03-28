@@ -121,6 +121,8 @@ export default function ImageProcessor() {
     restoredOffsetRef.current = null
     currentWarpRef.current = undefined
     restoredWarpRef.current = undefined
+    currentCenterRef.current = undefined
+    restoredCenterRef.current = undefined
     setSuggestedCorners(lastCornersRef.current)
     setPhase('adjust')
   }
