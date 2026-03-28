@@ -90,10 +90,7 @@ export default function ImageUpload({
             '0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.1), 0 1px 3px rgba(60,36,21,0.07)',
         }}
       >
-        <div
-          className="menu-stripe mb-3"
-          style={{ marginLeft: '-1.5rem', marginRight: '-1.5rem' }}
-        />
+        <div className="menu-stripe mb-3 self-stretch" />
 
         {loadState === 'error' ? (
           /* Error state with retry */
@@ -209,10 +206,7 @@ export default function ImageUpload({
           </>
         )}
 
-        <div
-          className="menu-stripe mt-3"
-          style={{ marginLeft: '-1.5rem', marginRight: '-1.5rem' }}
-        />
+        <div className="menu-stripe mt-3 self-stretch" />
       </div>
     </div>
   )
