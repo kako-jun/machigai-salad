@@ -119,7 +119,7 @@ export default function ToastContainer() {
             style={{
               background: 'none',
               border: 'none',
-              padding: '2px 6px',
+              padding: '8px 12px',
               cursor: 'pointer',
               color: 'var(--muted)',
               fontSize: 16,

@@ -30,6 +30,8 @@ const dict = {
     en: 'Take a nice straight photo\nof the puzzle!',
   },
   loadFailed: { ja: 'よみこめなかったよ', en: "Oops, couldn't load!" },
+  imageTooBig: { ja: 'しゃしんが おおきすぎるよ', en: 'This photo is too big!' },
+  imageTooSmall: { ja: 'しゃしんが ちいさすぎるよ', en: 'This photo is too small!' },
   checkNetwork: { ja: 'ネットワーク接続を確認してね', en: 'Check your internet and try again' },
   retryLoad: { ja: 'もう1回ためす', en: 'Try again' },
 
@@ -55,7 +57,10 @@ const dict = {
   right: { ja: 'みぎ', en: 'Right' },
   dragging: { ja: 'ずらしちゅう...', en: 'Moving...' },
   releaseToReturn: { ja: 'はなすと もどるよ', en: 'Let go to flip back' },
-  holdInstruction: { ja: '長おし→みぎ / ドラッグ→ずらす', en: 'Hold → right / Drag → move' },
+  holdInstruction: {
+    ja: '長おし→みぎの絵\nドラッグ→位置あわせ',
+    en: 'Hold → see right\nDrag → adjust position',
+  },
   resetPosition: { ja: '位置をリセット', en: 'Reset position' },
 
   // PaperCornersAdjustment
@@ -75,6 +80,7 @@ const dict = {
     en: 'You can keep up to 5.\nOldest ones go away when full!',
   },
   savesEmpty: { ja: 'まだないよ', en: 'Nothing here yet!' },
+  deleteConfirm: { ja: 'ほんとうに けす？', en: 'Really delete?' },
 
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },

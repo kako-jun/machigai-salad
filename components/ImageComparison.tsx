@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { useI18n } from '@/lib/i18n'
 
 /** Minimum pointer movement (px) to distinguish drag from hold */
-const DRAG_THRESHOLD = 20
+const DRAG_THRESHOLD = 25
 /** Maximum offset in each direction (px) */
 const MAX_OFFSET = 40
 /** Time (ms) to confirm hold — once confirmed, drag is disabled */
@@ -105,6 +105,7 @@ export default function ImageComparison({
   // Left opacity: normal=1, tap-hold=0 (right shows through), drag=0.5 (both visible)
   const leftOpacity = isDragging ? 0.5 : isHolding ? 0 : 1
 
+  // Keep in sync with --left-color / --right-color in globals.css
   const leftColor = '#6B7F3E'
   const rightColor = '#B05228'
   const showingRight = isHolding && !isDragging
@@ -134,7 +135,10 @@ export default function ImageComparison({
         >
           {showingRight ? t('right') : t('left')}
         </span>
-        <p className="whitespace-nowrap text-xs font-medium" style={{ color: activeColor }}>
+        <p
+          className="whitespace-pre-line text-right text-xs font-medium leading-snug"
+          style={{ color: activeColor }}
+        >
           {isDragging ? t('dragging') : showingRight ? t('releaseToReturn') : t('holdInstruction')}
         </p>
       </div>
@@ -146,7 +150,7 @@ export default function ImageComparison({
       >
         <button
           onClick={() => setOffset({ x: 0, y: 0 })}
-          className="rounded-lg px-3 py-1 text-xs"
+          className="rounded-lg px-3 py-2 text-xs"
           style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
         >
           {t('resetPosition')}

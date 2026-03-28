@@ -50,7 +50,21 @@ export default function ImageProcessor() {
     setOriginalImage(imageDataUrl)
     setPhase('detecting')
 
-    const size = await getImageSize(imageDataUrl)
+    let size: { width: number; height: number }
+    try {
+      size = await getImageSize(imageDataUrl)
+    } catch {
+      showToast(t('loadFailed'), 'error')
+      setPhase('upload')
+      return
+    }
+
+    if (size.width < 100 || size.height < 100) {
+      showToast(t('imageTooSmall'), 'error')
+      setPhase('upload')
+      return
+    }
+
     setImageSize(size)
 
     try {

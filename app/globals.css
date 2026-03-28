@@ -9,7 +9,7 @@
   --surface-hover: #fff3cc;
   --border: #d4a85a;
   --border-light: #e8c87a;
-  --muted: #8b6b3a;
+  --muted: #7a5c2e;
   --accent: #cc6b3c;
   --accent-hover: #b85a2e;
   --accent-light: #fdebd8;
@@ -20,6 +20,13 @@
   --cream: #fff8e7;
   --parchment: #f5e6c8;
   --success: #6b7f3e;
+  --error: #8b3e1a;
+  --error-bg: #fff0ec;
+  --error-bg-dark: #ffe4dc;
+  --error-border: #d4885a;
+  --espresso-light: #5c3d1e;
+  --left-color: #6b7f3e;
+  --right-color: #b05228;
 }
 
 body {
@@ -236,4 +243,27 @@ body::before {
 
 .animate-spin-smooth {
   animation: spin-smooth 0.8s linear infinite;
+}
+
+/* Focus ring for keyboard navigation */
+.btn-action:focus-visible,
+.btn-ghost:focus-visible,
+.btn-shutter:focus-visible {
+  outline: 2px solid var(--golden);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: none;
+  }
+  .animate-spin-smooth {
+    animation: spin-smooth 2s linear infinite;
+  }
+  .btn-action,
+  .btn-ghost,
+  .btn-shutter {
+    transition: none;
+  }
 }

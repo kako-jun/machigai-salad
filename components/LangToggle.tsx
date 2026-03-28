@@ -6,27 +6,29 @@ export default function LangToggle() {
   const { lang, setLang } = useI18n()
 
   return (
-    <div className="absolute right-3 top-3 flex gap-1 text-xs" style={{ color: 'var(--muted)' }}>
+    <div className="flex items-center text-xs" style={{ color: 'var(--muted)' }}>
       <button
         onClick={() => setLang('ja')}
-        className="rounded px-1.5 py-0.5"
+        className="rounded px-2 py-2"
         style={{
           fontWeight: lang === 'ja' ? 700 : 400,
-          color: lang === 'ja' ? 'var(--espresso)' : 'var(--muted)',
-          background: lang === 'ja' ? 'rgba(212,160,16,0.15)' : 'transparent',
+          color: lang === 'ja' ? 'var(--olive)' : 'var(--muted)',
+          background: lang === 'ja' ? 'rgba(107,127,62,0.15)' : 'transparent',
         }}
+        aria-label="日本語"
       >
         JA
       </button>
-      <span>/</span>
+      <span style={{ fontSize: 10, opacity: 0.5 }}>/</span>
       <button
         onClick={() => setLang('en')}
-        className="rounded px-1.5 py-0.5"
+        className="rounded px-2 py-2"
         style={{
           fontWeight: lang === 'en' ? 700 : 400,
-          color: lang === 'en' ? 'var(--espresso)' : 'var(--muted)',
-          background: lang === 'en' ? 'rgba(212,160,16,0.15)' : 'transparent',
+          color: lang === 'en' ? 'var(--olive)' : 'var(--muted)',
+          background: lang === 'en' ? 'rgba(107,127,62,0.15)' : 'transparent',
         }}
+        aria-label="English"
       >
         EN
       </button>

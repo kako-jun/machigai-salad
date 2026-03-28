@@ -33,7 +33,9 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
 
   if (!open) return null
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
+    if (!confirm(t('deleteConfirm'))) return
     deleteSave(id)
     setSaves((prev) => prev.filter((s) => s.id !== id))
   }
@@ -66,7 +68,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
           </span>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-sm"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
             style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
           >
             ✕
@@ -74,7 +76,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
         </div>
 
         {/* List */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 52px)' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 56px)' }}>
           <p className="whitespace-pre-line px-4 pt-2 text-xs" style={{ color: 'var(--muted)' }}>
             {t('savesLimit')}
           </p>
@@ -86,8 +88,14 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
             saves.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-center gap-3 px-4 py-3"
+                className="flex cursor-pointer items-center gap-3 px-4 py-3 active:opacity-70"
                 style={{ borderBottom: '1px solid var(--border-light)' }}
+                onClick={() => onLoad(entry)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') onLoad(entry)
+                }}
               >
                 {/* Thumbnail */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -98,22 +106,34 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
                   style={{ border: '1px solid var(--border-light)' }}
                 />
 
-                {/* Date label — tappable to load */}
-                <button
+                {/* Date label */}
+                <span
                   className="flex-1 text-left text-sm font-medium"
                   style={{ color: 'var(--espresso)' }}
-                  onClick={() => onLoad(entry)}
                 >
                   {formatSaveDate(entry.savedAt)}
-                </button>
+                </span>
 
                 {/* Delete */}
                 <button
-                  onClick={() => handleDelete(entry.id)}
-                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs"
+                  onClick={(e) => handleDelete(e, entry.id)}
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs"
                   style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+                  aria-label={t('deleteConfirm')}
                 >
-                  🗑
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
                 </button>
               </div>
             ))

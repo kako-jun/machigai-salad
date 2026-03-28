@@ -12,7 +12,10 @@ export default function Home() {
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Menu-style header card */}
         <header className="menu-card relative mb-6 px-5 py-4">
-          <LangToggle />
+          {/* Lang toggle — top-right corner of the card */}
+          <div className="absolute right-2 top-1">
+            <LangToggle />
+          </div>
 
           {/* Decorative top stripe */}
           <div className="menu-stripe mb-3" />
@@ -32,7 +35,7 @@ export default function Home() {
             <h1
               className="text-xl font-extrabold tracking-wide"
               style={{
-                color: '#5C3D1E',
+                color: 'var(--espresso-light)',
                 textShadow: '0 1px 0 rgba(255,255,255,0.5)',
                 letterSpacing: '0.08em',
               }}
@@ -59,8 +62,8 @@ export default function Home() {
               rel="noopener noreferrer"
               className="flex w-full flex-col items-center gap-1 rounded-xl px-5 py-3 text-center"
               style={{
-                color: '#5C3D1E',
-                background: 'linear-gradient(145deg, #FFF8E7, #F5E0B0)',
+                color: 'var(--espresso-light)',
+                background: 'linear-gradient(145deg, var(--cream), var(--parchment))',
                 border: '1.5px solid rgba(212,160,16,0.4)',
                 boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 2px 4px rgba(60,36,21,0.1)',
               }}

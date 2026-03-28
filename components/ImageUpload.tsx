@@ -25,9 +25,16 @@ export default function ImageUpload({
   const galleryInputRef = useRef<HTMLInputElement>(null)
   const { t } = useI18n()
 
+  const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(t('imageTooBig'), 'error')
+      return
+    }
 
     const reader = new FileReader()
     reader.onload = (event) => {
@@ -84,8 +91,8 @@ export default function ImageUpload({
             <div
               className="flex h-14 w-14 items-center justify-center rounded-full"
               style={{
-                background: 'linear-gradient(145deg, #FFF0EC, #FFE4DC)',
-                border: '2px solid #D4885A',
+                background: 'linear-gradient(145deg, var(--error-bg), var(--error-bg-dark))',
+                border: '2px solid var(--error-border)',
                 boxShadow: '0 2px 8px rgba(60,36,21,0.12)',
               }}
             >
@@ -94,7 +101,7 @@ export default function ImageUpload({
                 height="28"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#8B3E1A"
+                stroke="var(--error)"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -106,7 +113,7 @@ export default function ImageUpload({
             </div>
 
             <div className="text-center">
-              <p className="text-sm font-bold" style={{ color: '#8B3E1A' }}>
+              <p className="text-sm font-bold" style={{ color: 'var(--error)' }}>
                 {t('loadFailed')}
               </p>
               <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
