@@ -26,22 +26,28 @@ npm run lint     # Lint実行
 ```
 app/           # Next.js App Router（ページ）
 components/    # Reactコンポーネント
+  icons.tsx    # 共有アイコン（UndoIcon, SaveIcon, ShareResultIcon）
 hooks/         # カスタムフック（useOpenCV）
-lib/opencv/    # 画像処理ユーティリティ
-types/         # TypeScript型定義
-public/        # 静的アセット（PWAアイコン、OGP画像、QRコード等）
+lib/
+  opencv/      # OpenCV画像処理（紙検出、透視変換）
+  image-utils.ts # 画像ユーティリティ（リサイズ、GIF生成）
+  i18n.tsx     # 日英i18n
+  storage.ts   # LocalStorage保存・復元
+types/         # TypeScript型定義（Point, CornerOffsets, MAX_UNDO, gif.js）
+public/        # 静的アセット（PWAアイコン、OGP画像、QRコード、gif.worker.js等）
 docs/          # 詳細ドキュメント
 ```
 
 ## 主要コンポーネント
 
-| ファイル                     | 役割                                                 |
-| ---------------------------- | ---------------------------------------------------- |
-| `ImageProcessor.tsx`         | 画像処理フロー制御                                   |
-| `ImageUpload.tsx`            | 画像アップロードUI                                   |
-| `PaperCornersAdjustment.tsx` | 角の調整UI（ルーペ拡大鏡付き、DPR対応）              |
-| `ImageComparison.tsx`        | 左右画像比較UI（ドラッグ微調整・半透明オーバーレイ） |
-| `ServiceWorkerRegister.tsx`  | Service Worker登録（PWA）                            |
+| ファイル                     | 役割                                                       |
+| ---------------------------- | ---------------------------------------------------------- |
+| `ImageProcessor.tsx`         | 画像処理フロー制御                                         |
+| `ImageUpload.tsx`            | 画像アップロードUI                                         |
+| `PaperCornersAdjustment.tsx` | 角の調整UI（ルーペ拡大鏡付き、DPR対応）                    |
+| `ImageComparison.tsx`        | 左右画像比較UI（ドラッグ微調整・コーナーワープ・アンドゥ） |
+| `ShareButtons.tsx`           | フッターSNSシェアボタン（X/LINE/Web Share）                |
+| `icons.tsx`                  | 共有SVGアイコン（Undo, Save, ShareResult）                 |
 
 ## 画像処理フロー
 
@@ -49,7 +55,7 @@ docs/          # 詳細ドキュメント
 2. 角の手動調整（ルーペ拡大鏡で精密操作、小画像は自動拡大）
 3. 台形補正（透視変換）
 4. 左右分割（色は加工しない）
-5. 比較表示（タップで左右切替、ドラッグで左画像の位置微調整）
+5. 比較表示（長押しで左右切替、スライドで位置微調整、四隅ワープ、アンドゥ、GIFシェア）
 
 ## 開発ガイドライン
 

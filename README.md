@@ -31,7 +31,7 @@
 - **TypeScript 5** — 型安全性
 - **Tailwind CSS** — スタイリング
 - **OpenCV.js 4.9** — 画像処理（紙の検出、台形補正、左右分割）
-- **upng-js** — アニメーションPNG（APNG）生成
+- **gif.js** — アニメーションGIF生成（Web Worker）
 - **Cloudflare Pages** — ホスティング（GitHub 連携で自動デプロイ）
 
 ## 開発

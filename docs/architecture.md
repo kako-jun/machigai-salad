@@ -34,7 +34,7 @@ machigai-salad/
 │   └── useOpenCV.ts           # OpenCV.js管理フック
 ├── lib/                        # ユーティリティライブラリ
 │   ├── i18n.tsx               # 日英i18n（React Context + 辞書）
-│   ├── image-utils.ts         # 画像ユーティリティ（リサイズ、APNG生成）
+│   ├── image-utils.ts         # 画像ユーティリティ（リサイズ、GIF生成）
 │   ├── storage.ts             # LocalStorage保存・復元
 │   └── opencv/                # OpenCV関連
 │       ├── index.ts           # エクスポート
@@ -42,7 +42,7 @@ machigai-salad/
 │       └── image-transform.ts # 画像変換ロジック
 ├── types/                      # 型定義
 │   ├── index.ts               # 共通型定義（Point, CornerOffsets, MAX_UNDO, OpenCV）
-│   └── upng-js.d.ts           # upng-js型定義（APNGエンコード）
+│   └── gif.js.d.ts            # gif.js型定義（GIFエンコード）
 ├── docs/                       # ドキュメント
 │   ├── architecture.md        # アーキテクチャ（このファイル）
 │   ├── design.md              # 設計ドキュメント
