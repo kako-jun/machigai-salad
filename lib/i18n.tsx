@@ -84,7 +84,7 @@ const dict = {
   deleteBtn: { ja: 'けす', en: 'Delete' },
 
   // PWA install
-  installPrompt: { ja: 'ホーム画面に追加できるよ', en: 'Add to your home screen!' },
+  installPrompt: { ja: 'ホーム画面に追加する？', en: 'Add to home screen?' },
   installBtn: { ja: 'インストール', en: 'Install' },
   installDismiss: { ja: 'あとで', en: 'Later' },
 
