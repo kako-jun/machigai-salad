@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
+import type { CornerOffsets } from '@/types'
+import { MAX_UNDO } from '@/types'
 import { useI18n } from '@/lib/i18n'
-import { UndoIcon } from './PaperCornersAdjustment'
+import { UndoIcon } from './icons'
 
 /** Minimum pointer movement (px) to distinguish drag from hold */
 const DRAG_THRESHOLD = 25
@@ -14,13 +16,6 @@ const MAX_CORNER_OFFSET = 30
 const HOLD_CONFIRM_MS = 200
 /** Corner handle hit area radius (px) */
 const CORNER_HIT_RADIUS = 22
-
-type CornerOffsets = [
-  { x: number; y: number },
-  { x: number; y: number },
-  { x: number; y: number },
-  { x: number; y: number },
-]
 
 const ZERO_CORNERS: CornerOffsets = [
   { x: 0, y: 0 },
@@ -130,7 +125,7 @@ export default function ImageComparison({
       offset: { ...offsetRef.current },
       corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
     })
-    if (stack.length > 50) stack.splice(0, stack.length - 50)
+    if (stack.length > MAX_UNDO) stack.splice(0, stack.length - MAX_UNDO)
     setUndoCount(stack.length)
   }, [])
 
@@ -352,37 +347,6 @@ export default function ImageComparison({
         </p>
       </div>
 
-      {/* Back to corner adjustment + Undo buttons */}
-      <div
-        className="flex items-center justify-end gap-2 px-2"
-        style={{
-          visibility: !isDragging && !isHolding && draggingCorner === null ? 'visible' : 'hidden',
-        }}
-      >
-        {onBackToAdjust && (
-          <button
-            onClick={onBackToAdjust}
-            className="flex-shrink-0 rounded-lg px-3 py-2 text-xs"
-            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
-          >
-            {t('backToAdjust')}
-          </button>
-        )}
-        <button
-          onClick={handleUndo}
-          disabled={undoCount === 0}
-          className="flex flex-shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs"
-          style={{
-            color: 'var(--muted)',
-            border: '1px solid var(--border-light)',
-            opacity: undoCount === 0 ? 0.35 : 1,
-          }}
-        >
-          <UndoIcon size={12} />
-          {t('undo')}
-        </button>
-      </div>
-
       {/* Image panel — right always behind, left overlaid on top */}
       <div
         ref={panelRef}
@@ -429,6 +393,47 @@ export default function ImageComparison({
             transition: 'opacity 0.15s ease',
           }}
         />
+
+        {/* Overlay buttons — back to adjust (left) + undo (right) */}
+        {!isDragging && !isHolding && draggingCorner === null && (
+          <>
+            {onBackToAdjust && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onBackToAdjust()
+                }}
+                className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
+                style={{
+                  color: 'var(--muted)',
+                  background: 'rgba(255,255,255,0.85)',
+                  border: '1px solid var(--border-light)',
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                {t('backToAdjust')}
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                handleUndo()
+              }}
+              disabled={undoCount === 0}
+              className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
+              style={{
+                color: 'var(--muted)',
+                background: 'rgba(255,255,255,0.85)',
+                border: '1px solid var(--border-light)',
+                backdropFilter: 'blur(4px)',
+                opacity: undoCount === 0 ? 0.35 : 1,
+              }}
+            >
+              <UndoIcon size={12} />
+              {t('undo')}
+            </button>
+          </>
+        )}
       </div>
 
       {/* Corner warp handles — outside overflow:hidden panel so they stay visible */}

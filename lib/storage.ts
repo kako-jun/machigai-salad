@@ -1,4 +1,4 @@
-import type { Point } from '@/types'
+import type { Point, CornerOffsets } from '@/types'
 
 const STORAGE_KEY = 'machigai-salad-saves'
 const MAX_SAVES = 5
@@ -10,12 +10,7 @@ export interface SaveEntry {
   corners: Point[]
   offset: { x: number; y: number }
   imageSize: { width: number; height: number }
-  warpCorners?: [
-    { x: number; y: number },
-    { x: number; y: number },
-    { x: number; y: number },
-    { x: number; y: number },
-  ]
+  warpCorners?: CornerOffsets
 }
 
 function isValidEntry(s: unknown): s is SaveEntry {

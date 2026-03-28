@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import type { Point } from '@/types'
+import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
+import { getImageSize, resizeImage, generateToggleApng } from '@/lib/image-utils'
 import { showToast } from './Toast'
 import { addSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
-import ImageUpload, { SaveIcon } from './ImageUpload'
+import { SaveIcon, ShareResultIcon } from './icons'
+import ImageUpload from './ImageUpload'
 import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
 import SavesPopup from './SavesPopup'
@@ -43,24 +45,8 @@ export default function ImageProcessor() {
   const lastCornersRef = useRef<Point[] | null>(null)
   const currentOffsetRef = useRef({ x: 0, y: 0 })
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
-  const currentWarpRef = useRef<
-    | [
-        { x: number; y: number },
-        { x: number; y: number },
-        { x: number; y: number },
-        { x: number; y: number },
-      ]
-    | undefined
-  >(undefined)
-  const restoredWarpRef = useRef<
-    | [
-        { x: number; y: number },
-        { x: number; y: number },
-        { x: number; y: number },
-        { x: number; y: number },
-      ]
-    | undefined
-  >(undefined)
+  const currentWarpRef = useRef<CornerOffsets | undefined>(undefined)
+  const restoredWarpRef = useRef<CornerOffsets | undefined>(undefined)
 
   const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
@@ -313,128 +299,6 @@ export default function ImageProcessor() {
         onLoad={handleLoad}
       />
     </div>
-  )
-}
-
-function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve({ width: img.width, height: img.height })
-    img.onerror = reject
-    img.src = dataUrl
-  })
-}
-
-/** Maximum image dimension (longest side) in physical pixels */
-const MAX_IMAGE_DIM = 2400
-
-/**
- * Resize an image data URL so its longest side does not exceed maxDim physical pixels.
- * Uses the display's devicePixelRatio to determine the practical upper bound,
- * capped at MAX_IMAGE_DIM. Returns the original if already small enough.
- */
-function resizeImage(dataUrl: string, width: number, height: number): Promise<string> {
-  const screenLong = Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1)
-  const maxDim = Math.min(Math.max(screenLong, 1200), MAX_IMAGE_DIM)
-  const longest = Math.max(width, height)
-
-  if (longest <= maxDim) return Promise.resolve(dataUrl)
-
-  const scale = maxDim / longest
-  const newW = Math.round(width * scale)
-  const newH = Math.round(height * scale)
-
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = newW
-      canvas.height = newH
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        resolve(dataUrl)
-        return
-      }
-      ctx.drawImage(img, 0, 0, newW, newH)
-      resolve(canvas.toDataURL('image/webp', 0.92))
-    }
-    img.onerror = reject
-    img.src = dataUrl
-  })
-}
-
-/** APNG share image max dimension */
-const APNG_MAX_DIM = 480
-
-/**
- * Generate an animated PNG (APNG) that toggles between left and right images.
- * Infinite loop, 1-second interval per frame. Full color (lossless).
- */
-async function generateToggleApng(
-  leftDataUrl: string,
-  rightDataUrl: string,
-  delay: number
-): Promise<Blob> {
-  const loadImg = (src: string) =>
-    new Promise<HTMLImageElement>((res, rej) => {
-      const img = new Image()
-      img.onload = () => res(img)
-      img.onerror = rej
-      img.src = src
-    })
-
-  const [leftImg, rightImg] = await Promise.all([loadImg(leftDataUrl), loadImg(rightDataUrl)])
-
-  const w = leftImg.width
-  const h = leftImg.height
-  const scale = Math.min(1, APNG_MAX_DIM / Math.max(w, h))
-  const gw = Math.round(w * scale)
-  const gh = Math.round(h * scale)
-
-  const canvas = document.createElement('canvas')
-  canvas.width = gw
-  canvas.height = gh
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Canvas context unavailable')
-
-  // Extract RGBA data for each frame
-  ctx.drawImage(leftImg, 0, 0, gw, gh)
-  const leftData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
-
-  ctx.drawImage(rightImg, 0, 0, gw, gh)
-  const rightData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
-
-  const UPNG = await import('upng-js')
-  const apngBuffer = UPNG.encode(
-    [leftData, rightData],
-    gw,
-    gh,
-    0, // 0 = lossless full color
-    [delay, delay]
-  )
-
-  return new Blob([apngBuffer], { type: 'image/png' })
-}
-
-function ShareResultIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="18" cy="5" r="3" />
-      <circle cx="6" cy="12" r="3" />
-      <circle cx="18" cy="19" r="3" />
-      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-    </svg>
   )
 }
 

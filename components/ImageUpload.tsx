@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { showToast } from './Toast'
+import { SaveIcon } from './icons'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -210,26 +211,6 @@ export default function ImageUpload({
         <div className="menu-stripe-olive mt-3 self-stretch" />
       </div>
     </div>
-  )
-}
-
-export function SaveIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
   )
 }
 

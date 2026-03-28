@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point } from '@/types'
+import { MAX_UNDO } from '@/types'
 import { useI18n } from '@/lib/i18n'
+import { UndoIcon } from './icons'
 
 /** Minimum canvas dimension in CSS pixels — tiny images are scaled up to this */
 const MIN_CANVAS_DIM = 280
@@ -394,7 +396,7 @@ export default function PaperCornersAdjustment({
   const pushCornersHistory = () => {
     const stack = cornersHistoryRef.current
     stack.push(corners.map((c) => ({ ...c })))
-    if (stack.length > 50) stack.splice(0, stack.length - 50)
+    if (stack.length > MAX_UNDO) stack.splice(0, stack.length - MAX_UNDO)
     setUndoCount(stack.length)
   }
 
@@ -457,7 +459,7 @@ export default function PaperCornersAdjustment({
       {/* Canvas with placemat-style frame */}
       <div className="flex justify-center">
         <div
-          className="inline-flex p-1"
+          className="relative inline-flex p-1"
           style={{
             background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
             border: '2px solid var(--border)',
@@ -478,6 +480,22 @@ export default function PaperCornersAdjustment({
             className="cursor-pointer"
             style={{ touchAction: 'none', borderRadius: 10 }}
           />
+          {/* Undo button — top right of canvas */}
+          <button
+            onClick={handleUndo}
+            disabled={undoCount === 0}
+            className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
+            style={{
+              color: 'var(--muted)',
+              background: 'rgba(255,255,255,0.85)',
+              border: '1px solid var(--border-light)',
+              backdropFilter: 'blur(4px)',
+              opacity: undoCount === 0 ? 0.35 : 1,
+            }}
+          >
+            <UndoIcon size={12} />
+            {t('undo')}
+          </button>
         </div>
       </div>
 
@@ -486,38 +504,10 @@ export default function PaperCornersAdjustment({
         <button onClick={onCancel} className="btn-ghost flex-1 px-4 py-3 text-sm">
           {t('cornersCancel')}
         </button>
-        <button
-          onClick={handleUndo}
-          disabled={undoCount === 0}
-          className="btn-ghost flex items-center justify-center gap-1 px-3 py-3 text-sm"
-          style={{ opacity: undoCount === 0 ? 0.35 : 1 }}
-        >
-          <UndoIcon size={14} />
-          {t('undo')}
-        </button>
         <button onClick={handleApply} className="btn-action flex-[1.5] px-4 py-3 text-sm">
           {t('cornersOk')}
         </button>
       </div>
     </div>
-  )
-}
-
-export function UndoIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-    </svg>
   )
 }

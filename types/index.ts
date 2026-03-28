@@ -4,6 +4,12 @@ export interface Point {
   y: number
 }
 
+/** 4隅のオフセット（コーナーワープ用） */
+export type CornerOffsets = [Point, Point, Point, Point]
+
+/** アンドゥ履歴の最大件数 */
+export const MAX_UNDO = 50
+
 // OpenCV.jsのグローバル型定義
 declare global {
   interface Window {
