@@ -90,6 +90,8 @@ export default function ImageUpload({
             '0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(180,130,60,0.2) inset, 0 4px 16px rgba(60,36,21,0.1), 0 1px 3px rgba(60,36,21,0.07)',
         }}
       >
+        <div className="menu-stripe mb-3 w-full" />
+
         {loadState === 'error' ? (
           /* Error state with retry */
           <div className="flex flex-col items-center gap-4 px-4 py-4">
@@ -203,22 +205,25 @@ export default function ImageUpload({
             </div>
           </>
         )}
+
+        <div className="menu-stripe mt-3 w-full" />
       </div>
     </div>
   )
 }
 
-function SaveIcon() {
+export function SaveIcon({ size = 18 }: { size?: number }) {
   return (
     <svg
-      width="18"
-      height="18"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
       <polyline points="17 21 17 13 7 13 7 21" />
@@ -238,6 +243,7 @@ function GalleryIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
+      aria-hidden="true"
     >
       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
       <circle cx="8.5" cy="8.5" r="1.5" />

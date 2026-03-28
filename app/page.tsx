@@ -56,6 +56,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="menu-card mt-6 px-5 py-4">
+          <div className="menu-stripe mb-3" />
           <div className="flex flex-col items-center gap-4">
             <a
               href="https://amzn.to/4uWSrNa"
@@ -76,6 +77,7 @@ export default function Home() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="M5.8 11.3 2 22l10.7-3.8" />
                   <path d="M4 3h.01" />
@@ -132,6 +134,7 @@ export default function Home() {
               <span>© kako-jun</span>
             </div>
           </div>
+          <div className="menu-stripe mt-3" />
         </footer>
       </div>
       <PwaInstallPrompt />

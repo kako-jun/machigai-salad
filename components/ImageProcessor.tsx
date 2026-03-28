@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n'
 import { showToast } from './Toast'
 import { addSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
-import ImageUpload from './ImageUpload'
+import ImageUpload, { SaveIcon } from './ImageUpload'
 import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
 import SavesPopup from './SavesPopup'
@@ -193,20 +193,7 @@ export default function ImageProcessor() {
               onClick={handleSave}
               className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
+              <SaveIcon size={16} />
               {t('saveBtn')}
             </button>
             <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
