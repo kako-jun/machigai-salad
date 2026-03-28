@@ -23,11 +23,13 @@ machigai-salad/
 │   ├── ImageUpload.tsx        # 画像アップロード UI
 │   ├── ImageComparison.tsx    # 画像比較 UI
 │   ├── PaperCornersAdjustment.tsx  # 角の調整 UI
-│   └── SavesPopup.tsx         # 保存データ一覧ポップアップ
+│   ├── SavesPopup.tsx         # 保存データ一覧ポップアップ
+│   └── LangToggle.tsx         # JA/EN言語切替トグル
 ├── hooks/                      # カスタムフック
 │   ├── index.ts               # エクスポート
 │   └── useOpenCV.ts           # OpenCV.js管理フック
 ├── lib/                        # ユーティリティライブラリ
+│   ├── i18n.tsx               # 日英i18n（React Context + 辞書）
 │   ├── storage.ts             # LocalStorage保存・復元
 │   └── opencv/                # OpenCV関連
 │       ├── index.ts           # エクスポート
@@ -187,7 +189,8 @@ corrected.delete()
 
 ### Service Worker (`public/sw.js`)
 
-- stale-while-revalidate戦略: キャッシュがあればキャッシュを返しつつ、バックグラウンドで更新
+- network-first戦略: 常にネットワークを優先し、オフライン時のみキャッシュにフォールバック
+- デプロイ後にユーザーが即座に最新版を取得可能
 - 旧バージョンのキャッシュを自動削除
 - `skipWaiting` + `clients.claim` で即座に有効化
 
@@ -205,6 +208,18 @@ corrected.delete()
 - 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize }`
 - 加工済み画像は保存しない（復元時にcornersから再処理）
 - `crypto.randomUUID()` でID生成
+
+## 国際化 (i18n)
+
+### lib/i18n.tsx
+
+- React Context + 辞書ベースの軽量i18n（外部ライブラリ不要）
+- 対応言語: 日本語 (ja) / 英語 (en)
+- 初期値: `localStorage` → `navigator.language` の順で判定
+- 言語選択は `machigai-salad-lang` キーに記憶
+- `html lang` 属性も動的に切替
+- `as const` + `keyof typeof dict` で辞書キーの型安全を確保
+- metadata (OGP, title) はサーバーサイド固定（日本語のみ）
 
 ## デプロイ
 

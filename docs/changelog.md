@@ -71,6 +71,35 @@
 - **リセットボタンのレイアウトシフト修正**
   - 条件付きレンダリング → visibility方式に変更、ボタン出現時の画像ずれを解消
 
+- **日英2言語対応**
+  - ヘッダ右上にJA/ENトグル。ブラウザ言語で初期値自動判定
+  - React Context + 辞書ベースの軽量i18n（lib/i18n.tsx）
+  - 全UIテキストをt()関数経由に置換
+  - 英語も子供向けフレンドリーなトーン
+  - 言語選択はLocalStorageに記憶、html lang属性も動的切替
+
+### 改善 🎨
+
+- **Service Worker をnetwork-first戦略に変更**
+  - デプロイ後にユーザーが即座に最新版を取得可能
+  - オフライン時のみキャッシュにフォールバック
+
+- **画像出力をwebp形式に変更**
+  - toDataURL を PNG → webp/0.85 に変更
+  - LocalStorage保存時の容量を大幅削減
+
+- **アクセシビリティ改善**
+  - SavesPopup: Escapeキーで閉じる、role="dialog"、aria-modal追加
+  - Toast: aria-labelをi18n化
+
+- **OpenCV.js CDNフォールバックを4.x系に統一**
+  - 旧1.2.1フォールバックを廃止（API非互換リスク解消）
+
+- **エラー処理強化**
+  - FileReader.onerror にトースト通知追加
+  - i18nのlocalStorageアクセスをtry-catch保護（Safariプライベート対応）
+  - roi Mat の delete順序修正（ダブルフリー防止）
+
 ## [0.2.0] - 2025-01-XX
 
 ### 追加 ✨
