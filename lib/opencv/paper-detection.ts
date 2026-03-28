@@ -14,13 +14,13 @@ const SENSITIVITY_CONFIGS: Record<
 > = {
   strict: {
     cannyPairs: [
-      [50, 150],
-      [75, 200],
+      [80, 220],
+      [100, 250],
     ],
-    epsilons: [0.02, 0.03],
-    minAreaRatio: 0.1,
-    earlyStopRatio: 0.25,
-    blurSize: 5,
+    epsilons: [0.015, 0.02],
+    minAreaRatio: 0.15,
+    earlyStopRatio: 0.3,
+    blurSize: 3,
   },
   normal: {
     cannyPairs: [
@@ -35,15 +35,15 @@ const SENSITIVITY_CONFIGS: Record<
   },
   loose: {
     cannyPairs: [
-      [15, 60],
-      [30, 100],
-      [50, 150],
-      [75, 200],
+      [5, 20],
+      [10, 40],
+      [20, 70],
+      [40, 120],
     ],
-    epsilons: [0.02, 0.03, 0.04, 0.06],
-    minAreaRatio: 0.02,
-    earlyStopRatio: 0.1,
-    blurSize: 7,
+    epsilons: [0.03, 0.05, 0.08, 0.1],
+    minAreaRatio: 0.01,
+    earlyStopRatio: 0.05,
+    blurSize: 9,
   },
 }
 
