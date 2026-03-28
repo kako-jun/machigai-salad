@@ -24,14 +24,14 @@ const SENSITIVITY_CONFIGS: Record<
   },
   normal: {
     cannyPairs: [
+      [15, 60],
       [30, 100],
       [50, 150],
-      [75, 200],
     ],
-    epsilons: [0.02, 0.03, 0.04],
-    minAreaRatio: 0.05,
-    earlyStopRatio: 0.2,
-    blurSize: 5,
+    epsilons: [0.03, 0.05, 0.08],
+    minAreaRatio: 0.02,
+    earlyStopRatio: 0.1,
+    blurSize: 7,
   },
   loose: {
     cannyPairs: [
