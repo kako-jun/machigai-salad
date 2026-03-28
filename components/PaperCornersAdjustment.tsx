@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point } from '@/types'
+import { useI18n } from '@/lib/i18n'
 
 /** Minimum canvas dimension in CSS pixels — tiny images are scaled up to this */
 const MIN_CANVAS_DIM = 280
@@ -205,6 +206,7 @@ export default function PaperCornersAdjustment({
   onApply,
   onCancel,
 }: PaperCornersAdjustmentProps) {
+  const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const loadedImageRef = useRef<HTMLImageElement | null>(null)
   const dprRef = useRef(1)
@@ -354,16 +356,16 @@ export default function PaperCornersAdjustment({
           border: '1px solid rgba(212,160,16,0.3)',
         }}
       >
-        <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
-          かどの まるを うごかして 紙にあわせてね
+        <p className="whitespace-pre-line text-sm font-medium" style={{ color: 'var(--muted)' }}>
+          {t('cornersInstruction')}
         </p>
         <button
           onClick={handleReset}
           className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-xs"
           style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
-          title="かどの位置をもどす"
+          title={t('cornersResetTitle')}
         >
-          リセット
+          {t('cornersReset')}
         </button>
       </div>
 
@@ -397,10 +399,10 @@ export default function PaperCornersAdjustment({
       {/* Button row */}
       <div className="flex gap-2">
         <button onClick={onCancel} className="btn-ghost flex-1 px-4 py-3 text-sm">
-          やめる
+          {t('cornersCancel')}
         </button>
         <button onClick={handleApply} className="btn-action flex-[1.5] px-4 py-3 text-sm">
-          OK! すすむ
+          {t('cornersOk')}
         </button>
       </div>
     </div>

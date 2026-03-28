@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useI18n } from '@/lib/i18n'
 import { loadAllSaves, deleteSave, formatSaveDate } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
 
@@ -12,6 +13,7 @@ interface SavesPopupProps {
 
 export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
   const [saves, setSaves] = useState<SaveEntry[]>([])
+  const { t } = useI18n()
 
   useEffect(() => {
     if (open) {
@@ -47,7 +49,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
           style={{ borderBottom: '1px solid var(--border-light)' }}
         >
           <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
-            ほぞんしたやつ
+            {t('savesTitle')}
           </span>
           <button
             onClick={onClose}
@@ -60,12 +62,12 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
 
         {/* List */}
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 52px)' }}>
-          <p className="px-4 pt-2 text-xs" style={{ color: 'var(--muted)' }}>
-            さいだい5つまで。いっぱいになると ふるいのから きえるよ
+          <p className="whitespace-pre-line px-4 pt-2 text-xs" style={{ color: 'var(--muted)' }}>
+            {t('savesLimit')}
           </p>
           {saves.length === 0 ? (
             <p className="py-8 text-center text-xs" style={{ color: 'var(--muted)' }}>
-              まだないよ
+              {t('savesEmpty')}
             </p>
           ) : (
             saves.map((entry) => (

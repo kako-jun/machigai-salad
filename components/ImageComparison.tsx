@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 /** Minimum pointer movement (px) to distinguish drag from hold */
 const DRAG_THRESHOLD = 20
@@ -22,6 +23,7 @@ export default function ImageComparison({
   initialOffset,
   onOffsetChange,
 }: ImageComparisonProps) {
+  const { t } = useI18n()
   const [offset, _setOffset] = useState(initialOffset ?? { x: 0, y: 0 })
   const onOffsetChangeRef = useRef(onOffsetChange)
   onOffsetChangeRef.current = onOffsetChange
@@ -127,14 +129,10 @@ export default function ImageComparison({
           className="shrink-0 whitespace-nowrap rounded-full px-3 py-0.5 text-xs font-bold text-white"
           style={{ background: activeColor }}
         >
-          {showingRight ? 'みぎ' : 'ひだり'}
+          {showingRight ? t('right') : t('left')}
         </span>
         <p className="whitespace-nowrap text-xs font-medium" style={{ color: activeColor }}>
-          {isDragging
-            ? 'ずらしちゅう...'
-            : showingRight
-              ? 'はなすと もどるよ'
-              : '長おし→みぎ / ドラッグ→ずらす'}
+          {isDragging ? t('dragging') : showingRight ? t('releaseToReturn') : t('holdInstruction')}
         </p>
       </div>
 
@@ -148,7 +146,7 @@ export default function ImageComparison({
           className="rounded-lg px-3 py-1 text-xs"
           style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
         >
-          位置をリセット
+          {t('resetPosition')}
         </button>
       </div>
 
@@ -176,12 +174,12 @@ export default function ImageComparison({
         }, [handlePointerUp])}
       >
         {/* Right image — always present, behind left */}
-        <img src={rightImage} alt="みぎの絵" draggable={false} style={imgConstraint} />
+        <img src={rightImage} alt={t('right')} draggable={false} style={imgConstraint} />
 
         {/* Left image — overlaid on top, opacity changes with interaction */}
         <img
           src={leftImage}
-          alt="ひだりの絵"
+          alt={t('left')}
           draggable={false}
           style={{
             ...imgConstraint,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { useI18n } from '@/lib/i18n'
 
 type LoadState = 'loading' | 'ready' | 'error'
 
@@ -21,6 +22,7 @@ export default function ImageUpload({
 }: ImageUploadProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
+  const { t } = useI18n()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -101,15 +103,15 @@ export default function ImageUpload({
 
             <div className="text-center">
               <p className="text-sm font-bold" style={{ color: '#8B3E1A' }}>
-                よみこめなかったよ
+                {t('loadFailed')}
               </p>
               <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--muted)' }}>
-                {loadError || 'ネットワーク接続を確認してね'}
+                {loadError || t('checkNetwork')}
               </p>
             </div>
 
             <button onClick={onRetry} className="btn-action px-8 py-3 text-sm">
-              もう1回ためす
+              {t('retryLoad')}
             </button>
           </div>
         ) : (
@@ -138,7 +140,7 @@ export default function ImageUpload({
                 className="text-base font-bold tracking-wide"
                 style={{ color: 'var(--espresso)' }}
               >
-                {cvLoaded ? 'しゃしんを とる' : 'じゅんびちゅう...'}
+                {cvLoaded ? t('takePhoto') : t('preparing')}
               </span>
             </button>
 
@@ -150,7 +152,7 @@ export default function ImageUpload({
               style={{ color: 'var(--muted)' }}
             >
               <GalleryIcon />
-              <span className="text-sm">アルバムから えらぶ</span>
+              <span className="text-sm">{t('pickFromAlbum')}</span>
             </button>
 
             {/* Instruction text styled like menu footnote */}
@@ -161,10 +163,11 @@ export default function ImageUpload({
                 border: '1px solid rgba(212,160,16,0.3)',
               }}
             >
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>
-                間違いさがしの紙を
-                <br />
-                まっすぐ撮ってね
+              <p
+                className="whitespace-pre-line text-sm leading-relaxed"
+                style={{ color: 'var(--muted)' }}
+              >
+                {t('shootStraight')}
               </p>
             </div>
           </>

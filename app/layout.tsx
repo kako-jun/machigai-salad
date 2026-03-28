@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import ToastContainer from '@/components/Toast'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import { I18nProvider } from '@/lib/i18n'
 import './globals.css'
 
 const siteUrl = 'https://machigai-salad.llll-ll.com'
@@ -47,8 +48,10 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="antialiased">
-        {children}
-        <ToastContainer />
+        <I18nProvider>
+          {children}
+          <ToastContainer />
+        </I18nProvider>
         <ServiceWorkerRegister />
       </body>
     </html>

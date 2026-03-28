@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import type { Point } from '@/types'
 import { useOpenCV } from '@/hooks'
+import { useI18n } from '@/lib/i18n'
 import { showToast } from './Toast'
 import { addSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -13,8 +14,6 @@ import SavesPopup from './SavesPopup'
 
 type Phase = 'upload' | 'detecting' | 'adjust' | 'processing' | 'result'
 
-const PHASE_LABELS = ['さつえい', 'かどあわせ', 'くらべる'] as const
-
 const PHASE_STEP: Record<Phase, number> = {
   upload: 1,
   detecting: 1,
@@ -24,6 +23,7 @@ const PHASE_STEP: Record<Phase, number> = {
 }
 
 export default function ImageProcessor() {
+  const { t } = useI18n()
   const [originalImage, setOriginalImage] = useState<string | null>(null)
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null)
   const [leftImage, setLeftImage] = useState<string | null>(null)
@@ -74,7 +74,7 @@ export default function ImageProcessor() {
       setPhase('result')
     } catch (error) {
       console.error('Error processing image with corners:', error)
-      showToast('うまくいかなかったみたい。かどの位置をなおして もう1回ためしてね。', 'error')
+      showToast(t('processError'), 'error')
       setPhase('adjust')
     }
   }
@@ -101,9 +101,9 @@ export default function ImageProcessor() {
     })
     if (result) {
       setSaveCount((c) => c + 1)
-      showToast('ほぞんしたよ', 'info')
+      showToast(t('saved'), 'info')
     } else {
-      showToast('ほぞんできなかった...', 'error')
+      showToast(t('saveFailed'), 'error')
     }
   }
 
@@ -125,7 +125,7 @@ export default function ImageProcessor() {
       setPhase('result')
     } catch (error) {
       console.error('Error restoring save:', error)
-      showToast('ふくげんできなかった...', 'error')
+      showToast(t('restoreFailed'), 'error')
       setPhase('adjust')
     }
   }
@@ -134,7 +134,9 @@ export default function ImageProcessor() {
 
   return (
     <div className="space-y-4">
-      {phase !== 'upload' && <StepIndicator current={currentStep} labels={[...PHASE_LABELS]} />}
+      {phase !== 'upload' && (
+        <StepIndicator current={currentStep} labels={[t('step1'), t('step2'), t('step3')]} />
+      )}
 
       {phase === 'upload' && (
         <>
@@ -148,14 +150,14 @@ export default function ImageProcessor() {
           {saveCount > 0 && (
             <div className="text-center">
               <button onClick={() => setPopupOpen(true)} className="btn-ghost px-5 py-2 text-sm">
-                ほぞんしたやつ ({saveCount})
+                {t('savedList')} ({saveCount})
               </button>
             </div>
           )}
         </>
       )}
 
-      {phase === 'detecting' && <LoadingIndicator message="よみこみちゅう..." />}
+      {phase === 'detecting' && <LoadingIndicator message={t('loading')} />}
 
       {phase === 'adjust' && originalImage && imageSize && (
         <PaperCornersAdjustment
@@ -167,7 +169,7 @@ export default function ImageProcessor() {
         />
       )}
 
-      {phase === 'processing' && <LoadingIndicator message="しょりちゅう..." />}
+      {phase === 'processing' && <LoadingIndicator message={t('processing')} />}
 
       {phase === 'result' && leftImage && rightImage && (
         <>
@@ -181,10 +183,10 @@ export default function ImageProcessor() {
           />
           <div className="flex items-center justify-center gap-4 pt-3">
             <button onClick={handleSave} className="btn-ghost px-5 py-3 text-sm">
-              ほぞん
+              {t('saveBtn')}
             </button>
             <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
-              もう1回やる
+              {t('retryBtn')}
             </button>
           </div>
         </>

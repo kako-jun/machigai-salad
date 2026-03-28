@@ -1,13 +1,19 @@
 'use client'
 
+import { useI18n } from '@/lib/i18n'
 import ImageProcessor from '@/components/ImageProcessor'
+import LangToggle from '@/components/LangToggle'
 
 export default function Home() {
+  const { t } = useI18n()
+
   return (
     <main className="relative z-10 min-h-screen">
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Menu-style header card */}
-        <header className="menu-card mb-6 px-5 py-4">
+        <header className="menu-card relative mb-6 px-5 py-4">
+          <LangToggle />
+
           {/* Decorative top stripe */}
           <div className="menu-stripe mb-3" />
 
@@ -16,7 +22,7 @@ export default function Home() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/static/banner.webp"
-              alt="小エビの間違いサラダ バナー"
+              alt={t('bannerAlt')}
               className="w-full"
               style={{ display: 'block' }}
             />
@@ -31,10 +37,10 @@ export default function Home() {
                 letterSpacing: '0.08em',
               }}
             >
-              小エビの間違いサラダ
+              {t('appTitle')}
             </h1>
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
-              間違いさがし おたすけツール
+              {t('appSubtitle')}
             </p>
           </div>
 
@@ -59,9 +65,9 @@ export default function Home() {
                 boxShadow: '0 1px 0 rgba(255,255,255,0.5) inset, 0 2px 4px rgba(60,36,21,0.1)',
               }}
             >
-              <span className="text-sm font-medium">Amazon で応援する</span>
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                リンク先の商品でなくても、ここから買い物するだけで支援になるよ
+              <span className="text-sm font-medium">{t('amazonSupport')}</span>
+              <span className="whitespace-pre-line text-xs" style={{ color: 'var(--muted)' }}>
+                {t('amazonHint')}
               </span>
             </a>
 
@@ -76,7 +82,7 @@ export default function Home() {
                 className="rounded"
               />
               <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                このアプリを共有
+                {t('shareApp')}
               </span>
             </div>
 
@@ -87,7 +93,7 @@ export default function Home() {
                 rel="noopener noreferrer"
                 className="underline"
               >
-                作者のサイト
+                {t('authorSite')}
               </a>
               <span>·</span>
               <a
