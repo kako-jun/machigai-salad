@@ -60,6 +60,9 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
 
         {/* List */}
         <div className="overflow-y-auto" style={{ maxHeight: 'calc(70vh - 52px)' }}>
+          <p className="px-4 pt-2 text-xs" style={{ color: 'var(--muted)' }}>
+            さいだい5つまで。いっぱいになると ふるいのから きえるよ
+          </p>
           {saves.length === 0 ? (
             <p className="py-8 text-center text-xs" style={{ color: 'var(--muted)' }}>
               まだないよ
