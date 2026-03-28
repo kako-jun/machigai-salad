@@ -245,6 +245,16 @@ body::before {
   animation: spin-smooth 0.8s linear infinite;
 }
 
+/* Landscape-aware image panel margin */
+:root {
+  --panel-margin: 280px;
+}
+@media (orientation: landscape) {
+  :root {
+    --panel-margin: 120px;
+  }
+}
+
 /* Focus ring for keyboard navigation */
 .btn-action:focus-visible,
 .btn-ghost:focus-visible,

@@ -153,22 +153,15 @@ export default function ImageProcessor() {
       )}
 
       {phase === 'upload' && (
-        <>
-          <ImageUpload
-            onImageUpload={handleImageUpload}
-            cvLoaded={cvLoaded}
-            loadState={loadState}
-            loadError={loadError}
-            onRetry={retryLoad}
-          />
-          {saveCount > 0 && (
-            <div className="text-center">
-              <button onClick={() => setPopupOpen(true)} className="btn-ghost px-5 py-2 text-sm">
-                {t('savedList')} ({saveCount})
-              </button>
-            </div>
-          )}
-        </>
+        <ImageUpload
+          onImageUpload={handleImageUpload}
+          cvLoaded={cvLoaded}
+          loadState={loadState}
+          loadError={loadError}
+          onRetry={retryLoad}
+          saveCount={saveCount}
+          onOpenSaves={() => setPopupOpen(true)}
+        />
       )}
 
       {phase === 'detecting' && <LoadingIndicator message={t('loading')} />}

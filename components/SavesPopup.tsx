@@ -119,7 +119,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
                   onClick={(e) => handleDelete(e, entry.id)}
                   className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs"
                   style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
-                  aria-label={t('deleteConfirm')}
+                  aria-label={t('deleteBtn')}
                 >
                   <svg
                     width="16"

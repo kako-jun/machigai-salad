@@ -114,7 +114,7 @@ export default function ImageComparison({
   const imgConstraint: React.CSSProperties = {
     width: '100%',
     height: '100%',
-    maxHeight: 'calc(100dvh - 280px)',
+    maxHeight: 'calc(100dvh - var(--panel-margin))',
     objectFit: 'contain' as const,
   }
 
@@ -137,7 +137,7 @@ export default function ImageComparison({
         </span>
         <p
           className="whitespace-pre-line text-right text-xs font-medium leading-snug"
-          style={{ color: activeColor }}
+          style={{ color: activeColor, minHeight: '2.75em' }}
         >
           {isDragging ? t('dragging') : showingRight ? t('releaseToReturn') : t('holdInstruction')}
         </p>
@@ -166,8 +166,8 @@ export default function ImageComparison({
           boxShadow: `0 4px 16px rgba(60,36,21,0.12)`,
           background: 'var(--parchment)',
           transition: 'border-color 0.2s ease',
-          minHeight: 'min(280px, calc(100dvh - 280px))',
-          maxHeight: 'calc(100dvh - 280px)',
+          minHeight: 'min(280px, calc(100dvh - var(--panel-margin)))',
+          maxHeight: 'calc(100dvh - var(--panel-margin))',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         onPointerDown={handlePointerDown}

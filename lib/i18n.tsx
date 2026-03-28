@@ -81,6 +81,7 @@ const dict = {
   },
   savesEmpty: { ja: 'まだないよ', en: 'Nothing here yet!' },
   deleteConfirm: { ja: 'ほんとうに けす？', en: 'Really delete?' },
+  deleteBtn: { ja: 'けす', en: 'Delete' },
 
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },

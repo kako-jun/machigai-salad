@@ -82,9 +82,9 @@ export default function ToastContainer() {
             pointerEvents: 'auto',
             background:
               toast.type === 'error'
-                ? 'linear-gradient(145deg, #FFF0EC, #FFE4DC)'
-                : 'linear-gradient(145deg, #FFFDF4, #FFF8E7)',
-            border: `1px solid ${toast.type === 'error' ? '#D4885A' : 'var(--border)'}`,
+                ? 'linear-gradient(145deg, var(--error-bg), var(--error-bg-dark))'
+                : 'linear-gradient(145deg, var(--surface), var(--cream))',
+            border: `1px solid ${toast.type === 'error' ? 'var(--error-border)' : 'var(--border)'}`,
             borderRadius: 12,
             padding: '12px 16px',
             boxShadow: '0 4px 16px rgba(60,36,21,0.15), 0 1px 3px rgba(60,36,21,0.1)',
@@ -97,19 +97,49 @@ export default function ToastContainer() {
         >
           <span
             style={{
-              fontSize: 18,
               lineHeight: 1,
               flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            {toast.type === 'error' ? '\u26A0' : '\u2139'}
+            {toast.type === 'error' ? (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--error)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            ) : (
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--olive)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            )}
           </span>
           <p
             style={{
               margin: 0,
               fontSize: 13,
               lineHeight: 1.5,
-              color: toast.type === 'error' ? '#8B3E1A' : 'var(--espresso)',
+              color: toast.type === 'error' ? 'var(--error)' : 'var(--espresso)',
               flex: 1,
             }}
           >

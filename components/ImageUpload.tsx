@@ -12,6 +12,8 @@ interface ImageUploadProps {
   loadState: LoadState
   loadError: string | null
   onRetry: () => void
+  saveCount?: number
+  onOpenSaves?: () => void
 }
 
 export default function ImageUpload({
@@ -20,6 +22,8 @@ export default function ImageUpload({
   loadState,
   loadError,
   onRetry,
+  saveCount,
+  onOpenSaves,
 }: ImageUploadProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -33,6 +37,7 @@ export default function ImageUpload({
 
     if (file.size > MAX_FILE_SIZE) {
       showToast(t('imageTooBig'), 'error')
+      e.target.value = ''
       return
     }
 
@@ -166,6 +171,20 @@ export default function ImageUpload({
               <span className="text-sm">{t('pickFromAlbum')}</span>
             </button>
 
+            {/* Saved items link */}
+            {saveCount != null && saveCount > 0 && onOpenSaves && (
+              <button
+                onClick={onOpenSaves}
+                className="flex items-center gap-1.5 py-2 transition-opacity hover:opacity-70"
+                style={{ color: 'var(--muted)' }}
+              >
+                <SaveIcon />
+                <span className="text-sm">
+                  {t('savedList')} ({saveCount})
+                </span>
+              </button>
+            )}
+
             {/* Instruction text styled like menu footnote */}
             <div
               className="rounded-xl px-4 py-2.5 text-center"
@@ -185,6 +204,25 @@ export default function ImageUpload({
         )}
       </div>
     </div>
+  )
+}
+
+function SaveIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
   )
 }
 

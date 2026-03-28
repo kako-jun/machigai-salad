@@ -11,9 +11,9 @@ export default function Home() {
     <main className="relative z-10 min-h-screen">
       <div className="mx-auto max-w-lg px-4 py-6">
         {/* Menu-style header card */}
-        <header className="menu-card relative mb-6 px-5 py-4">
-          {/* Lang toggle — top-right corner of the card */}
-          <div className="absolute right-2 top-1">
+        <header className="menu-card mb-6 px-5 py-4">
+          {/* Lang toggle — above the stripe, right-aligned */}
+          <div className="mb-1 flex justify-end">
             <LangToggle />
           </div>
 
@@ -89,7 +89,10 @@ export default function Home() {
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--muted)' }}>
+            <div
+              className="flex flex-wrap items-center justify-center gap-3 text-xs"
+              style={{ color: 'var(--muted)' }}
+            >
               <a
                 href="https://llll-ll.com"
                 target="_blank"
