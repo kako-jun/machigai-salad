@@ -145,8 +145,9 @@ export default function ImageProcessor() {
   }
 
   const [sharing, setSharing] = useState(false)
+  const [gifPreview, setGifPreview] = useState<{ url: string; blob: Blob } | null>(null)
 
-  const handleShareResult = async () => {
+  const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
     setSharing(true)
 
@@ -156,8 +157,21 @@ export default function ImageProcessor() {
         warpCorners: currentWarpRef.current,
         centerOffset: currentCenterRef.current,
       })
-      const file = new File([blob], 'machigai-salad.gif', { type: 'image/gif' })
+      const url = URL.createObjectURL(blob)
+      setGifPreview({ url, blob })
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        showToast(t('shareFailed'), 'error')
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
 
+  const handleGifShare = async () => {
+    if (!gifPreview) return
+    try {
+      const file = new File([gifPreview.blob], 'machigai-salad.gif', { type: 'image/gif' })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -165,21 +179,27 @@ export default function ImageProcessor() {
           text: t('shareResultText'),
         })
       } else {
-        // Fallback: download
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'machigai-salad.gif'
-        a.click()
-        URL.revokeObjectURL(url)
+        handleGifDownload()
       }
     } catch (e: unknown) {
-      // Ignore user cancellation, notify on actual errors
       if (e instanceof Error && e.name !== 'AbortError') {
         showToast(t('shareFailed'), 'error')
       }
-    } finally {
-      setSharing(false)
+    }
+  }
+
+  const handleGifDownload = () => {
+    if (!gifPreview) return
+    const a = document.createElement('a')
+    a.href = gifPreview.url
+    a.download = 'machigai-salad.gif'
+    a.click()
+  }
+
+  const handleGifClose = () => {
+    if (gifPreview) {
+      URL.revokeObjectURL(gifPreview.url)
+      setGifPreview(null)
     }
   }
 
@@ -304,7 +324,7 @@ export default function ImageProcessor() {
               {t('saveBtn')}
             </button>
             <button
-              onClick={() => handleShareResult()}
+              onClick={handleCreateGif}
               disabled={sharing}
               className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
             >
@@ -326,6 +346,66 @@ export default function ImageProcessor() {
         }}
         onLoad={handleLoad}
       />
+
+      {/* GIF Preview Modal */}
+      {gifPreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={handleGifClose}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('shareResultTitle')}
+              </span>
+              <button
+                onClick={handleGifClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
+                style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex justify-center p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={gifPreview.url}
+                alt="GIF preview"
+                className="max-h-[50vh] rounded-lg object-contain"
+                style={{ border: '1px solid var(--border-light)' }}
+              />
+            </div>
+            <div
+              className="flex gap-2 px-4 py-3"
+              style={{ borderTop: '1px solid var(--border-light)' }}
+            >
+              <button onClick={handleGifClose} className="btn-ghost flex-1 py-3 text-sm">
+                {t('gifPreviewClose')}
+              </button>
+              <button onClick={handleGifDownload} className="btn-ghost flex-1 py-3 text-sm">
+                {t('gifPreviewDownload')}
+              </button>
+              <button onClick={handleGifShare} className="btn-action flex-1 py-3 text-sm">
+                {t('gifPreviewShare')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

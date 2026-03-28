@@ -54,7 +54,10 @@ const dict = {
   saveFailed: { ja: 'ほぞんできなかった...', en: "Couldn't save..." },
   restoreFailed: { ja: 'ふくげんできなかった...', en: "Couldn't open it..." },
   saveBtn: { ja: 'ほぞん', en: 'Save' },
-  shareResult: { ja: 'アニメーションをシェア', en: 'Share animation' },
+  shareResult: { ja: 'アニメーションをつくる', en: 'Create animation' },
+  gifPreviewShare: { ja: 'シェアする', en: 'Share' },
+  gifPreviewDownload: { ja: 'ほぞんする', en: 'Download' },
+  gifPreviewClose: { ja: 'とじる', en: 'Close' },
   shareResultTitle: { ja: '間違いさがし 比較結果', en: 'Spot the difference — comparison' },
   shareResultText: {
     ja: '「小エビの間違いサラダ」で間違いさがしを比較したよ！',
