@@ -90,11 +90,9 @@ export function generateToggleGif(
     const gw = Math.round(w * scale)
     const gh = Math.round(h * scale)
 
-    // Scale factor for CSS-pixel values (offset, corners, center) → GIF pixels
-    const cssToGif = gw / options.displayWidth
-
-    const ox = options.offset.x * cssToGif
-    const oy = options.offset.y * cssToGif
+    // Scale from CSS display pixels to GIF pixels
+    const sx = gw / options.displayWidth
+    const sy = gh / options.displayHeight
 
     const canvas = document.createElement('canvas')
     canvas.width = gw
@@ -120,20 +118,19 @@ export function generateToggleGif(
           })
 
           // Frame 1: right image + left image with mesh warp
+          // Draw right image as background
           ctx.drawImage(rightImg, 0, 0, gw, gh)
-          drawMeshWarp(ctx, leftImg, gw, gh, {
-            cornerOffsets: options.warpCorners.map((c) => ({
-              x: c.x * cssToGif,
-              y: c.y * cssToGif,
-            })) as unknown as CornerOffsets,
-            centerOffset: {
-              x: options.centerOffset.x * cssToGif,
-              y: options.centerOffset.y * cssToGif,
-            },
-            offset: { x: ox, y: oy },
+          // Draw left image in CSS-pixel coordinate system, scaled to GIF
+          ctx.save()
+          ctx.scale(sx, sy)
+          drawMeshWarp(ctx, leftImg, options.displayWidth, options.displayHeight, {
+            cornerOffsets: options.warpCorners,
+            centerOffset: options.centerOffset,
+            offset: options.offset,
             imgLeft: 0,
             imgTop: 0,
           })
+          ctx.restore()
           gif.addFrame(ctx, { delay, copy: true })
 
           // Frame 2: right image only (what user sees when holding)
