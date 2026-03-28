@@ -16,7 +16,7 @@ interface PaperCornersAdjustmentProps {
   onApply: (corners: Point[]) => void
   onCancel: () => void
   /** 感度を変えて再検出する。結果のcornersまたはnullを返す */
-  onRedetect?: (sensitivity: string) => Promise<Point[] | null>
+  onRedetect?: (sensitivity: 'strict' | 'normal' | 'loose') => Promise<Point[] | null>
 }
 
 function getDefaultCorners(imageSize: { width: number; height: number }): Point[] {
@@ -241,7 +241,7 @@ export default function PaperCornersAdjustment({
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const [scale, setScale] = useState(1)
-  const [sensitivityIndex, setSensitivityIndex] = useState(0)
+  const [sensitivityIndex, setSensitivityIndex] = useState(1) // 初期検出が'normal'(index 1)のため
   const [detecting, setDetecting] = useState(false)
 
   // 画像の読み込みとキャンバスサイズ設定
@@ -404,12 +404,26 @@ export default function PaperCornersAdjustment({
           <button
             onClick={handleRedetect}
             disabled={detecting}
-            className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-xs"
+            className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-center text-xs leading-tight"
             style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
           >
-            {detecting
-              ? '...'
-              : `${t('redetect')}（${SENSITIVITY_LABELS[SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]][lang]}）`}
+            {detecting ? (
+              '...'
+            ) : (
+              <>
+                {t('redetect')}
+                <br />
+                <span style={{ opacity: 0.7 }}>
+                  （
+                  {
+                    SENSITIVITY_LABELS[
+                      SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]
+                    ][lang]
+                  }
+                  ）
+                </span>
+              </>
+            )}
           </button>
         )}
       </div>

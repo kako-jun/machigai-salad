@@ -183,11 +183,7 @@ export default function ImageProcessor() {
           onApply={handleCornersApply}
           onCancel={handleReset}
           onRedetect={async (sensitivity) => {
-            const result = await suggestCorners(
-              originalImage!,
-              sensitivity as 'strict' | 'normal' | 'loose'
-            )
-            return result
+            return await suggestCorners(originalImage!, sensitivity)
           }}
         />
       )}

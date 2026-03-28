@@ -47,12 +47,6 @@ const SENSITIVITY_CONFIGS: Record<
   },
 }
 
-// デフォルト値（後方互換）
-const CANNY_THRESHOLD_PAIRS = SENSITIVITY_CONFIGS.normal.cannyPairs
-const APPROX_EPSILON_VALUES = SENSITIVITY_CONFIGS.normal.epsilons
-const MIN_AREA_RATIO = SENSITIVITY_CONFIGS.normal.minAreaRatio
-const EARLY_STOP_AREA_RATIO = SENSITIVITY_CONFIGS.normal.earlyStopRatio
-
 /**
  * 4つの角を左上、右上、右下、左下の順に並べ替える
  */

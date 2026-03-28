@@ -69,8 +69,6 @@ const dict = {
     ja: 'かどの まるを うごかして\n紙にあわせてね',
     en: 'Move the dots to\nmatch the paper corners!',
   },
-  cornersResetTitle: { ja: 'かどの位置をもどす', en: 'Put corners back' },
-  cornersReset: { ja: 'リセット', en: 'Reset' },
   redetect: { ja: 'もう1回けんしゅつ', en: 'Re-detect' },
   cornersCancel: { ja: 'やめる', en: 'Cancel' },
   cornersOk: { ja: 'OK! すすむ', en: "OK! Let's go" },
