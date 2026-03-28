@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
@@ -141,6 +141,10 @@ export default function ImageProcessor() {
     currentCenterRef.current = undefined
     restoredCenterRef.current = undefined
     currentSaveIdRef.current = null
+    if (gifPreview) {
+      URL.revokeObjectURL(gifPreview.url)
+      setGifPreview(null)
+    }
     setPhase('upload')
   }
 
@@ -196,12 +200,22 @@ export default function ImageProcessor() {
     a.click()
   }
 
-  const handleGifClose = () => {
+  const handleGifClose = useCallback(() => {
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
-  }
+  }, [gifPreview])
+
+  // Escape key to close GIF preview
+  useEffect(() => {
+    if (!gifPreview) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleGifClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [gifPreview, handleGifClose])
 
   const handleSave = () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
