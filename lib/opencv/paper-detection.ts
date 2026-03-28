@@ -35,15 +35,15 @@ const SENSITIVITY_CONFIGS: Record<
   },
   loose: {
     cannyPairs: [
+      [3, 10],
       [5, 20],
       [10, 40],
       [20, 70],
-      [40, 120],
     ],
-    epsilons: [0.03, 0.05, 0.08, 0.1],
-    minAreaRatio: 0.01,
-    earlyStopRatio: 0.05,
-    blurSize: 9,
+    epsilons: [0.05, 0.08, 0.12, 0.15],
+    minAreaRatio: 0.005,
+    earlyStopRatio: 0.03,
+    blurSize: 11,
   },
 }
 
