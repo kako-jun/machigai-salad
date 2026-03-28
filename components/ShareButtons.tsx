@@ -71,22 +71,22 @@ export default function ShareButtons() {
       </span>
       <div className="flex items-center gap-2">
         {/* X (Twitter) */}
-        <button onClick={handleX} style={btnStyle} aria-label="Share on X">
+        <button onClick={handleX} style={btnStyle} aria-label={t('shareOnX')}>
           <XIcon />
         </button>
 
         {/* LINE */}
-        <button onClick={handleLine} style={btnStyle} aria-label="Share on LINE">
+        <button onClick={handleLine} style={btnStyle} aria-label={t('shareOnLine')}>
           <LineIcon />
         </button>
 
         {/* Native share on supported devices, clipboard copy as fallback */}
         {canShare ? (
-          <button onClick={handleNativeShare} style={btnStyle} aria-label="Share">
+          <button onClick={handleNativeShare} style={btnStyle} aria-label={t('shareVia')}>
             <ShareIcon />
           </button>
         ) : (
-          <button onClick={handleCopy} style={btnStyle} aria-label="Copy link">
+          <button onClick={handleCopy} style={btnStyle} aria-label={t('copyLink')}>
             <ClipboardIcon />
           </button>
         )}

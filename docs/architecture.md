@@ -25,6 +25,7 @@ machigai-salad/
 │   ├── PaperCornersAdjustment.tsx  # 角の調整 UI
 │   ├── SavesPopup.tsx         # 保存データ一覧ポップアップ
 │   ├── LangToggle.tsx         # JA/EN言語切替トグル
+│   ├── ShareButtons.tsx        # フッターSNSシェアボタン（X/LINE/Web Share/クリップボード）
 │   ├── PwaInstallPrompt.tsx   # PWAインストールバナー（beforeinstallprompt）
 │   └── VisitorCounter.tsx     # Nostalgicカウンター+ビルド日バージョン表示
 ├── hooks/                      # カスタムフック
@@ -38,7 +39,8 @@ machigai-salad/
 │       ├── paper-detection.ts # 紙の検出ロジック
 │       └── image-transform.ts # 画像変換ロジック
 ├── types/                      # 型定義
-│   └── index.ts               # 共通型定義
+│   ├── index.ts               # 共通型定義（Point, OpenCV）
+│   └── upng-js.d.ts           # upng-js型定義（APNGエンコード）
 ├── docs/                       # ドキュメント
 │   ├── architecture.md        # アーキテクチャ（このファイル）
 │   ├── design.md              # 設計ドキュメント
@@ -170,9 +172,10 @@ export interface Mat {
 
 ## パフォーマンス最適化
 
-1. **OpenCV.jsの遅延ロード**: CDNから動的ロード
-2. **画像処理の非同期化**: Promiseでラップ
-3. **メモリ管理**: Matオブジェクトは必ず`.delete()`
+1. **画像の自動縮小**: カメラ取得後に表示解像度×dpr（上限2400px）にcanvasリサイズ
+2. **OpenCV.jsの遅延ロード**: CDNから動的ロード
+3. **画像処理の非同期化**: Promiseでラップ
+4. **メモリ管理**: Matオブジェクトは必ず`.delete()`
 
 ```typescript
 // Good
@@ -207,7 +210,7 @@ corrected.delete()
 
 - キー: `machigai-salad-saves`（アプリ全体で1つ）
 - 値: `SaveEntry[]` のJSON配列
-- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize }`
+- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners? }`
 - 加工済み画像は保存しない（復元時にcornersから再処理）
 - `crypto.randomUUID()` でID生成
 

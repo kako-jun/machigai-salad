@@ -148,6 +148,41 @@ export default function ImageProcessor() {
     setPhase('upload')
   }
 
+  const [sharing, setSharing] = useState(false)
+
+  const handleShareResult = async () => {
+    if (!leftImage || !rightImage || sharing) return
+    setSharing(true)
+
+    try {
+      const blob = await generateToggleApng(leftImage, rightImage, 1000)
+      const file = new File([blob], 'machigai-salad.png', { type: 'image/png' })
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: t('shareResultTitle'),
+          text: t('shareResultText'),
+        })
+      } else {
+        // Fallback: download
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'machigai-salad.png'
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+    } catch (e: unknown) {
+      // Ignore user cancellation, notify on actual errors
+      if (e instanceof Error && e.name !== 'AbortError') {
+        showToast(t('shareFailed'), 'error')
+      }
+    } finally {
+      setSharing(false)
+    }
+  }
+
   const handleSave = () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
     const result = addSave({
@@ -242,17 +277,29 @@ export default function ImageProcessor() {
             }}
             onBackToAdjust={handleBackToAdjust}
           />
-          <div className="flex items-center justify-center gap-4 pt-1">
-            <button
-              onClick={handleSave}
-              className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
-            >
-              <SaveIcon size={16} />
-              {t('saveBtn')}
-            </button>
-            <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
-              {t('retryBtn')}
-            </button>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={handleSave}
+                className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
+              >
+                <SaveIcon size={16} />
+                {t('saveBtn')}
+              </button>
+              <button
+                onClick={() => handleShareResult()}
+                disabled={sharing}
+                className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
+              >
+                <ShareResultIcon size={16} />
+                {t('shareResult')}
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <button onClick={handleReset} className="btn-ghost px-5 py-2.5 text-xs">
+                {t('retryBtn')}
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -314,6 +361,81 @@ function resizeImage(dataUrl: string, width: number, height: number): Promise<st
     img.onerror = reject
     img.src = dataUrl
   })
+}
+
+/** APNG share image max dimension */
+const APNG_MAX_DIM = 480
+
+/**
+ * Generate an animated PNG (APNG) that toggles between left and right images.
+ * Infinite loop, 1-second interval per frame. Full color (lossless).
+ */
+async function generateToggleApng(
+  leftDataUrl: string,
+  rightDataUrl: string,
+  delay: number
+): Promise<Blob> {
+  const loadImg = (src: string) =>
+    new Promise<HTMLImageElement>((res, rej) => {
+      const img = new Image()
+      img.onload = () => res(img)
+      img.onerror = rej
+      img.src = src
+    })
+
+  const [leftImg, rightImg] = await Promise.all([loadImg(leftDataUrl), loadImg(rightDataUrl)])
+
+  const w = leftImg.width
+  const h = leftImg.height
+  const scale = Math.min(1, APNG_MAX_DIM / Math.max(w, h))
+  const gw = Math.round(w * scale)
+  const gh = Math.round(h * scale)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = gw
+  canvas.height = gh
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas context unavailable')
+
+  // Extract RGBA data for each frame
+  ctx.drawImage(leftImg, 0, 0, gw, gh)
+  const leftData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
+
+  ctx.drawImage(rightImg, 0, 0, gw, gh)
+  const rightData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
+
+  const UPNG = await import('upng-js')
+  const apngBuffer = UPNG.encode(
+    [leftData, rightData],
+    gw,
+    gh,
+    0, // 0 = lossless full color
+    [delay, delay]
+  )
+
+  return new Blob([apngBuffer], { type: 'image/png' })
+}
+
+function ShareResultIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  )
 }
 
 function StepIndicator({ current, labels }: { current: number; labels: string[] }) {

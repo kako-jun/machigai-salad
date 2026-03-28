@@ -54,6 +54,17 @@ const dict = {
   saveFailed: { ja: 'ほぞんできなかった...', en: "Couldn't save..." },
   restoreFailed: { ja: 'ふくげんできなかった...', en: "Couldn't open it..." },
   saveBtn: { ja: 'ほぞん', en: 'Save' },
+  shareResult: { ja: 'シェア', en: 'Share' },
+  shareResultTitle: { ja: '間違いさがし 比較結果', en: 'Spot the difference — comparison' },
+  shareResultText: {
+    ja: '「小エビの間違いサラダ」で間違いさがしを比較したよ！',
+    en: 'I compared a spot-the-difference puzzle with Machigai Salad!',
+  },
+  shareFailed: { ja: 'シェアできなかった...', en: "Couldn't share..." },
+  shareOnX: { ja: 'Xでシェア', en: 'Share on X' },
+  shareOnLine: { ja: 'LINEでシェア', en: 'Share on LINE' },
+  copyLink: { ja: 'リンクをコピー', en: 'Copy link' },
+  shareVia: { ja: 'シェアする', en: 'Share' },
   retryBtn: { ja: 'もう1回やる', en: 'Do it again' },
   savedList: { ja: 'ほぞんしたやつ', en: 'My saves' },
 

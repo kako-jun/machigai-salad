@@ -121,9 +121,18 @@ export default function ImageComparison({
   cornerOffsetsRef.current = cornerOffsets
   const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
 
-  // Undo history: snapshot of {offset, cornerOffsets} before each drag
+  // Undo history: snapshot of {offset, cornerOffsets} before each drag (max 50)
   const undoStackRef = useRef<{ offset: { x: number; y: number }; corners: CornerOffsets }[]>([])
   const [undoCount, setUndoCount] = useState(0) // trigger re-render for button opacity
+  const pushUndo = useCallback(() => {
+    const stack = undoStackRef.current
+    stack.push({
+      offset: { ...offsetRef.current },
+      corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
+    })
+    if (stack.length > 50) stack.splice(0, stack.length - 50)
+    setUndoCount(stack.length)
+  }, [])
 
   // Image panel ref for measuring rendered image rect
   const panelRef = useRef<HTMLDivElement>(null)
@@ -159,12 +168,7 @@ export default function ImageComparison({
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     const cur = offsetRef.current
-    // Save undo snapshot before drag starts
-    undoStackRef.current.push({
-      offset: { ...cur },
-      corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
-    })
-    setUndoCount(undoStackRef.current.length)
+    pushUndo()
     startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
     isDraggingRef.current = false
     isHoldConfirmedRef.current = false
@@ -233,12 +237,7 @@ export default function ImageComparison({
     (e: React.PointerEvent<HTMLDivElement>, index: number) => {
       e.stopPropagation()
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-      // Save undo snapshot before corner drag starts
-      undoStackRef.current.push({
-        offset: { ...offsetRef.current },
-        corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
-      })
-      setUndoCount(undoStackRef.current.length)
+      pushUndo()
       const cur = cornerOffsetsRef.current
       cornerStartRef.current = {
         x: e.clientX,

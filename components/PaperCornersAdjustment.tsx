@@ -241,6 +241,7 @@ export default function PaperCornersAdjustment({
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
   const cornersHistoryRef = useRef<Point[][]>([])
+  const [undoCount, setUndoCount] = useState(0)
   const [scale, setScale] = useState(1)
   const [sensitivityIndex, setSensitivityIndex] = useState(2) // 初期検出がnormal。次クリックでstrict(0)→normal(1)→loose(2)の順
   const [detecting, setDetecting] = useState(false)
@@ -320,7 +321,7 @@ export default function PaperCornersAdjustment({
     const point = getCanvasPoint(e.clientX, e.clientY)
     const index = findCornerAtPoint(point)
     if (index !== null) {
-      cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
+      pushCornersHistory()
       setDraggingIndex(index)
     }
   }
@@ -347,7 +348,7 @@ export default function PaperCornersAdjustment({
     const point = getCanvasPoint(touch.clientX, touch.clientY)
     const index = findCornerAtPoint(point)
     if (index !== null) {
-      cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
+      pushCornersHistory()
       setDraggingIndex(index)
     }
   }
@@ -372,7 +373,7 @@ export default function PaperCornersAdjustment({
 
   const handleRedetect = async () => {
     if (!onRedetect || detecting) return
-    cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
+    pushCornersHistory()
     const nextIndex = (sensitivityIndex + 1) % SENSITIVITY_CYCLE.length
     setSensitivityIndex(nextIndex)
     const sensitivity = SENSITIVITY_CYCLE[nextIndex]
@@ -390,9 +391,19 @@ export default function PaperCornersAdjustment({
     }
   }
 
+  const pushCornersHistory = () => {
+    const stack = cornersHistoryRef.current
+    stack.push(corners.map((c) => ({ ...c })))
+    if (stack.length > 50) stack.splice(0, stack.length - 50)
+    setUndoCount(stack.length)
+  }
+
   const handleUndo = () => {
     const prev = cornersHistoryRef.current.pop()
-    if (prev) setCorners(prev)
+    if (prev) {
+      setCorners(prev)
+      setUndoCount(cornersHistoryRef.current.length)
+    }
   }
 
   const handleApply = () => {
@@ -477,9 +488,9 @@ export default function PaperCornersAdjustment({
         </button>
         <button
           onClick={handleUndo}
-          disabled={cornersHistoryRef.current.length === 0}
+          disabled={undoCount === 0}
           className="btn-ghost flex items-center justify-center gap-1 px-3 py-3 text-sm"
-          style={{ opacity: cornersHistoryRef.current.length === 0 ? 0.35 : 1 }}
+          style={{ opacity: undoCount === 0 ? 0.35 : 1 }}
         >
           <UndoIcon size={14} />
           {t('undo')}
