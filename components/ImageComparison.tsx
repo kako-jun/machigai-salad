@@ -146,21 +146,40 @@ export default function ImageComparison({
         </p>
       </div>
 
-      {/* Back to corner adjustment button */}
-      {onBackToAdjust && (
-        <div
-          className="flex justify-end px-2"
-          style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
+      {/* Scale slider + back to adjust button */}
+      <div
+        className="flex items-center gap-2 px-2"
+        style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
+      >
+        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+          {t('scaleAdjust')}
+        </span>
+        <input
+          type="range"
+          min="0.9"
+          max="1.1"
+          step="0.005"
+          value={scale}
+          onChange={(e) => setScale(parseFloat(e.target.value))}
+          className="flex-1"
+          style={{ accentColor: 'var(--olive)' }}
+        />
+        <span
+          className="text-xs tabular-nums"
+          style={{ color: 'var(--muted)', minWidth: '2.5em', textAlign: 'right' }}
         >
+          {Math.round((scale - 1) * 100)}%
+        </span>
+        {onBackToAdjust && (
           <button
             onClick={onBackToAdjust}
-            className="rounded-lg px-3 py-2 text-xs"
+            className="ml-1 flex-shrink-0 rounded-lg px-3 py-2 text-xs"
             style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
           >
             {t('backToAdjust')}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Image panel — right always behind, left overlaid on top */}
       <div
@@ -201,32 +220,6 @@ export default function ImageComparison({
             transition: 'opacity 0.15s ease',
           }}
         />
-      </div>
-
-      {/* Scale slider */}
-      <div
-        className="flex items-center gap-3 px-2"
-        style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
-      >
-        <span className="text-xs" style={{ color: 'var(--muted)' }}>
-          {t('scaleAdjust')}
-        </span>
-        <input
-          type="range"
-          min="0.9"
-          max="1.1"
-          step="0.005"
-          value={scale}
-          onChange={(e) => setScale(parseFloat(e.target.value))}
-          className="flex-1"
-          style={{ accentColor: 'var(--olive)' }}
-        />
-        <span
-          className="text-xs tabular-nums"
-          style={{ color: 'var(--muted)', minWidth: '3em', textAlign: 'right' }}
-        >
-          {Math.round((scale - 1) * 100)}%
-        </span>
       </div>
     </div>
   )
