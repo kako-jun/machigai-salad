@@ -3,8 +3,8 @@
 /** Maximum image dimension (longest side) in physical pixels */
 const MAX_IMAGE_DIM = 2400
 
-/** APNG share image max dimension */
-const APNG_MAX_DIM = 480
+/** GIF share image max dimension */
+const GIF_MAX_DIM = 480
 
 export function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
@@ -53,10 +53,10 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
 }
 
 /**
- * Generate an animated PNG (APNG) that toggles between left and right images.
- * Infinite loop. Full color (lossless).
+ * Generate an animated GIF that toggles between left and right images.
+ * Infinite loop, Floyd-Steinberg dithering for better quality.
  */
-export async function generateToggleApng(
+export function generateToggleGif(
   leftDataUrl: string,
   rightDataUrl: string,
   delay: number
@@ -69,36 +69,43 @@ export async function generateToggleApng(
       img.src = src
     })
 
-  const [leftImg, rightImg] = await Promise.all([loadImg(leftDataUrl), loadImg(rightDataUrl)])
+  return Promise.all([loadImg(leftDataUrl), loadImg(rightDataUrl)]).then(([leftImg, rightImg]) => {
+    const w = leftImg.width
+    const h = leftImg.height
+    const scale = Math.min(1, GIF_MAX_DIM / Math.max(w, h))
+    const gw = Math.round(w * scale)
+    const gh = Math.round(h * scale)
 
-  const w = leftImg.width
-  const h = leftImg.height
-  const scale = Math.min(1, APNG_MAX_DIM / Math.max(w, h))
-  const gw = Math.round(w * scale)
-  const gh = Math.round(h * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = gw
+    canvas.height = gh
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Canvas context unavailable')
 
-  const canvas = document.createElement('canvas')
-  canvas.width = gw
-  canvas.height = gh
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Canvas context unavailable')
+    return import('gif.js').then(
+      ({ default: GIF }) =>
+        new Promise<Blob>((resolve, reject) => {
+          const gif = new GIF({
+            workers: 2,
+            quality: 1,
+            width: gw,
+            height: gh,
+            workerScript: '/static/gif.worker.js',
+            repeat: 0,
+            dither: 'FloydSteinberg',
+          })
 
-  ctx.drawImage(leftImg, 0, 0, gw, gh)
-  const leftData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
+          ctx.drawImage(leftImg, 0, 0, gw, gh)
+          gif.addFrame(ctx, { delay, copy: true })
 
-  ctx.drawImage(rightImg, 0, 0, gw, gh)
-  const rightData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
+          ctx.drawImage(rightImg, 0, 0, gw, gh)
+          gif.addFrame(ctx, { delay, copy: true })
 
-  const upngModule = await import('upng-js')
-  // CJS/ESM interop: module.exports may be under .default
-  const UPNG = (upngModule as unknown as { default?: typeof upngModule }).default || upngModule
-  const apngBuffer = UPNG.encode(
-    [leftData, rightData],
-    gw,
-    gh,
-    0, // 0 = lossless full color
-    [delay, delay]
-  )
+          gif.on('finished', resolve)
+          gif.render()
 
-  return new Blob([apngBuffer], { type: 'image/png' })
+          setTimeout(() => reject(new Error('GIF generation timed out')), 30000)
+        })
+    )
+  })
 }

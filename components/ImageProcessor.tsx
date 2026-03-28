@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
-import { getImageSize, resizeImage, generateToggleApng } from '@/lib/image-utils'
+import { getImageSize, resizeImage, generateToggleGif } from '@/lib/image-utils'
 import { showToast } from './Toast'
 import { addSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -141,8 +141,8 @@ export default function ImageProcessor() {
     setSharing(true)
 
     try {
-      const blob = await generateToggleApng(leftImage, rightImage, 1000)
-      const file = new File([blob], 'machigai-salad.png', { type: 'image/png' })
+      const blob = await generateToggleGif(leftImage, rightImage, 1000)
+      const file = new File([blob], 'machigai-salad.gif', { type: 'image/gif' })
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
@@ -155,7 +155,7 @@ export default function ImageProcessor() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'machigai-salad.png'
+        a.download = 'machigai-salad.gif'
         a.click()
         URL.revokeObjectURL(url)
       }
