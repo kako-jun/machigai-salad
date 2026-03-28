@@ -245,6 +245,10 @@ export default function PaperCornersAdjustment({
   const effectiveInitialCorners = initialCorners ?? getDefaultCorners(imageSize)
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  /** Offset between the pointer position and the corner center at drag start */
+  const dragOffsetRef = useRef<Point>({ x: 0, y: 0 })
+  /** Previous corner position during drag — for anti-slip on release */
+  const prevDragCornerRef = useRef<Point | null>(null)
   const cornersHistoryRef = useRef<Point[][]>([])
   const [undoCount, setUndoCount] = useState(0)
   const [scale, setScale] = useState(1)
@@ -327,6 +331,8 @@ export default function PaperCornersAdjustment({
     const index = findCornerAtPoint(point)
     if (index !== null) {
       pushCornersHistory()
+      dragOffsetRef.current = { x: point.x - corners[index].x, y: point.y - corners[index].y }
+      prevDragCornerRef.current = null
       setDraggingIndex(index)
     }
   }
@@ -335,15 +341,29 @@ export default function PaperCornersAdjustment({
     if (draggingIndex === null) return
 
     const point = getCanvasPoint(e.clientX, e.clientY)
-    point.x = Math.max(0, Math.min(imageSize.width, point.x))
-    point.y = Math.max(0, Math.min(imageSize.height, point.y))
+    const adjusted = {
+      x: Math.max(0, Math.min(imageSize.width, point.x - dragOffsetRef.current.x)),
+      y: Math.max(0, Math.min(imageSize.height, point.y - dragOffsetRef.current.y)),
+    }
 
+    prevDragCornerRef.current = { ...corners[draggingIndex] }
     const newCorners = [...corners]
-    newCorners[draggingIndex] = point
+    newCorners[draggingIndex] = adjusted
     setCorners(newCorners)
   }
 
   const handleMouseUp = () => {
+    if (draggingIndex !== null && prevDragCornerRef.current) {
+      const curr = corners[draggingIndex]
+      const prev = prevDragCornerRef.current
+      const dist = Math.hypot((curr.x - prev.x) * scale, (curr.y - prev.y) * scale)
+      if (dist < 3) {
+        const newCorners = [...corners]
+        newCorners[draggingIndex] = prev
+        setCorners(newCorners)
+      }
+    }
+    prevDragCornerRef.current = null
     setDraggingIndex(null)
   }
 
@@ -354,6 +374,8 @@ export default function PaperCornersAdjustment({
     const index = findCornerAtPoint(point)
     if (index !== null) {
       pushCornersHistory()
+      dragOffsetRef.current = { x: point.x - corners[index].x, y: point.y - corners[index].y }
+      prevDragCornerRef.current = null
       setDraggingIndex(index)
     }
   }
@@ -364,15 +386,29 @@ export default function PaperCornersAdjustment({
 
     const touch = e.touches[0]
     const point = getCanvasPoint(touch.clientX, touch.clientY)
-    point.x = Math.max(0, Math.min(imageSize.width, point.x))
-    point.y = Math.max(0, Math.min(imageSize.height, point.y))
+    const adjusted = {
+      x: Math.max(0, Math.min(imageSize.width, point.x - dragOffsetRef.current.x)),
+      y: Math.max(0, Math.min(imageSize.height, point.y - dragOffsetRef.current.y)),
+    }
 
+    prevDragCornerRef.current = { ...corners[draggingIndex] }
     const newCorners = [...corners]
-    newCorners[draggingIndex] = point
+    newCorners[draggingIndex] = adjusted
     setCorners(newCorners)
   }
 
   const handleTouchEnd = () => {
+    if (draggingIndex !== null && prevDragCornerRef.current) {
+      const curr = corners[draggingIndex]
+      const prev = prevDragCornerRef.current
+      const dist = Math.hypot((curr.x - prev.x) * scale, (curr.y - prev.y) * scale)
+      if (dist < 3) {
+        const newCorners = [...corners]
+        newCorners[draggingIndex] = prev
+        setCorners(newCorners)
+      }
+    }
+    prevDragCornerRef.current = null
     setDraggingIndex(null)
   }
 

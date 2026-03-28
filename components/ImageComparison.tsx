@@ -115,6 +115,8 @@ export default function ImageComparison({
   const cornerOffsetsRef = useRef(cornerOffsets)
   cornerOffsetsRef.current = cornerOffsets
   const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
+  /** Previous corner offset during drag — for anti-slip on release */
+  const prevCornerOffsetRef = useRef<{ x: number; y: number } | null>(null)
 
   // Undo history: snapshot of {offset, cornerOffsets} before each drag (max 50)
   const undoStackRef = useRef<{ offset: { x: number; y: number }; corners: CornerOffsets }[]>([])
@@ -254,6 +256,7 @@ export default function ImageComparison({
       const idx = draggingCornerRef.current
       if (idx === null || !cornerStartRef.current) return
       e.stopPropagation()
+      prevCornerOffsetRef.current = { ...cornerOffsetsRef.current[idx] }
       const dx = e.clientX - cornerStartRef.current.x
       const dy = e.clientY - cornerStartRef.current.y
       const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
@@ -273,10 +276,22 @@ export default function ImageComparison({
   )
 
   const handleCornerPointerUp = useCallback(() => {
+    const idx = draggingCornerRef.current
+    if (idx !== null && prevCornerOffsetRef.current) {
+      const curr = cornerOffsetsRef.current[idx]
+      const prev = prevCornerOffsetRef.current
+      const dist = Math.hypot(curr.x - prev.x, curr.y - prev.y)
+      if (dist < 3) {
+        const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
+        newOffsets[idx] = prev
+        setCornerOffsets(newOffsets)
+      }
+    }
+    prevCornerOffsetRef.current = null
     cornerStartRef.current = null
     draggingCornerRef.current = null
     setDraggingCorner(null)
-  }, [])
+  }, [setCornerOffsets])
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => e.preventDefault(), [])
 
