@@ -26,7 +26,7 @@ const ZERO_CORNERS: CornerOffsets = [
   { x: 0, y: 0 },
   { x: 0, y: 0 },
   { x: 0, y: 0 },
-]
+] as const as unknown as CornerOffsets
 
 /**
  * Compute CSS matrix3d for projective warp from rectangle to quad.
@@ -115,6 +115,9 @@ export default function ImageComparison({
     onWarpChangeRef.current?.(c)
   }, [])
   const [draggingCorner, setDraggingCorner] = useState<number | null>(null)
+  const draggingCornerRef = useRef<number | null>(null)
+  const cornerOffsetsRef = useRef(cornerOffsets)
+  cornerOffsetsRef.current = cornerOffsets
   const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
 
   // Image panel ref for measuring rendered image rect
@@ -205,30 +208,33 @@ export default function ImageComparison({
     setIsHolding(false)
   }, [])
 
-  // Corner handle pointer handlers
+  // Corner handle pointer handlers (using refs to avoid callback churn during drag)
   const handleCornerPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>, index: number) => {
       e.stopPropagation()
-      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+      const cur = cornerOffsetsRef.current
       cornerStartRef.current = {
         x: e.clientX,
         y: e.clientY,
-        cx: cornerOffsets[index].x,
-        cy: cornerOffsets[index].y,
+        cx: cur[index].x,
+        cy: cur[index].y,
       }
+      draggingCornerRef.current = index
       setDraggingCorner(index)
     },
-    [cornerOffsets]
+    [setCornerOffsets]
   )
 
   const handleCornerPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (draggingCorner === null || !cornerStartRef.current) return
+      const idx = draggingCornerRef.current
+      if (idx === null || !cornerStartRef.current) return
       e.stopPropagation()
       const dx = e.clientX - cornerStartRef.current.x
       const dy = e.clientY - cornerStartRef.current.y
-      const newOffsets = [...cornerOffsets] as unknown as CornerOffsets
-      newOffsets[draggingCorner] = {
+      const newOffsets = [...cornerOffsetsRef.current] as unknown as CornerOffsets
+      newOffsets[idx] = {
         x: Math.max(
           -MAX_CORNER_OFFSET,
           Math.min(MAX_CORNER_OFFSET, cornerStartRef.current.cx + dx)
@@ -240,11 +246,12 @@ export default function ImageComparison({
       }
       setCornerOffsets(newOffsets)
     },
-    [draggingCorner, cornerOffsets]
+    [setCornerOffsets]
   )
 
   const handleCornerPointerUp = useCallback(() => {
     cornerStartRef.current = null
+    draggingCornerRef.current = null
     setDraggingCorner(null)
   }, [])
 
