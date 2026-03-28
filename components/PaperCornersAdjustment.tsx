@@ -411,7 +411,7 @@ export default function PaperCornersAdjustment({
             style={{
               color: 'var(--muted)',
               border: '1px solid var(--border-light)',
-              minWidth: '5.5em',
+              minWidth: '8em',
             }}
           >
             {detecting ? (
