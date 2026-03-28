@@ -250,14 +250,8 @@ export function detectPaperContour(
       5
     )
 
-    // 失敗したら反転画像で再試行（白背景に薄い紙など）
+    // 失敗したらブラーサイズを大きく変えて再試行
     if (!result) {
-      const inverted = new cv.Mat()
-      // 255 - gray で反転（bitwise_not の代替）
-      const ones = new cv.Mat()
-      cv.cvtColor(src, ones, cv.COLOR_RGBA2GRAY)
-      // Canny は勾配ベースなので、反転しても同じ結果になりがち
-      // → 代わりにブラーサイズを大きく変えて再試行
       result = findBestQuad(
         gray,
         cv,
@@ -271,8 +265,6 @@ export function detectPaperContour(
         0.1,
         11
       )
-      inverted.delete()
-      ones.delete()
     }
   } else {
     // loose: 全ての四角形候補を集めて外接矩形を返す

@@ -405,7 +405,11 @@ export default function PaperCornersAdjustment({
             onClick={handleRedetect}
             disabled={detecting}
             className="ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-center text-xs leading-tight"
-            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+            style={{
+              color: 'var(--muted)',
+              border: '1px solid var(--border-light)',
+              minWidth: '5.5em',
+            }}
           >
             {detecting ? (
               '...'
