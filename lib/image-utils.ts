@@ -87,7 +87,9 @@ export async function generateToggleApng(
   ctx.drawImage(rightImg, 0, 0, gw, gh)
   const rightData = ctx.getImageData(0, 0, gw, gh).data.buffer.slice(0)
 
-  const UPNG = await import('upng-js')
+  const upngModule = await import('upng-js')
+  // CJS/ESM interop: module.exports may be under .default
+  const UPNG = (upngModule as unknown as { default?: typeof upngModule }).default || upngModule
   const apngBuffer = UPNG.encode(
     [leftData, rightData],
     gw,

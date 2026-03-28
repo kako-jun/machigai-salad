@@ -263,29 +263,25 @@ export default function ImageProcessor() {
             }}
             onBackToAdjust={handleBackToAdjust}
           />
-          <div className="space-y-2 pt-1">
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={handleSave}
-                className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
-              >
-                <SaveIcon size={16} />
-                {t('saveBtn')}
-              </button>
-              <button
-                onClick={() => handleShareResult()}
-                disabled={sharing}
-                className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
-              >
-                <ShareResultIcon size={16} />
-                {t('shareResult')}
-              </button>
-            </div>
-            <div className="flex justify-center">
-              <button onClick={handleReset} className="btn-ghost px-5 py-2.5 text-xs">
-                {t('retryBtn')}
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <button
+              onClick={handleSave}
+              className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
+            >
+              <SaveIcon size={16} />
+              {t('saveBtn')}
+            </button>
+            <button
+              onClick={() => handleShareResult()}
+              disabled={sharing}
+              className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
+            >
+              <ShareResultIcon size={16} />
+              {t('shareResult')}
+            </button>
+            <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
+              {t('retryBtn')}
+            </button>
           </div>
         </>
       )}

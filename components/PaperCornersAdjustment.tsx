@@ -456,10 +456,27 @@ export default function PaperCornersAdjustment({
         )}
       </div>
 
+      {/* Undo — above the canvas, right-aligned */}
+      <div className="flex justify-end px-2">
+        <button
+          onClick={handleUndo}
+          disabled={undoCount === 0}
+          className="flex items-center gap-1 rounded-lg px-3 py-2 text-xs"
+          style={{
+            color: 'var(--muted)',
+            border: '1px solid var(--border-light)',
+            opacity: undoCount === 0 ? 0.35 : 1,
+          }}
+        >
+          <UndoIcon size={12} />
+          {t('undo')}
+        </button>
+      </div>
+
       {/* Canvas with placemat-style frame */}
       <div className="flex justify-center">
         <div
-          className="relative inline-flex p-1"
+          className="inline-flex p-1"
           style={{
             background: 'linear-gradient(145deg, #FFF8E7, #FDF3D8)',
             border: '2px solid var(--border)',
@@ -480,22 +497,6 @@ export default function PaperCornersAdjustment({
             className="cursor-pointer"
             style={{ touchAction: 'none', borderRadius: 10 }}
           />
-          {/* Undo button — top right of canvas */}
-          <button
-            onClick={handleUndo}
-            disabled={undoCount === 0}
-            className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
-            style={{
-              color: 'var(--muted)',
-              background: 'rgba(255,255,255,0.85)',
-              border: '1px solid var(--border-light)',
-              backdropFilter: 'blur(4px)',
-              opacity: undoCount === 0 ? 0.35 : 1,
-            }}
-          >
-            <UndoIcon size={12} />
-            {t('undo')}
-          </button>
         </div>
       </div>
 

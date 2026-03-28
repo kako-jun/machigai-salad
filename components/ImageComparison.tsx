@@ -347,6 +347,39 @@ export default function ImageComparison({
         </p>
       </div>
 
+      {/* Back to adjust + Undo — above the image panel */}
+      <div
+        className="flex items-center justify-between px-2"
+        style={{
+          visibility: !isDragging && !isHolding && draggingCorner === null ? 'visible' : 'hidden',
+        }}
+      >
+        {onBackToAdjust ? (
+          <button
+            onClick={onBackToAdjust}
+            className="flex-shrink-0 rounded-lg px-3 py-2 text-xs"
+            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+          >
+            {t('backToAdjust')}
+          </button>
+        ) : (
+          <div />
+        )}
+        <button
+          onClick={handleUndo}
+          disabled={undoCount === 0}
+          className="flex flex-shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs"
+          style={{
+            color: 'var(--muted)',
+            border: '1px solid var(--border-light)',
+            opacity: undoCount === 0 ? 0.35 : 1,
+          }}
+        >
+          <UndoIcon size={12} />
+          {t('undo')}
+        </button>
+      </div>
+
       {/* Image panel — right always behind, left overlaid on top */}
       <div
         ref={panelRef}
@@ -393,47 +426,6 @@ export default function ImageComparison({
             transition: 'opacity 0.15s ease',
           }}
         />
-
-        {/* Overlay buttons — back to adjust (left) + undo (right) */}
-        {!isDragging && !isHolding && draggingCorner === null && (
-          <>
-            {onBackToAdjust && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onBackToAdjust()
-                }}
-                className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
-                style={{
-                  color: 'var(--muted)',
-                  background: 'rgba(255,255,255,0.85)',
-                  border: '1px solid var(--border-light)',
-                  backdropFilter: 'blur(4px)',
-                }}
-              >
-                {t('backToAdjust')}
-              </button>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                handleUndo()
-              }}
-              disabled={undoCount === 0}
-              className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs"
-              style={{
-                color: 'var(--muted)',
-                background: 'rgba(255,255,255,0.85)',
-                border: '1px solid var(--border-light)',
-                backdropFilter: 'blur(4px)',
-                opacity: undoCount === 0 ? 0.35 : 1,
-              }}
-            >
-              <UndoIcon size={12} />
-              {t('undo')}
-            </button>
-          </>
-        )}
       </div>
 
       {/* Corner warp handles — outside overflow:hidden panel so they stay visible */}
