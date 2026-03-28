@@ -33,8 +33,23 @@
   - 赤色（`--error`）に変更
 
 - **比較画面ボタンレイアウト改善**
-  - ほぞん+シェアを1行目、「もう1回やる」を2行目に分離
+  - ほぞん・シェア・最初からやり直すを同一行に配置
   - シェアは`btn-action`で目立つスタイル
+
+### 変更 🔧
+
+- **リファクタリング**
+  - `CornerOffsets` 型を `types/index.ts` に共通化（ImageComparison/ImageProcessor/storageの重複解消）
+  - `MAX_UNDO = 50` を共通定数化
+  - `UndoIcon / SaveIcon / ShareResultIcon` を `components/icons.tsx` に分離
+  - `getImageSize / resizeImage / generateToggleApng` を `lib/image-utils.ts` に分離
+  - ImageProcessor.tsx を527行→320行に削減
+
+- **UndoIconをUターン型に変更**
+  - リロードアイコンとの混同を防止
+
+- **upng-js CJS/ESM interop修正**
+  - `default || module` フォールバックでNext.jsの動的importに対応
 
 - **比較画面のコーナーワープ（透視変形）**
   - 左画像の四隅にドラッグ可能なハンドルを追加

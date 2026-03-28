@@ -26,6 +26,7 @@ machigai-salad/
 │   ├── SavesPopup.tsx         # 保存データ一覧ポップアップ
 │   ├── LangToggle.tsx         # JA/EN言語切替トグル
 │   ├── ShareButtons.tsx        # フッターSNSシェアボタン（X/LINE/Web Share/クリップボード）
+│   ├── icons.tsx              # 共有アイコン（UndoIcon, SaveIcon, ShareResultIcon）
 │   ├── PwaInstallPrompt.tsx   # PWAインストールバナー（beforeinstallprompt）
 │   └── VisitorCounter.tsx     # Nostalgicカウンター+ビルド日バージョン表示
 ├── hooks/                      # カスタムフック
@@ -33,13 +34,14 @@ machigai-salad/
 │   └── useOpenCV.ts           # OpenCV.js管理フック
 ├── lib/                        # ユーティリティライブラリ
 │   ├── i18n.tsx               # 日英i18n（React Context + 辞書）
+│   ├── image-utils.ts         # 画像ユーティリティ（リサイズ、APNG生成）
 │   ├── storage.ts             # LocalStorage保存・復元
 │   └── opencv/                # OpenCV関連
 │       ├── index.ts           # エクスポート
 │       ├── paper-detection.ts # 紙の検出ロジック
 │       └── image-transform.ts # 画像変換ロジック
 ├── types/                      # 型定義
-│   ├── index.ts               # 共通型定義（Point, OpenCV）
+│   ├── index.ts               # 共通型定義（Point, CornerOffsets, MAX_UNDO, OpenCV）
 │   └── upng-js.d.ts           # upng-js型定義（APNGエンコード）
 ├── docs/                       # ドキュメント
 │   ├── architecture.md        # アーキテクチャ（このファイル）
