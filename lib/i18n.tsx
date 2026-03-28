@@ -58,7 +58,7 @@ const dict = {
   gifPreviewShare: { ja: 'シェアする', en: 'Share' },
   gifPreviewDownload: { ja: 'ほぞんする', en: 'Download' },
   gifPreviewClose: { ja: 'とじる', en: 'Close' },
-  shareResultTitle: { ja: '間違いさがし 比較結果', en: 'Spot the difference — comparison' },
+  shareResultTitle: { ja: 'クネクネ動いて見えるかな？', en: 'Can you see it wiggling?' },
   shareResultText: {
     ja: '「小エビの間違いサラダ」で間違いさがしを比較したよ！',
     en: 'I compared a spot-the-difference puzzle with Machigai Salad!',
