@@ -152,7 +152,7 @@ export default function ImageComparison({
         className="flex items-center gap-2 px-2"
         style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
       >
-        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+        <span className="flex-shrink-0 text-xs" style={{ color: 'var(--muted)' }}>
           {t('scaleAdjust')}
         </span>
         <input
