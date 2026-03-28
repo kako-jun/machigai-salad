@@ -15,6 +15,7 @@ interface ImageComparisonProps {
   rightImage: string
   initialOffset?: { x: number; y: number }
   onOffsetChange?: (offset: { x: number; y: number }) => void
+  onBackToAdjust?: () => void
 }
 
 export default function ImageComparison({
@@ -22,6 +23,7 @@ export default function ImageComparison({
   rightImage,
   initialOffset,
   onOffsetChange,
+  onBackToAdjust,
 }: ImageComparisonProps) {
   const { t } = useI18n()
   const [offset, _setOffset] = useState(initialOffset ?? { x: 0, y: 0 })
@@ -143,19 +145,21 @@ export default function ImageComparison({
         </p>
       </div>
 
-      {/* Reset button — always reserve space to prevent layout shift */}
-      <div
-        className="flex justify-end px-2"
-        style={{ visibility: hasOffset && !isDragging && !isHolding ? 'visible' : 'hidden' }}
-      >
-        <button
-          onClick={() => setOffset({ x: 0, y: 0 })}
-          className="rounded-lg px-3 py-2 text-xs"
-          style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+      {/* Back to corner adjustment button */}
+      {onBackToAdjust && (
+        <div
+          className="flex justify-end px-2"
+          style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
         >
-          {t('resetPosition')}
-        </button>
-      </div>
+          <button
+            onClick={onBackToAdjust}
+            className="rounded-lg px-3 py-2 text-xs"
+            style={{ color: 'var(--muted)', border: '1px solid var(--border-light)' }}
+          >
+            {t('backToAdjust')}
+          </button>
+        </div>
+      )}
 
       {/* Image panel — right always behind, left overlaid on top */}
       <div

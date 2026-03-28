@@ -93,6 +93,15 @@ export default function ImageProcessor() {
     }
   }
 
+  const handleBackToAdjust = () => {
+    setLeftImage(null)
+    setRightImage(null)
+    currentOffsetRef.current = { x: 0, y: 0 }
+    restoredOffsetRef.current = null
+    setSuggestedCorners(lastCornersRef.current)
+    setPhase('adjust')
+  }
+
   const handleReset = () => {
     setOriginalImage(null)
     setImageSize(null)
@@ -187,6 +196,7 @@ export default function ImageProcessor() {
             onOffsetChange={(o) => {
               currentOffsetRef.current = o
             }}
+            onBackToAdjust={handleBackToAdjust}
           />
           <div className="flex items-center justify-center gap-4 pt-3">
             <button
