@@ -105,9 +105,9 @@ export default function ImageComparison({
   const [scale, setScale] = useState(1.0)
   const hasOffset = offset.x !== 0 || offset.y !== 0
 
-  // Left opacity: normal=1, tap-hold=0 (right shows through), drag/scale-adjusting=0.5
-  const isScaling = scale !== 1.0
-  const leftOpacity = isDragging || isScaling ? 0.5 : isHolding ? 0 : 1
+  // Left opacity: normal=1, tap-hold=0 (right shows through), drag/offset/scale=0.5
+  const hasAdjustment = offset.x !== 0 || offset.y !== 0 || Math.abs(scale - 1) > 0.001
+  const leftOpacity = isDragging || hasAdjustment ? 0.5 : isHolding ? 0 : 1
 
   // Keep in sync with --left-color / --right-color in globals.css
   const leftColor = '#6B7F3E'
