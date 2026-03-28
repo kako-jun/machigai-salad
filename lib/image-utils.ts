@@ -108,6 +108,10 @@ export function generateToggleGif(source: GifSource, delay: number): Promise<Blo
 
           // Frame 1: right image + left canvas (pixel-perfect capture)
           ctx.drawImage(rightImg, 0, 0, gw, gh)
+          // DEBUG: red border to verify this code is running
+          ctx.strokeStyle = 'red'
+          ctx.lineWidth = 4
+          ctx.strokeRect(2, 2, gw - 4, gh - 4)
           // Crop the image area from the comparison canvas (DPR-scaled physical pixels)
           ctx.drawImage(
             leftCanvas,
