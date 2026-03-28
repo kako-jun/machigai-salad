@@ -2,7 +2,8 @@ import type { NextConfig } from 'next'
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
-const BUILD_DATE = new Date().toISOString().split('T')[0]
+// Use JST (UTC+9) for build date to match user's timezone
+const BUILD_DATE = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
 
 // Stamp build date into sw.js cache name (production only to avoid polluting git)
 if (process.env.NODE_ENV === 'production') {
