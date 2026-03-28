@@ -376,17 +376,23 @@ export default function ImageComparison({
             transition: 'opacity 0.15s ease',
           }}
         />
+      </div>
 
-        {/* Corner warp handles */}
-        {cornerPositions &&
-          !isHolding &&
-          cornerPositions.map((pos, i) => (
+      {/* Corner warp handles — outside overflow:hidden panel so they stay visible */}
+      {cornerPositions && !isHolding && (
+        <div className="relative" style={{ height: 0 }}>
+          {cornerPositions.map((pos, i) => (
             <div
               key={i}
               className="absolute"
               style={{
                 left: pos.x + cornerOffsets[i].x + offset.x - CORNER_HIT_RADIUS,
-                top: pos.y + cornerOffsets[i].y + offset.y - CORNER_HIT_RADIUS,
+                top:
+                  pos.y +
+                  cornerOffsets[i].y +
+                  offset.y -
+                  CORNER_HIT_RADIUS -
+                  (panelRef.current?.clientHeight ?? 0),
                 width: CORNER_HIT_RADIUS * 2,
                 height: CORNER_HIT_RADIUS * 2,
                 cursor: 'move',
@@ -397,24 +403,41 @@ export default function ImageComparison({
               onPointerMove={handleCornerPointerMove}
               onPointerUp={handleCornerPointerUp}
             >
+              {/* Glow ring when active */}
+              {draggingCorner === i && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    border: '2.5px solid rgba(245, 197, 24, 0.4)',
+                  }}
+                />
+              )}
+              {/* Handle dot — golden with white border (matches corner adjustment) */}
               <div
                 style={{
                   position: 'absolute',
                   left: '50%',
                   top: '50%',
                   transform: 'translate(-50%, -50%)',
-                  width: draggingCorner === i ? 14 : 10,
-                  height: draggingCorner === i ? 14 : 10,
+                  width: draggingCorner === i ? 20 : 16,
+                  height: draggingCorner === i ? 20 : 16,
                   borderRadius: '50%',
-                  background: draggingCorner === i ? leftColor : 'rgba(107,127,62,0.7)',
-                  border: '2px solid white',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+                  background: draggingCorner === i ? '#D4A010' : '#F5C518',
+                  border: '2.5px solid #ffffff',
+                  boxShadow: '0 2px 6px rgba(60,36,21,0.25)',
                   transition: 'width 0.1s, height 0.1s',
                 }}
               />
             </div>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
