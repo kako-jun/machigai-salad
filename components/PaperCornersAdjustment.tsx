@@ -240,6 +240,7 @@ export default function PaperCornersAdjustment({
   const effectiveInitialCorners = initialCorners ?? getDefaultCorners(imageSize)
   const [corners, setCorners] = useState<Point[]>(effectiveInitialCorners)
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null)
+  const cornersHistoryRef = useRef<Point[][]>([])
   const [scale, setScale] = useState(1)
   const [sensitivityIndex, setSensitivityIndex] = useState(2) // 初期検出がnormal。次クリックでstrict(0)→normal(1)→loose(2)の順
   const [detecting, setDetecting] = useState(false)
@@ -319,6 +320,7 @@ export default function PaperCornersAdjustment({
     const point = getCanvasPoint(e.clientX, e.clientY)
     const index = findCornerAtPoint(point)
     if (index !== null) {
+      cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
       setDraggingIndex(index)
     }
   }
@@ -345,6 +347,7 @@ export default function PaperCornersAdjustment({
     const point = getCanvasPoint(touch.clientX, touch.clientY)
     const index = findCornerAtPoint(point)
     if (index !== null) {
+      cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
       setDraggingIndex(index)
     }
   }
@@ -369,6 +372,7 @@ export default function PaperCornersAdjustment({
 
   const handleRedetect = async () => {
     if (!onRedetect || detecting) return
+    cornersHistoryRef.current.push(corners.map((c) => ({ ...c })))
     const nextIndex = (sensitivityIndex + 1) % SENSITIVITY_CYCLE.length
     setSensitivityIndex(nextIndex)
     const sensitivity = SENSITIVITY_CYCLE[nextIndex]
@@ -384,6 +388,11 @@ export default function PaperCornersAdjustment({
     } finally {
       setDetecting(false)
     }
+  }
+
+  const handleUndo = () => {
+    const prev = cornersHistoryRef.current.pop()
+    if (prev) setCorners(prev)
   }
 
   const handleApply = () => {
@@ -466,10 +475,38 @@ export default function PaperCornersAdjustment({
         <button onClick={onCancel} className="btn-ghost flex-1 px-4 py-3 text-sm">
           {t('cornersCancel')}
         </button>
+        <button
+          onClick={handleUndo}
+          disabled={cornersHistoryRef.current.length === 0}
+          className="btn-ghost flex items-center justify-center gap-1 px-3 py-3 text-sm"
+          style={{ opacity: cornersHistoryRef.current.length === 0 ? 0.35 : 1 }}
+        >
+          <UndoIcon size={14} />
+          {t('undo')}
+        </button>
         <button onClick={handleApply} className="btn-action flex-[1.5] px-4 py-3 text-sm">
           {t('cornersOk')}
         </button>
       </div>
     </div>
+  )
+}
+
+export function UndoIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="1 4 1 10 7 10" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+    </svg>
   )
 }

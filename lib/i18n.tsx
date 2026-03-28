@@ -19,6 +19,11 @@ const dict = {
     en: 'Any purchase through this link\nhelps us out — thanks!',
   },
   shareApp: { ja: 'このアプリを共有', en: 'Share this app' },
+  copied: { ja: 'コピーしたよ', en: 'Copied!' },
+  shareText: {
+    ja: '間違いさがし おたすけツール「小エビの間違いサラダ」',
+    en: 'Machigai Salad — Your spot-the-difference helper!',
+  },
   authorSite: { ja: '作者のサイト', en: "Maker's site" },
 
   // ImageUpload
@@ -70,6 +75,7 @@ const dict = {
     en: 'Move the dots to\nmatch the paper corners!',
   },
   redetect: { ja: 'もう1回けんしゅつ', en: 'Re-detect' },
+  undo: { ja: 'もどす', en: 'Undo' },
   cornersCancel: { ja: 'やめる', en: 'Cancel' },
   cornersOk: { ja: 'OK! すすむ', en: "OK! Let's go" },
 

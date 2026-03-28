@@ -65,7 +65,6 @@ export default function ImageProcessor() {
   const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
   const handleImageUpload = async (imageDataUrl: string) => {
-    setOriginalImage(imageDataUrl)
     setPhase('detecting')
 
     let size: { width: number; height: number }
@@ -83,10 +82,23 @@ export default function ImageProcessor() {
       return
     }
 
+    // Resize large images to save memory and speed up processing
+    let resizedUrl = imageDataUrl
+    try {
+      resizedUrl = await resizeImage(imageDataUrl, size.width, size.height)
+      if (resizedUrl !== imageDataUrl) {
+        const newSize = await getImageSize(resizedUrl)
+        size = newSize
+      }
+    } catch {
+      // Fall through with original image
+    }
+
+    setOriginalImage(resizedUrl)
     setImageSize(size)
 
     try {
-      const suggestion = await suggestCorners(imageDataUrl)
+      const suggestion = await suggestCorners(resizedUrl)
       setSuggestedCorners(suggestion)
     } catch {
       setSuggestedCorners(null)
@@ -261,6 +273,44 @@ function getImageSize(dataUrl: string): Promise<{ width: number; height: number 
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve({ width: img.width, height: img.height })
+    img.onerror = reject
+    img.src = dataUrl
+  })
+}
+
+/** Maximum image dimension (longest side) in physical pixels */
+const MAX_IMAGE_DIM = 2400
+
+/**
+ * Resize an image data URL so its longest side does not exceed maxDim physical pixels.
+ * Uses the display's devicePixelRatio to determine the practical upper bound,
+ * capped at MAX_IMAGE_DIM. Returns the original if already small enough.
+ */
+function resizeImage(dataUrl: string, width: number, height: number): Promise<string> {
+  const screenLong = Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1)
+  const maxDim = Math.min(Math.max(screenLong, 1200), MAX_IMAGE_DIM)
+  const longest = Math.max(width, height)
+
+  if (longest <= maxDim) return Promise.resolve(dataUrl)
+
+  const scale = maxDim / longest
+  const newW = Math.round(width * scale)
+  const newH = Math.round(height * scale)
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = newW
+      canvas.height = newH
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(dataUrl)
+        return
+      }
+      ctx.drawImage(img, 0, 0, newW, newH)
+      resolve(canvas.toDataURL('image/webp', 0.92))
+    }
     img.onerror = reject
     img.src = dataUrl
   })

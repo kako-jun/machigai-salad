@@ -5,6 +5,7 @@ import ImageProcessor from '@/components/ImageProcessor'
 import LangToggle from '@/components/LangToggle'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 import VisitorCounter from '@/components/VisitorCounter'
+import ShareButtons from '@/components/ShareButtons'
 
 export default function Home() {
   const { t } = useI18n()
@@ -74,19 +75,24 @@ export default function Home() {
                   height="16"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="var(--error)"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"
                 >
-                  <path d="M5.8 11.3 2 22l10.7-3.8" />
-                  <path d="M4 3h.01" />
-                  <path d="M22 8h.01" />
-                  <path d="M15 2h.01" />
-                  <path d="M22 20h.01" />
-                  <path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
-                  <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.63-.69 1.08-1.36.98c-.65-.09-1.14-.64-1.14-1.26V12a1 1 0 0 0-1-1h-.38a1.97 1.97 0 0 1-1.79-2.77L9 6.88" />
+                  {/* Cracker cone */}
+                  <path d="M2 22 8.5 11.5 12.5 15.5Z" />
+                  {/* Burst lines */}
+                  <line x1="12" y1="10" x2="15" y2="4" />
+                  <line x1="14" y1="13" x2="20" y2="10" />
+                  <line x1="10" y1="8" x2="8" y2="3" />
+                  {/* Confetti dots */}
+                  <circle cx="18" cy="5" r="1" fill="var(--error)" stroke="none" />
+                  <circle cx="21" cy="12" r="1" fill="var(--error)" stroke="none" />
+                  <circle cx="16" cy="16" r="1" fill="var(--error)" stroke="none" />
+                  <circle cx="6" cy="5" r="0.8" fill="var(--error)" stroke="none" />
+                  <circle cx="20" cy="18" r="0.8" fill="var(--error)" stroke="none" />
                 </svg>
                 {t('amazonSupport')}
               </span>
@@ -95,8 +101,8 @@ export default function Home() {
               </span>
             </a>
 
-            {/* QR Code */}
-            <div className="flex flex-col items-center gap-1.5">
+            {/* QR Code + Share buttons */}
+            <div className="flex flex-col items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/static/qr.webp"
@@ -105,9 +111,7 @@ export default function Home() {
                 height={120}
                 className="rounded"
               />
-              <span className="text-xs" style={{ color: 'var(--muted)' }}>
-                {t('shareApp')}
-              </span>
+              <ShareButtons />
             </div>
 
             <div

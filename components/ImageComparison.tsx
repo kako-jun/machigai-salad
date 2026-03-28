@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { UndoIcon } from './PaperCornersAdjustment'
 
 /** Minimum pointer movement (px) to distinguish drag from hold */
 const DRAG_THRESHOLD = 25
@@ -120,6 +121,10 @@ export default function ImageComparison({
   cornerOffsetsRef.current = cornerOffsets
   const cornerStartRef = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null)
 
+  // Undo history: snapshot of {offset, cornerOffsets} before each drag
+  const undoStackRef = useRef<{ offset: { x: number; y: number }; corners: CornerOffsets }[]>([])
+  const [undoCount, setUndoCount] = useState(0) // trigger re-render for button opacity
+
   // Image panel ref for measuring rendered image rect
   const panelRef = useRef<HTMLDivElement>(null)
   const [imgRect, setImgRect] = useState<{
@@ -154,6 +159,12 @@ export default function ImageComparison({
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     const cur = offsetRef.current
+    // Save undo snapshot before drag starts
+    undoStackRef.current.push({
+      offset: { ...cur },
+      corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
+    })
+    setUndoCount(undoStackRef.current.length)
     startRef.current = { x: e.clientX, y: e.clientY, ox: cur.x, oy: cur.y }
     isDraggingRef.current = false
     isHoldConfirmedRef.current = false
@@ -197,6 +208,15 @@ export default function ImageComparison({
   )
 
   const handlePointerUp = useCallback(() => {
+    // If no actual drag happened, remove the undo snapshot we saved on pointerDown
+    if (!isDraggingRef.current && undoStackRef.current.length > 0) {
+      const snap = undoStackRef.current[undoStackRef.current.length - 1]
+      const cur = offsetRef.current
+      if (snap.offset.x === cur.x && snap.offset.y === cur.y) {
+        undoStackRef.current.pop()
+        setUndoCount(undoStackRef.current.length)
+      }
+    }
     startRef.current = null
     isDraggingRef.current = false
     isHoldConfirmedRef.current = false
@@ -213,6 +233,12 @@ export default function ImageComparison({
     (e: React.PointerEvent<HTMLDivElement>, index: number) => {
       e.stopPropagation()
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+      // Save undo snapshot before corner drag starts
+      undoStackRef.current.push({
+        offset: { ...offsetRef.current },
+        corners: cornerOffsetsRef.current.map((c) => ({ ...c })) as unknown as CornerOffsets,
+      })
+      setUndoCount(undoStackRef.current.length)
       const cur = cornerOffsetsRef.current
       cornerStartRef.current = {
         x: e.clientX,
@@ -254,6 +280,14 @@ export default function ImageComparison({
     draggingCornerRef.current = null
     setDraggingCorner(null)
   }, [])
+
+  const handleUndo = useCallback(() => {
+    const snap = undoStackRef.current.pop()
+    if (!snap) return
+    setOffset(snap.offset)
+    setCornerOffsets(snap.corners)
+    setUndoCount(undoStackRef.current.length)
+  }, [setOffset, setCornerOffsets])
 
   const hasCornerWarp = cornerOffsets.some((c) => c.x !== 0 || c.y !== 0)
 
@@ -319,7 +353,7 @@ export default function ImageComparison({
         </p>
       </div>
 
-      {/* Back to corner adjustment button */}
+      {/* Back to corner adjustment + Undo buttons */}
       <div
         className="flex items-center justify-end gap-2 px-2"
         style={{
@@ -335,6 +369,19 @@ export default function ImageComparison({
             {t('backToAdjust')}
           </button>
         )}
+        <button
+          onClick={handleUndo}
+          disabled={undoCount === 0}
+          className="flex flex-shrink-0 items-center gap-1 rounded-lg px-3 py-2 text-xs"
+          style={{
+            color: 'var(--muted)',
+            border: '1px solid var(--border-light)',
+            opacity: undoCount === 0 ? 0.35 : 1,
+          }}
+        >
+          <UndoIcon size={12} />
+          {t('undo')}
+        </button>
       </div>
 
       {/* Image panel — right always behind, left overlaid on top */}
