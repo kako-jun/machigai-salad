@@ -12,10 +12,23 @@ const HOLD_CONFIRM_MS = 200
 interface ImageComparisonProps {
   leftImage: string
   rightImage: string
+  initialOffset?: { x: number; y: number }
+  onOffsetChange?: (offset: { x: number; y: number }) => void
 }
 
-export default function ImageComparison({ leftImage, rightImage }: ImageComparisonProps) {
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
+export default function ImageComparison({
+  leftImage,
+  rightImage,
+  initialOffset,
+  onOffsetChange,
+}: ImageComparisonProps) {
+  const [offset, _setOffset] = useState(initialOffset ?? { x: 0, y: 0 })
+  const onOffsetChangeRef = useRef(onOffsetChange)
+  onOffsetChangeRef.current = onOffsetChange
+  const setOffset = useCallback((o: { x: number; y: number }) => {
+    _setOffset(o)
+    onOffsetChangeRef.current?.(o)
+  }, [])
   const [isDragging, setIsDragging] = useState(false)
   const [isHolding, setIsHolding] = useState(false)
   const isDraggingRef = useRef(false)
@@ -121,7 +134,7 @@ export default function ImageComparison({ leftImage, rightImage }: ImageComparis
             ? 'ずらしちゅう...'
             : showingRight
               ? 'はなすと もどるよ'
-              : 'タップ→みぎ / ドラッグ→ずらす'}
+              : '長おし→みぎ / ドラッグ→ずらす'}
         </p>
       </div>
 

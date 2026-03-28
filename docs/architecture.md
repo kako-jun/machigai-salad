@@ -22,11 +22,13 @@ machigai-salad/
 │   ├── ImageProcessor.tsx     # 画像処理の統合コンポーネント
 │   ├── ImageUpload.tsx        # 画像アップロード UI
 │   ├── ImageComparison.tsx    # 画像比較 UI
-│   └── PaperCornersAdjustment.tsx  # 角の調整 UI
+│   ├── PaperCornersAdjustment.tsx  # 角の調整 UI
+│   └── SavesPopup.tsx         # 保存データ一覧ポップアップ
 ├── hooks/                      # カスタムフック
 │   ├── index.ts               # エクスポート
 │   └── useOpenCV.ts           # OpenCV.js管理フック
 ├── lib/                        # ユーティリティライブラリ
+│   ├── storage.ts             # LocalStorage保存・復元
 │   └── opencv/                # OpenCV関連
 │       ├── index.ts           # エクスポート
 │       ├── paper-detection.ts # 紙の検出ロジック
@@ -193,6 +195,16 @@ corrected.delete()
 
 - `layout.tsx` で Open Graph / Twitter Card メタタグを設定
 - OGP画像: `public/static/ogp.webp`（1200x630）
+
+## データ永続化
+
+### LocalStorage (`lib/storage.ts`)
+
+- キー: `machigai-salad-saves`（アプリ全体で1つ）
+- 値: `SaveEntry[]` のJSON配列
+- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize }`
+- 加工済み画像は保存しない（復元時にcornersから再処理）
+- `crypto.randomUUID()` でID生成
 
 ## デプロイ
 

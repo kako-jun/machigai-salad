@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import type { Point } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { showToast } from './Toast'
+import { addSave, loadAllSaves } from '@/lib/storage'
+import type { SaveEntry } from '@/lib/storage'
 import ImageUpload from './ImageUpload'
 import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
+import SavesPopup from './SavesPopup'
 
 type Phase = 'upload' | 'detecting' | 'adjust' | 'processing' | 'result'
 
@@ -27,6 +30,19 @@ export default function ImageProcessor() {
   const [rightImage, setRightImage] = useState<string | null>(null)
   const [suggestedCorners, setSuggestedCorners] = useState<Point[] | null>(null)
   const [phase, setPhase] = useState<Phase>('upload')
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [saveCount, setSaveCount] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    try {
+      return loadAllSaves().length
+    } catch {
+      return 0
+    }
+  })
+
+  const lastCornersRef = useRef<Point[] | null>(null)
+  const currentOffsetRef = useRef({ x: 0, y: 0 })
+  const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
 
   const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
 
@@ -48,6 +64,7 @@ export default function ImageProcessor() {
   }
 
   const handleCornersApply = async (adjustedCorners: Point[]) => {
+    lastCornersRef.current = adjustedCorners
     setPhase('processing')
 
     try {
@@ -68,7 +85,49 @@ export default function ImageProcessor() {
     setLeftImage(null)
     setRightImage(null)
     setSuggestedCorners(null)
+    lastCornersRef.current = null
+    currentOffsetRef.current = { x: 0, y: 0 }
+    restoredOffsetRef.current = null
     setPhase('upload')
+  }
+
+  const handleSave = () => {
+    if (!originalImage || !imageSize || !lastCornersRef.current) return
+    const result = addSave({
+      originalImage,
+      corners: lastCornersRef.current,
+      offset: currentOffsetRef.current,
+      imageSize,
+    })
+    if (result) {
+      setSaveCount((c) => c + 1)
+      showToast('ほぞんしたよ', 'info')
+    } else {
+      showToast('ほぞんできなかった...', 'error')
+    }
+  }
+
+  const handleLoad = async (entry: SaveEntry) => {
+    setPopupOpen(false)
+
+    setOriginalImage(entry.originalImage)
+    setImageSize(entry.imageSize)
+    setSuggestedCorners(entry.corners)
+    lastCornersRef.current = entry.corners
+    restoredOffsetRef.current = entry.offset
+    currentOffsetRef.current = entry.offset
+    setPhase('processing')
+
+    try {
+      const { leftImage, rightImage } = await processImage(entry.originalImage, entry.corners)
+      setLeftImage(leftImage)
+      setRightImage(rightImage)
+      setPhase('result')
+    } catch (error) {
+      console.error('Error restoring save:', error)
+      showToast('ふくげんできなかった...', 'error')
+      setPhase('adjust')
+    }
   }
 
   const currentStep = PHASE_STEP[phase]
@@ -78,13 +137,22 @@ export default function ImageProcessor() {
       {phase !== 'upload' && <StepIndicator current={currentStep} labels={[...PHASE_LABELS]} />}
 
       {phase === 'upload' && (
-        <ImageUpload
-          onImageUpload={handleImageUpload}
-          cvLoaded={cvLoaded}
-          loadState={loadState}
-          loadError={loadError}
-          onRetry={retryLoad}
-        />
+        <>
+          <ImageUpload
+            onImageUpload={handleImageUpload}
+            cvLoaded={cvLoaded}
+            loadState={loadState}
+            loadError={loadError}
+            onRetry={retryLoad}
+          />
+          {saveCount > 0 && (
+            <div className="text-center">
+              <button onClick={() => setPopupOpen(true)} className="btn-ghost px-5 py-2 text-sm">
+                ほぞんしたやつ ({saveCount})
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {phase === 'detecting' && <LoadingIndicator message="よみこみちゅう..." />}
@@ -103,10 +171,33 @@ export default function ImageProcessor() {
 
       {phase === 'result' && leftImage && rightImage && (
         <>
-          <ImageComparison leftImage={leftImage} rightImage={rightImage} />
-          <ResetButton onClick={handleReset} />
+          <ImageComparison
+            leftImage={leftImage}
+            rightImage={rightImage}
+            initialOffset={restoredOffsetRef.current ?? undefined}
+            onOffsetChange={(o) => {
+              currentOffsetRef.current = o
+            }}
+          />
+          <div className="flex items-center justify-center gap-4 pt-3">
+            <button onClick={handleSave} className="btn-ghost px-5 py-3 text-sm">
+              ほぞん
+            </button>
+            <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
+              もう1回やる
+            </button>
+          </div>
         </>
       )}
+
+      <SavesPopup
+        open={popupOpen}
+        onClose={() => {
+          setPopupOpen(false)
+          setSaveCount(loadAllSaves().length)
+        }}
+        onLoad={handleLoad}
+      />
     </div>
   )
 }
@@ -204,16 +295,6 @@ function LoadingIndicator({ message }: { message: string }) {
       <p className="text-sm font-medium" style={{ color: 'var(--muted)' }}>
         {message}
       </p>
-    </div>
-  )
-}
-
-function ResetButton({ onClick }: { onClick: () => void }) {
-  return (
-    <div className="pt-3 text-center">
-      <button onClick={onClick} className="btn-ghost px-7 py-3 text-sm">
-        もう1回やる
-      </button>
     </div>
   )
 }
