@@ -56,9 +56,9 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
 }
 
 interface GifOptions {
-  offset?: { x: number; y: number }
-  warpCorners?: CornerOffsets
-  centerOffset?: { x: number; y: number }
+  offset: { x: number; y: number }
+  warpCorners: CornerOffsets
+  centerOffset: { x: number; y: number }
 }
 
 /**
@@ -70,7 +70,7 @@ export function generateToggleGif(
   leftDataUrl: string,
   rightDataUrl: string,
   delay: number,
-  options?: GifOptions
+  options: GifOptions
 ): Promise<Blob> {
   const loadImg = (src: string) =>
     new Promise<HTMLImageElement>((res, rej) => {
@@ -87,8 +87,8 @@ export function generateToggleGif(
     const gw = Math.round(w * scale)
     const gh = Math.round(h * scale)
 
-    const ox = (options?.offset?.x ?? 0) * scale
-    const oy = (options?.offset?.y ?? 0) * scale
+    const ox = options.offset.x * scale
+    const oy = options.offset.y * scale
 
     const canvas = document.createElement('canvas')
     canvas.width = gw
@@ -115,23 +115,15 @@ export function generateToggleGif(
 
           // Frame 1: right image + left image with mesh warp
           ctx.drawImage(rightImg, 0, 0, gw, gh)
-          const warpCorners = options?.warpCorners
-          const centerOff = options?.centerOffset
           drawMeshWarp(ctx, leftImg, gw, gh, {
-            cornerOffsets: warpCorners
-              ? (warpCorners.map((c) => ({
-                  x: c.x * scale,
-                  y: c.y * scale,
-                })) as unknown as CornerOffsets)
-              : ([
-                  { x: 0, y: 0 },
-                  { x: 0, y: 0 },
-                  { x: 0, y: 0 },
-                  { x: 0, y: 0 },
-                ] as CornerOffsets),
-            centerOffset: centerOff
-              ? { x: centerOff.x * scale, y: centerOff.y * scale }
-              : { x: 0, y: 0 },
+            cornerOffsets: options.warpCorners.map((c) => ({
+              x: c.x * scale,
+              y: c.y * scale,
+            })) as unknown as CornerOffsets,
+            centerOffset: {
+              x: options.centerOffset.x * scale,
+              y: options.centerOffset.y * scale,
+            },
             offset: { x: ox, y: oy },
             imgLeft: 0,
             imgTop: 0,

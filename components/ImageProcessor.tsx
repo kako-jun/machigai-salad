@@ -8,7 +8,7 @@ import { getImageSize, resizeImage, generateToggleGif } from '@/lib/image-utils'
 import { showToast } from './Toast'
 import { addSave, updateSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
-import { SaveIcon, ShareResultIcon } from './icons'
+import { SaveIcon, ShareResultIcon, DownloadIcon } from './icons'
 import ImageUpload from './ImageUpload'
 import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
@@ -45,10 +45,16 @@ export default function ImageProcessor() {
   const lastCornersRef = useRef<Point[] | null>(null)
   const currentOffsetRef = useRef({ x: 0, y: 0 })
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
-  const currentWarpRef = useRef<CornerOffsets | undefined>(undefined)
-  const restoredWarpRef = useRef<CornerOffsets | undefined>(undefined)
-  const currentCenterRef = useRef<Point | undefined>(undefined)
-  const restoredCenterRef = useRef<Point | undefined>(undefined)
+  const ZERO_CORNERS: CornerOffsets = [
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+    { x: 0, y: 0 },
+  ]
+  const currentWarpRef = useRef<CornerOffsets>(ZERO_CORNERS)
+  const restoredWarpRef = useRef<CornerOffsets | null>(null)
+  const currentCenterRef = useRef<Point>({ x: 0, y: 0 })
+  const restoredCenterRef = useRef<Point | null>(null)
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
@@ -119,10 +125,10 @@ export default function ImageProcessor() {
     setRightImage(null)
     currentOffsetRef.current = { x: 0, y: 0 }
     restoredOffsetRef.current = null
-    currentWarpRef.current = undefined
-    restoredWarpRef.current = undefined
-    currentCenterRef.current = undefined
-    restoredCenterRef.current = undefined
+    currentWarpRef.current = ZERO_CORNERS
+    restoredWarpRef.current = null
+    currentCenterRef.current = { x: 0, y: 0 }
+    restoredCenterRef.current = null
     setSuggestedCorners(lastCornersRef.current)
     setPhase('adjust')
   }
@@ -136,10 +142,10 @@ export default function ImageProcessor() {
     lastCornersRef.current = null
     currentOffsetRef.current = { x: 0, y: 0 }
     restoredOffsetRef.current = null
-    currentWarpRef.current = undefined
-    restoredWarpRef.current = undefined
-    currentCenterRef.current = undefined
-    restoredCenterRef.current = undefined
+    currentWarpRef.current = ZERO_CORNERS
+    restoredWarpRef.current = null
+    currentCenterRef.current = { x: 0, y: 0 }
+    restoredCenterRef.current = null
     currentSaveIdRef.current = null
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
@@ -224,13 +230,8 @@ export default function ImageProcessor() {
       corners: lastCornersRef.current,
       offset: currentOffsetRef.current,
       imageSize,
-      warpCorners: currentWarpRef.current ?? [
-        { x: 0, y: 0 },
-        { x: 0, y: 0 },
-        { x: 0, y: 0 },
-        { x: 0, y: 0 },
-      ],
-      centerOffset: currentCenterRef.current ?? { x: 0, y: 0 },
+      warpCorners: currentWarpRef.current,
+      centerOffset: currentCenterRef.current,
     }
     // Overwrite existing entry for the same image, or create new
     const existing = currentSaveIdRef.current
@@ -319,11 +320,11 @@ export default function ImageProcessor() {
             onOffsetChange={(o) => {
               currentOffsetRef.current = o
             }}
-            initialWarpCorners={restoredWarpRef.current}
+            initialWarpCorners={restoredWarpRef.current ?? undefined}
             onWarpChange={(w) => {
               currentWarpRef.current = w
             }}
-            initialCenterOffset={restoredCenterRef.current}
+            initialCenterOffset={restoredCenterRef.current ?? undefined}
             onCenterChange={(c) => {
               currentCenterRef.current = c
             }}
@@ -407,13 +408,18 @@ export default function ImageProcessor() {
               className="flex gap-2 px-4 py-3"
               style={{ borderTop: '1px solid var(--border-light)' }}
             >
-              <button onClick={handleGifClose} className="btn-ghost flex-1 py-3 text-sm">
-                {t('gifPreviewClose')}
-              </button>
-              <button onClick={handleGifDownload} className="btn-ghost flex-1 py-3 text-sm">
+              <button
+                onClick={handleGifDownload}
+                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                <DownloadIcon size={16} />
                 {t('gifPreviewDownload')}
               </button>
-              <button onClick={handleGifShare} className="btn-action flex-1 py-3 text-sm">
+              <button
+                onClick={handleGifShare}
+                className="btn-action flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                <ShareResultIcon size={16} />
                 {t('gifPreviewShare')}
               </button>
             </div>
