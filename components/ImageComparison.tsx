@@ -102,6 +102,7 @@ export default function ImageComparison({
     setIsHolding(false)
   }, [])
 
+  const [scale, setScale] = useState(1.0)
   const hasOffset = offset.x !== 0 || offset.y !== 0
 
   // Left opacity: normal=1, tap-hold=0 (right shows through), drag=0.5 (both visible)
@@ -196,10 +197,36 @@ export default function ImageComparison({
             ...imgConstraint,
             position: 'absolute',
             opacity: leftOpacity,
-            transform: `translate(${offset.x}px, ${offset.y}px)`,
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
             transition: 'opacity 0.15s ease',
           }}
         />
+      </div>
+
+      {/* Scale slider */}
+      <div
+        className="flex items-center gap-3 px-2"
+        style={{ visibility: !isDragging && !isHolding ? 'visible' : 'hidden' }}
+      >
+        <span className="text-xs" style={{ color: 'var(--muted)' }}>
+          {t('scaleAdjust')}
+        </span>
+        <input
+          type="range"
+          min="0.9"
+          max="1.1"
+          step="0.005"
+          value={scale}
+          onChange={(e) => setScale(parseFloat(e.target.value))}
+          className="flex-1"
+          style={{ accentColor: 'var(--olive)' }}
+        />
+        <span
+          className="text-xs tabular-nums"
+          style={{ color: 'var(--muted)', minWidth: '3em', textAlign: 'right' }}
+        >
+          {Math.round((scale - 1) * 100)}%
+        </span>
       </div>
     </div>
   )

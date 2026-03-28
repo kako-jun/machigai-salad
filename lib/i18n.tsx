@@ -62,6 +62,7 @@ const dict = {
     en: 'Hold → see right\nSlide → adjust position',
   },
   backToAdjust: { ja: 'かどの調整にもどる', en: 'Back to corners' },
+  scaleAdjust: { ja: 'おおきさ', en: 'Size' },
 
   // PaperCornersAdjustment
   cornersInstruction: {
