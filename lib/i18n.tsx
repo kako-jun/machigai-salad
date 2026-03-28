@@ -8,7 +8,7 @@ export type Lang = 'ja' | 'en'
 
 const dict = {
   // page.tsx — header
-  appTitle: { ja: '小エビの間違いサラダ', en: 'Spot the Difference Salad' },
+  appTitle: { ja: '小エビの間違いサラダ', en: 'Machigai Salad' },
   appSubtitle: { ja: '間違いさがし おたすけツール', en: 'Your spot-the-difference helper!' },
   bannerAlt: { ja: '小エビの間違いサラダ バナー', en: 'Spot the Difference Salad banner' },
 
