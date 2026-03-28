@@ -117,28 +117,25 @@ export function generateToggleGif(
           ctx.drawImage(rightImg, 0, 0, gw, gh)
           const warpCorners = options?.warpCorners
           const centerOff = options?.centerOffset
-          const hasWarp =
-            warpCorners?.some((c) => c.x !== 0 || c.y !== 0) ||
-            (centerOff && (centerOff.x !== 0 || centerOff.y !== 0))
-          if (hasWarp && warpCorners) {
-            drawMeshWarp(ctx, leftImg, gw, gh, {
-              cornerOffsets: warpCorners.map((c) => ({
-                x: c.x * scale,
-                y: c.y * scale,
-              })) as unknown as CornerOffsets,
-              centerOffset: centerOff
-                ? { x: centerOff.x * scale, y: centerOff.y * scale }
-                : { x: 0, y: 0 },
-              offset: { x: ox, y: oy },
-              imgLeft: 0,
-              imgTop: 0,
-            })
-          } else {
-            ctx.save()
-            ctx.translate(ox, oy)
-            ctx.drawImage(leftImg, 0, 0, gw, gh)
-            ctx.restore()
-          }
+          drawMeshWarp(ctx, leftImg, gw, gh, {
+            cornerOffsets: warpCorners
+              ? (warpCorners.map((c) => ({
+                  x: c.x * scale,
+                  y: c.y * scale,
+                })) as unknown as CornerOffsets)
+              : ([
+                  { x: 0, y: 0 },
+                  { x: 0, y: 0 },
+                  { x: 0, y: 0 },
+                  { x: 0, y: 0 },
+                ] as CornerOffsets),
+            centerOffset: centerOff
+              ? { x: centerOff.x * scale, y: centerOff.y * scale }
+              : { x: 0, y: 0 },
+            offset: { x: ox, y: oy },
+            imgLeft: 0,
+            imgTop: 0,
+          })
           gif.addFrame(ctx, { delay, copy: true })
 
           // Frame 2: right image only (what user sees when holding)
