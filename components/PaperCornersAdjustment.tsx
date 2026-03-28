@@ -377,6 +377,9 @@ export default function PaperCornersAdjustment({
       const result = await onRedetect(sensitivity)
       if (result) {
         setCorners(result)
+      } else {
+        // 検出失敗 → デフォルト矩形にフォールバック
+        setCorners(getDefaultCorners(imageSize))
       }
     } finally {
       setDetecting(false)
