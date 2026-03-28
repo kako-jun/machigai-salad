@@ -62,9 +62,10 @@ export default function Home() {
               target="_blank"
               rel="noopener noreferrer"
               className="btn-ghost flex w-full flex-col items-center gap-1 px-5 py-3 text-center"
-              style={{ color: 'var(--espresso-light)' }}
             >
-              <span className="text-sm font-medium">{t('amazonSupport')}</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--espresso-light)' }}>
+                {t('amazonSupport')}
+              </span>
               <span className="whitespace-pre-line text-xs" style={{ color: 'var(--muted)' }}>
                 {t('amazonHint')}
               </span>

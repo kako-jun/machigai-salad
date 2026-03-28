@@ -24,7 +24,8 @@ machigai-salad/
 │   ├── ImageComparison.tsx    # 画像比較 UI
 │   ├── PaperCornersAdjustment.tsx  # 角の調整 UI
 │   ├── SavesPopup.tsx         # 保存データ一覧ポップアップ
-│   └── LangToggle.tsx         # JA/EN言語切替トグル
+│   ├── LangToggle.tsx         # JA/EN言語切替トグル
+│   └── PwaInstallPrompt.tsx   # PWAインストールバナー（beforeinstallprompt）
 ├── hooks/                      # カスタムフック
 │   ├── index.ts               # エクスポート
 │   └── useOpenCV.ts           # OpenCV.js管理フック

@@ -43,10 +43,11 @@
 - `useCallback`適用（getCanvasPoint, findCornerAtPoint）
 
 - **PWA化**
-  - `manifest.webmanifest` + Service Worker（stale-while-revalidate戦略）
+  - `manifest.webmanifest` + Service Worker（network-first戦略）
   - `display: standalone`、テーマカラー `#FEF6DC`（アイコン背景色と統一）
   - OGPメタタグ（Open Graph + Twitter Card）
   - `ServiceWorkerRegister`コンポーネントで自動登録
+  - `PwaInstallPrompt`コンポーネント追加（beforeinstallprompt + appinstalled対応、sessionStorage記憶）
 
 - **画像アセット全7点配置**
   - バナー（800px幅）、OGP（1200x630）、PWAアイコン（192/512）、apple-touch-icon（180）、favicon（32）、QRコード（240、エスプレッソ茶に着色）
