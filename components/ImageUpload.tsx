@@ -82,7 +82,7 @@ export default function ImageUpload({
 
       {/* Outer placemat panel */}
       <div
-        className="flex w-full flex-col items-center gap-5 rounded-2xl px-8 py-4"
+        className="flex w-full flex-col items-center gap-5 rounded-2xl px-5 py-4"
         style={{
           background: 'linear-gradient(160deg, #FFFDF4 0%, #FFF8E7 50%, #FDF3D8 100%)',
           border: '2px solid var(--border)',

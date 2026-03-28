@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n'
 import ImageProcessor from '@/components/ImageProcessor'
 import LangToggle from '@/components/LangToggle'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
+import VisitorCounter from '@/components/VisitorCounter'
 
 export default function Home() {
   const { t } = useI18n()
@@ -135,6 +136,7 @@ export default function Home() {
             </div>
           </div>
           <div className="menu-stripe mt-3" />
+          <VisitorCounter />
         </footer>
       </div>
       <PwaInstallPrompt />
