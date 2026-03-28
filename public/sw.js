@@ -1,4 +1,4 @@
-const CACHE_NAME = 'machigai-salad-v2'
+const CACHE_NAME = 'machigai-salad-v3'
 
 const PRECACHE_URLS = ['/', '/manifest.webmanifest']
 

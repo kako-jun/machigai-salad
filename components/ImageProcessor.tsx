@@ -141,7 +141,10 @@ export default function ImageProcessor() {
     setSharing(true)
 
     try {
-      const blob = await generateToggleGif(leftImage, rightImage, 1000)
+      const blob = await generateToggleGif(leftImage, rightImage, 1000, {
+        offset: currentOffsetRef.current,
+        warpCorners: currentWarpRef.current,
+      })
       const file = new File([blob], 'machigai-salad.gif', { type: 'image/gif' })
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
