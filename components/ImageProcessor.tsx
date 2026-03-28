@@ -201,7 +201,7 @@ export default function ImageProcessor() {
             }}
             onBackToAdjust={handleBackToAdjust}
           />
-          <div className="flex items-center justify-center gap-4 pt-3">
+          <div className="flex items-center justify-center gap-4 pt-1">
             <button
               onClick={handleSave}
               className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
