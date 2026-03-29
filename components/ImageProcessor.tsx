@@ -376,7 +376,7 @@ export default function ImageProcessor() {
               ) : (
                 <SaveIcon size={16} />
               )}
-              {saveSuccess ? t('saved') : t('saveBtn')}
+              {t('saveBtn')}
             </button>
             <button
               onClick={handleCreateGif}
