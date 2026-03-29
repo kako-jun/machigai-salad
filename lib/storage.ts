@@ -79,7 +79,8 @@ export function updateSave(id: string, data: Omit<SaveEntry, 'id' | 'savedAt'>):
     const idx = saves.findIndex((s) => s.id === id)
     if (idx === -1) return null
     const updated: SaveEntry = { ...data, id, savedAt: new Date().toISOString() }
-    saves[idx] = updated
+    saves.splice(idx, 1)
+    saves.unshift(updated)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saves))
     return updated
   } catch {
