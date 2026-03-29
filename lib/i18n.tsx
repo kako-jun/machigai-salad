@@ -50,7 +50,6 @@ const dict = {
     ja: 'うまくいかなかったみたい。かどの位置をなおして もう1回ためしてね。',
     en: "Hmm, that didn't work. Fix the corners and try again!",
   },
-  saved: { ja: 'ほぞんしたよ', en: 'Saved!' },
   saveFailed: { ja: 'ほぞんできなかった...', en: "Couldn't save..." },
   restoreFailed: { ja: 'ふくげんできなかった...', en: "Couldn't open it..." },
   saveBtn: { ja: 'ほぞん', en: 'Save' },
