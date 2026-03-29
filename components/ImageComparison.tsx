@@ -37,7 +37,6 @@ interface ImageComparisonProps {
   initialCenterOffset?: Point
   onCenterChange?: (center: Point) => void
   onDisplaySize?: (size: { w: number; h: number; left: number; top: number }) => void
-  onCanvasReady?: (canvas: HTMLCanvasElement | null) => void
   onBackToAdjust?: () => void
 }
 
@@ -45,6 +44,27 @@ interface UndoSnapshot {
   offset: { x: number; y: number }
   corners: CornerOffsets
   center: Point
+}
+
+/** Compute objectFit:contain image rect within a container (pure math) */
+function computeImgRect(
+  containerW: number,
+  containerH: number,
+  naturalW: number,
+  naturalH: number
+): { w: number; h: number; left: number; top: number } {
+  const imageAspect = naturalW / naturalH
+  const containerAspect = containerW / containerH
+
+  if (imageAspect > containerAspect) {
+    const w = containerW
+    const h = containerW / imageAspect
+    return { w, h, left: 0, top: (containerH - h) / 2 }
+  } else {
+    const h = containerH
+    const w = containerH * imageAspect
+    return { w, h, left: (containerW - w) / 2, top: 0 }
+  }
 }
 
 export default function ImageComparison({
@@ -57,7 +77,6 @@ export default function ImageComparison({
   initialCenterOffset,
   onCenterChange,
   onDisplaySize,
-  onCanvasReady,
   onBackToAdjust,
 }: ImageComparisonProps) {
   const { t } = useI18n()
@@ -127,8 +146,9 @@ export default function ImageComparison({
     setUndoCount(stack.length)
   }, [])
 
-  // --- Panel & image measurement ---
+  // --- Panel & canvas ---
   const panelRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const [imgRect, setImgRect] = useState<{
     w: number
     h: number
@@ -136,74 +156,62 @@ export default function ImageComparison({
     top: number
   } | null>(null)
 
-  const measureImg = useCallback(() => {
+  // --- Load both images as Image objects (no DOM <img>) ---
+  const leftImgRef = useRef<HTMLImageElement | null>(null)
+  const rightImgRef = useRef<HTMLImageElement | null>(null)
+  const [imgsReady, setImgsReady] = useState(false)
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null)
+
+  useEffect(() => {
+    setImgsReady(false)
+    let loadedCount = 0
+    const onLoaded = () => {
+      if (++loadedCount === 2) setImgsReady(true)
+    }
+
+    const lImg = new Image()
+    lImg.onload = () => {
+      leftImgRef.current = lImg
+      onLoaded()
+    }
+    lImg.onerror = () => console.error('ImageComparison: failed to load left image')
+    lImg.src = leftImage
+
+    const rImg = new Image()
+    rImg.onload = () => {
+      rightImgRef.current = rImg
+      setNaturalSize({ w: rImg.naturalWidth, h: rImg.naturalHeight })
+      onLoaded()
+    }
+    rImg.onerror = () => console.error('ImageComparison: failed to load right image')
+    rImg.src = rightImage
+  }, [leftImage, rightImage])
+
+  // --- Compute imgRect from panel dimensions (pure math, no DOM img measurement) ---
+  const recomputeRect = useCallback(() => {
     const panel = panelRef.current
-    const img = panel?.querySelector('img') as HTMLImageElement | null
-    if (!panel || !img) return
-    const panelRect = panel.getBoundingClientRect()
-
-    // Compute the actual content rect within objectFit:contain
-    const elemW = img.clientWidth
-    const elemH = img.clientHeight
-    const naturalW = img.naturalWidth
-    const naturalH = img.naturalHeight
-    if (!naturalW || !naturalH) return
-
-    const naturalAspect = naturalW / naturalH
-    const elemAspect = elemW / elemH
-
-    let contentW: number, contentH: number, contentLeft: number, contentTop: number
-    if (naturalAspect > elemAspect) {
-      // Image wider than element → constrained by width
-      contentW = elemW
-      contentH = elemW / naturalAspect
-      contentLeft = img.getBoundingClientRect().left - panelRect.left
-      contentTop = img.getBoundingClientRect().top - panelRect.top + (elemH - contentH) / 2
-    } else {
-      // Image taller → constrained by height
-      contentH = elemH
-      contentW = elemH * naturalAspect
-      contentLeft = img.getBoundingClientRect().left - panelRect.left + (elemW - contentW) / 2
-      contentTop = img.getBoundingClientRect().top - panelRect.top
-    }
-
-    const newRect = {
-      w: contentW,
-      h: contentH,
-      left: contentLeft,
-      top: contentTop,
-    }
-    setImgRect(newRect)
-    onDisplaySizeRef.current?.(newRect)
-  }, [])
+    if (!panel || !naturalSize) return
+    const pw = panel.clientWidth
+    const ph = panel.clientHeight
+    if (!pw || !ph) return
+    const rect = computeImgRect(pw, ph, naturalSize.w, naturalSize.h)
+    setImgRect(rect)
+    onDisplaySizeRef.current?.(rect)
+  }, [naturalSize])
 
   useEffect(() => {
-    measureImg()
-    window.addEventListener('resize', measureImg)
-    return () => window.removeEventListener('resize', measureImg)
-  }, [measureImg, leftImage])
+    recomputeRect()
+    window.addEventListener('resize', recomputeRect)
+    return () => window.removeEventListener('resize', recomputeRect)
+  }, [recomputeRect])
 
-  // --- Left image loading for canvas ---
-  const leftCanvasRef = useRef<HTMLCanvasElement>(null)
-  const leftImgObjRef = useRef<HTMLImageElement | null>(null)
-  const [leftImgReady, setLeftImgReady] = useState(false)
-
+  // --- Canvas draw effect: both images rendered on canvas ---
   useEffect(() => {
-    setLeftImgReady(false)
-    const img = new Image()
-    img.onload = () => {
-      leftImgObjRef.current = img
-      setLeftImgReady(true)
-    }
-    img.src = leftImage
-  }, [leftImage])
-
-  // --- Canvas draw effect ---
-  useEffect(() => {
-    const canvas = leftCanvasRef.current
-    const img = leftImgObjRef.current
+    const canvas = canvasRef.current
     const panel = panelRef.current
-    if (!canvas || !img || !panel || !imgRect || !leftImgReady) return
+    const leftImg = leftImgRef.current
+    const rightImg = rightImgRef.current
+    if (!canvas || !panel || !leftImg || !rightImg || !imgRect || !imgsReady) return
 
     const dpr = window.devicePixelRatio || 1
     const pw = panel.clientWidth
@@ -223,18 +231,39 @@ export default function ImageComparison({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, pw, ph)
 
-    drawMeshWarp(ctx, img, imgRect.w, imgRect.h, {
-      cornerOffsets,
-      centerOffset,
-      offset,
-      imgLeft: imgRect.left,
-      imgTop: imgRect.top,
-    })
+    // 1. Always draw right image as background
+    ctx.drawImage(rightImg, imgRect.left, imgRect.top, imgRect.w, imgRect.h)
+
+    // 2. Draw mesh-warped left image with appropriate opacity
+    const isAnyHandleDragging = draggingCorner !== null || draggingCenter
+    const leftOpacity = isDragging || isAnyHandleDragging ? 0.5 : isHolding ? 0 : 1
+
+    if (leftOpacity > 0) {
+      ctx.globalAlpha = leftOpacity
+      drawMeshWarp(ctx, leftImg, imgRect.w, imgRect.h, {
+        cornerOffsets,
+        centerOffset,
+        offset,
+        imgLeft: imgRect.left,
+        imgTop: imgRect.top,
+      })
+      ctx.globalAlpha = 1
+    }
 
     ctx.restore()
-  }, [offset, cornerOffsets, centerOffset, imgRect, leftImgReady])
+  }, [
+    offset,
+    cornerOffsets,
+    centerOffset,
+    imgRect,
+    imgsReady,
+    isDragging,
+    isHolding,
+    draggingCorner,
+    draggingCenter,
+  ])
 
-  // --- Panel pointer handlers (hold/drag) ---
+  // --- Panel pointer handlers (hold/drag for slide) ---
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
@@ -446,20 +475,12 @@ export default function ImageComparison({
 
   // --- Derived state ---
   const isAnyHandleDragging = draggingCorner !== null || draggingCenter
-  const leftOpacity = isDragging || isAnyHandleDragging ? 0.5 : isHolding ? 0 : 1
   const showingRight = isHolding && !isDragging
   const leftColor = '#6B7F3E'
   const rightColor = '#B05228'
   const activeColor = showingRight ? rightColor : leftColor
 
-  const imgConstraint: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    maxHeight: 'calc(100dvh - var(--panel-margin))',
-    objectFit: 'contain' as const,
-  }
-
-  // Handle positions (relative to panel)
+  // Handle positions (relative to panel, computed from imgRect)
   const cornerPositions = imgRect
     ? [
         { x: imgRect.left, y: imgRect.top },
@@ -474,6 +495,9 @@ export default function ImageComparison({
     : null
 
   const panelHeight = panelRef.current?.clientHeight ?? 0
+
+  // Panel aspect ratio for sizing (replaces the DOM img element's sizing role)
+  const panelAspectRatio = naturalSize ? `${naturalSize.w} / ${naturalSize.h}` : undefined
 
   return (
     <div className="animate-fade-in space-y-3">
@@ -539,7 +563,7 @@ export default function ImageComparison({
         </button>
       </div>
 
-      {/* Image panel */}
+      {/* Image panel — canvas renders both images, no DOM <img> */}
       <div
         ref={panelRef}
         className="relative flex touch-none select-none items-center justify-center overflow-hidden"
@@ -551,6 +575,7 @@ export default function ImageComparison({
           transition: 'border-color 0.2s ease',
           minHeight: 'min(280px, calc(100dvh - var(--panel-margin)))',
           maxHeight: 'calc(100dvh - var(--panel-margin))',
+          aspectRatio: panelAspectRatio,
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         onPointerDown={handlePointerDown}
@@ -559,32 +584,10 @@ export default function ImageComparison({
         onContextMenu={handleContextMenu}
         onPointerLeave={handlePointerLeave}
       >
-        {/* Right image — always present, behind left */}
-        <img
-          src={rightImage}
-          alt={t('right')}
-          draggable={false}
-          style={imgConstraint}
-          onLoad={measureImg}
-        />
-
-        {/* Left image — canvas with mesh warp (4 corners + center) */}
-        <canvas
-          ref={(el) => {
-            leftCanvasRef.current = el
-            onCanvasReady?.(el)
-          }}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            opacity: leftOpacity,
-            transition: 'opacity 0.15s ease',
-            pointerEvents: 'none',
-          }}
-        />
+        <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
       </div>
 
-      {/* Warp handles — outside overflow:hidden panel so they stay visible */}
+      {/* Warp handles — DOM elements outside overflow:hidden panel for unrestricted positioning */}
       {!isHolding && (
         <div className="relative" style={{ height: 0 }}>
           {/* Corner handles */}
@@ -637,7 +640,7 @@ export default function ImageComparison({
             </div>
           ))}
 
-          {/* Center handle — blue to distinguish from gold corners */}
+          {/* Center handle */}
           {centerPosition && (
             <div
               className="absolute"

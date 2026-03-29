@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### 変更 🔧
+
+- **ImageComparison: DOM img廃止、canvas両面描画に移行**
+  - 左右両画像をcanvasで描画（DOM `<img>` 要素を廃止）
+  - パネルはCSS `aspect-ratio` で画像アスペクト比に追従
+  - `imgRect` を `panel.clientWidth/clientHeight` から純粋な数学で計算（DOM img測定に依存しない）
+  - ハンドルはDOMで残す（画像外にはみ出してドラッグできるため）
+
+- **GIF生成を表示canvas依存から独立レンダリングに変更**
+  - image-utils.ts が画像データURL + displaySize + warpパラメータから独立してフレームを描画
+  - `drawMeshWarp` を同じパラメータで呼ぶため、ワープ結果は数学的に同一
+  - 表示canvasとGIFの座標ズレが構造的に不可能になった
+
+- **ImageProcessor: leftCanvas/onCanvasReady依存を削除**
+  - GIF生成に `leftDataUrl + rightDataUrl + displaySize + warpパラメータ` を渡す方式に変更
+
 ### 改善 🔧
 
 - **角ドラッグのUX改善**
@@ -10,13 +26,9 @@
   - 指を離す瞬間のスリップを防止（200ms前の位置にスナップバック）
   - 角調整画面・比較画面の両方に適用
 
-- **objectFit:contain内のコンテンツ矩形を正確に計算**
-  - `measureImg`が`getBoundingClientRect()`（要素サイズ）ではなく`naturalWidth/Height`からコンテンツ位置を算出
-  - canvas描画のアスペクト比、ハンドル位置、GIFキャプチャのクロップが全て正確に
-
-- **GIF生成を比較canvasの直接キャプチャに変更**
-  - 再計算によるズレを排除。canvasのピクセルをそのままGIFフレームにコピー
-  - offset/warp/center引数を廃止、canvas要素+imgRectを受け取る方式
+- **imgRectをパネル寸法から数学的に計算**
+  - `panel.clientWidth/clientHeight` からコンテンツ矩形を算出（DOM img測定やobjectFit:containに依存しない）
+  - canvas描画のアスペクト比、ハンドル位置が全て正確に
 
 - **ほぞんボタンのフィードバック改善**
   - 保存成功時にボタンが1.5秒間緑チェックマーク+「ほぞんしたよ」に変化

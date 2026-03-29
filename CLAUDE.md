@@ -40,14 +40,14 @@ docs/          # 詳細ドキュメント
 
 ## 主要コンポーネント
 
-| ファイル                     | 役割                                                       |
-| ---------------------------- | ---------------------------------------------------------- |
-| `ImageProcessor.tsx`         | 画像処理フロー制御                                         |
-| `ImageUpload.tsx`            | 画像アップロードUI                                         |
-| `PaperCornersAdjustment.tsx` | 角の調整UI（ルーペ拡大鏡付き、DPR対応）                    |
-| `ImageComparison.tsx`        | 左右画像比較UI（ドラッグ微調整・コーナーワープ・アンドゥ） |
-| `ShareButtons.tsx`           | フッターSNSシェアボタン（X/LINE/Web Share）                |
-| `icons.tsx`                  | 共有SVGアイコン（Undo, Save, ShareResult）                 |
+| ファイル                     | 役割                                                                       |
+| ---------------------------- | -------------------------------------------------------------------------- |
+| `ImageProcessor.tsx`         | 画像処理フロー制御                                                         |
+| `ImageUpload.tsx`            | 画像アップロードUI                                                         |
+| `PaperCornersAdjustment.tsx` | 角の調整UI（ルーペ拡大鏡付き、DPR対応）                                    |
+| `ImageComparison.tsx`        | 左右画像比較UI（canvas両面描画・ドラッグ微調整・コーナーワープ・アンドゥ） |
+| `ShareButtons.tsx`           | フッターSNSシェアボタン（X/LINE/Web Share）                                |
+| `icons.tsx`                  | 共有SVGアイコン（Undo, Save, ShareResult）                                 |
 
 ## 画像処理フロー
 
@@ -55,7 +55,7 @@ docs/          # 詳細ドキュメント
 2. 角の手動調整（ルーペ拡大鏡で精密操作、小画像は自動拡大）
 3. 台形補正（透視変換）
 4. 左右分割（色は加工しない）
-5. 比較表示（長押しで左右切替、スライドで位置微調整、四隅ワープ、アンドゥ、GIFシェア）
+5. 比較表示（canvasで左右両画像描画、長押しで左右切替、スライドで位置微調整、四隅ワープ、アンドゥ、GIF独立レンダリングシェア）
 
 ## 開発ガイドライン
 

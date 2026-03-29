@@ -55,15 +55,13 @@ export default function ImageProcessor() {
   const restoredWarpRef = useRef<CornerOffsets | null>(null)
   const currentCenterRef = useRef<Point>({ x: 0, y: 0 })
   const restoredCenterRef = useRef<Point | null>(null)
-  /** Displayed image rect in CSS pixels (for GIF canvas capture) */
+  /** Displayed image rect in CSS pixels (for scaling warp params to GIF space) */
   const displayRectRef = useRef<{ w: number; h: number; left: number; top: number }>({
     w: 1,
     h: 1,
     left: 0,
     top: 0,
   })
-  /** Reference to the comparison canvas (has the warped left image) */
-  const leftCanvasElRef = useRef<HTMLCanvasElement | null>(null)
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
@@ -157,7 +155,6 @@ export default function ImageProcessor() {
     restoredCenterRef.current = null
     currentSaveIdRef.current = null
     displayRectRef.current = { w: 1, h: 1, left: 0, top: 0 }
-    leftCanvasElRef.current = null
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
@@ -170,15 +167,18 @@ export default function ImageProcessor() {
   const [saveSuccess, setSaveSuccess] = useState(false)
 
   const handleCreateGif = async () => {
-    if (!rightImage || !leftCanvasElRef.current || sharing) return
+    if (!leftImage || !rightImage || sharing) return
     setSharing(true)
 
     try {
       const blob = await generateToggleGif(
         {
-          leftCanvas: leftCanvasElRef.current,
-          imgRect: displayRectRef.current,
+          leftDataUrl: leftImage,
           rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
         },
         1000
       )
@@ -350,9 +350,6 @@ export default function ImageProcessor() {
             }}
             onDisplaySize={(rect) => {
               displayRectRef.current = rect
-            }}
-            onCanvasReady={(el) => {
-              leftCanvasElRef.current = el
             }}
             onBackToAdjust={handleBackToAdjust}
           />

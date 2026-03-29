@@ -1,5 +1,8 @@
 /** Pure utility functions for image processing (no React dependency) */
 
+import type { Point, CornerOffsets } from '@/types'
+import { drawMeshWarp } from '@/lib/mesh-warp'
+
 /** Maximum image dimension (longest side) in physical pixels */
 const MAX_IMAGE_DIM = 2400
 
@@ -52,92 +55,109 @@ export function resizeImage(dataUrl: string, width: number, height: number): Pro
   })
 }
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
 interface GifSource {
-  /** The comparison canvas element (already has the warped left image) */
-  leftCanvas: HTMLCanvasElement
-  /** Image rect within the canvas (CSS pixels, for cropping) */
-  imgRect: { w: number; h: number; left: number; top: number }
+  /** Left image data URL */
+  leftDataUrl: string
   /** Right image data URL */
   rightDataUrl: string
+  /** Display image rect in CSS pixels (for scaling warp params to GIF space) */
+  displaySize: { w: number; h: number }
+  /** Slide offset in CSS display pixels */
+  offset: { x: number; y: number }
+  /** 4 corner warp offsets in CSS display pixels */
+  cornerOffsets: CornerOffsets
+  /** Center warp offset in CSS display pixels */
+  centerOffset: Point
 }
 
 /**
- * Generate an animated GIF by capturing the comparison canvas directly.
- * Frame 1: right image + left canvas (exactly what the user sees)
+ * Generate an animated GIF by rendering both images independently.
+ * No dependency on the display canvas — renders at image native resolution.
+ * Frame 1: right image + mesh-warped left image
  * Frame 2: right image only
  */
 export function generateToggleGif(source: GifSource, delay: number): Promise<Blob> {
-  const { leftCanvas, imgRect, rightDataUrl } = source
+  const { leftDataUrl, rightDataUrl, displaySize, offset, cornerOffsets, centerOffset } = source
 
-  return new Promise<HTMLImageElement>((res, rej) => {
-    const img = new Image()
-    img.onload = () => res(img)
-    img.onerror = rej
-    img.src = rightDataUrl
-  }).then((rightImg) => {
-    const w = rightImg.width
-    const h = rightImg.height
-    const scale = Math.min(1, GIF_MAX_DIM / Math.max(w, h))
-    const gw = Math.round(w * scale)
-    const gh = Math.round(h * scale)
+  return Promise.all([loadImage(leftDataUrl), loadImage(rightDataUrl)]).then(
+    ([leftImg, rightImg]) => {
+      const w = rightImg.width
+      const h = rightImg.height
+      const scale = Math.min(1, GIF_MAX_DIM / Math.max(w, h))
+      const gw = Math.round(w * scale)
+      const gh = Math.round(h * scale)
 
-    const canvas = document.createElement('canvas')
-    canvas.width = gw
-    canvas.height = gh
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas context unavailable')
+      // Scale warp parameters from CSS display pixels to GIF pixels
+      const sx = gw / displaySize.w
+      const sy = gh / displaySize.h
 
-    const dpr = window.devicePixelRatio || 1
+      const gifOffset = { x: offset.x * sx, y: offset.y * sy }
+      const gifCornerOffsets = cornerOffsets.map((c) => ({
+        x: c.x * sx,
+        y: c.y * sy,
+      })) as unknown as CornerOffsets
+      const gifCenterOffset = { x: centerOffset.x * sx, y: centerOffset.y * sy }
 
-    return import('gif.js').then(
-      // CJS interop: gif.js uses module.exports, webpack wraps it in .default
-      (mod) => {
-        const GIF = ((mod as Record<string, unknown>).default || mod) as new (
-          opts: Record<string, unknown>
-        ) => { addFrame: Function; on: Function; render: Function; abort: Function }
-        return new Promise<Blob>((resolve, reject) => {
-          const gif = new GIF({
-            workers: 2,
-            quality: 1,
-            width: gw,
-            height: gh,
-            workerScript: '/static/gif.worker.js',
-            repeat: 0,
-            dither: 'FloydSteinberg',
+      const canvas = document.createElement('canvas')
+      canvas.width = gw
+      canvas.height = gh
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas context unavailable')
+
+      return import('gif.js').then(
+        // CJS interop: gif.js uses module.exports, webpack wraps it in .default
+        (mod) => {
+          const GIF = ((mod as Record<string, unknown>).default || mod) as new (
+            opts: Record<string, unknown>
+          ) => { addFrame: Function; on: Function; render: Function; abort: Function }
+          return new Promise<Blob>((resolve, reject) => {
+            const gif = new GIF({
+              workers: 2,
+              quality: 1,
+              width: gw,
+              height: gh,
+              workerScript: '/static/gif.worker.js',
+              repeat: 0,
+              dither: 'FloydSteinberg',
+            })
+
+            // Frame 1: right image + mesh-warped left image
+            ctx.drawImage(rightImg, 0, 0, gw, gh)
+            drawMeshWarp(ctx, leftImg, gw, gh, {
+              cornerOffsets: gifCornerOffsets,
+              centerOffset: gifCenterOffset,
+              offset: gifOffset,
+              imgLeft: 0,
+              imgTop: 0,
+            })
+            gif.addFrame(ctx, { delay, copy: true })
+
+            // Frame 2: right image only
+            ctx.clearRect(0, 0, gw, gh)
+            ctx.drawImage(rightImg, 0, 0, gw, gh)
+            gif.addFrame(ctx, { delay, copy: true })
+
+            const timer = setTimeout(() => {
+              gif.abort()
+              reject(new Error('GIF generation timed out'))
+            }, 30000)
+            gif.on('finished', (blob: Blob) => {
+              clearTimeout(timer)
+              resolve(blob)
+            })
+            gif.render()
           })
-
-          // Frame 1: right image + left canvas (pixel-perfect capture)
-          ctx.drawImage(rightImg, 0, 0, gw, gh)
-          // Crop the image area from the comparison canvas (DPR-scaled physical pixels)
-          ctx.drawImage(
-            leftCanvas,
-            imgRect.left * dpr,
-            imgRect.top * dpr,
-            imgRect.w * dpr,
-            imgRect.h * dpr,
-            0,
-            0,
-            gw,
-            gh
-          )
-          gif.addFrame(ctx, { delay, copy: true })
-
-          // Frame 2: right image only
-          ctx.clearRect(0, 0, gw, gh)
-          ctx.drawImage(rightImg, 0, 0, gw, gh)
-          gif.addFrame(ctx, { delay, copy: true })
-
-          const timer = setTimeout(() => {
-            gif.abort()
-            reject(new Error('GIF generation timed out'))
-          }, 30000)
-          gif.on('finished', (blob: Blob) => {
-            clearTimeout(timer)
-            resolve(blob)
-          })
-          gif.render()
-        })
-      }
-    )
-  })
+        }
+      )
+    }
+  )
 }

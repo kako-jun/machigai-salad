@@ -98,12 +98,13 @@ showCornersAdjustment: boolean   // 角調整UI表示フラグ
 
 左右の画像を切り替え表示。canvas描画で5点メッシュワープ（4隅+中心）を適用。
 
-- 右画像は`<img>`要素（objectFit:contain）、左画像はcanvasで描画
-- `measureImg`で`objectFit:contain`内のコンテンツ矩形を`naturalWidth/Height`から算出
+- DOM `<img>` 要素は不使用。左右両画像をcanvasで描画
+- パネルはCSS `aspect-ratio` で画像アスペクト比に追従
+- `imgRect` は `panel.clientWidth/clientHeight` から純粋な数学で計算（DOM img測定に依存しない）
 - 長押し: 左画像を非表示（右画像が見える）
 - スライド: 左画像の位置微調整
-- 四隅・中心ハンドル: メッシュワープ調整
-- GIF生成: 比較canvasのピクセルを直接キャプチャ（再計算なし）
+- 四隅・中心ハンドル: メッシュワープ調整（ハンドルはDOMで残す。画像外にはみ出してドラッグできるため）
+- GIF生成: ImageProcessorから `leftDataUrl + rightDataUrl + displaySize + warpパラメータ` を受け取り、image-utils.ts が画像データから独立レンダリング（表示canvasに依存しない）
 
 ## 画像処理パイプライン
 
