@@ -9,6 +9,9 @@ const MAX_IMAGE_DIM = 2400
 /** GIF share image max dimension */
 const GIF_MAX_DIM = 480
 
+/** APNG download image max dimension (higher quality than GIF) */
+const APNG_MAX_DIM = 800
+
 export function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -64,12 +67,12 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   })
 }
 
-interface GifSource {
+export interface AnimationSource {
   /** Left image data URL */
   leftDataUrl: string
   /** Right image data URL */
   rightDataUrl: string
-  /** Display image rect in CSS pixels (for scaling warp params to GIF space) */
+  /** Display image rect in CSS pixels (for scaling warp params to output space) */
   displaySize: { w: number; h: number }
   /** Slide offset in CSS display pixels */
   offset: { x: number; y: number }
@@ -80,84 +83,104 @@ interface GifSource {
 }
 
 /**
- * Generate an animated GIF by rendering both images independently.
- * No dependency on the display canvas — renders at image native resolution.
- * Frame 1: right image + mesh-warped left image
- * Frame 2: right image only
+ * Generate animation frames at the given max dimension.
+ * Returns raw ImageData for each frame (frame 1: overlay, frame 2: right only).
  */
-export function generateToggleGif(source: GifSource, delay: number): Promise<Blob> {
+async function generateFrames(
+  source: AnimationSource,
+  maxDim: number
+): Promise<{ frames: ImageData[]; width: number; height: number }> {
   const { leftDataUrl, rightDataUrl, displaySize, offset, cornerOffsets, centerOffset } = source
+  const [leftImg, rightImg] = await Promise.all([loadImage(leftDataUrl), loadImage(rightDataUrl)])
 
-  return Promise.all([loadImage(leftDataUrl), loadImage(rightDataUrl)]).then(
-    ([leftImg, rightImg]) => {
-      const w = rightImg.width
-      const h = rightImg.height
-      const scale = Math.min(1, GIF_MAX_DIM / Math.max(w, h))
-      const gw = Math.round(w * scale)
-      const gh = Math.round(h * scale)
+  const w = rightImg.width
+  const h = rightImg.height
+  const scale = Math.min(1, maxDim / Math.max(w, h))
+  const gw = Math.round(w * scale)
+  const gh = Math.round(h * scale)
 
-      // Scale warp parameters from CSS display pixels to GIF pixels
-      const sx = gw / displaySize.w
-      const sy = gh / displaySize.h
+  // Scale warp parameters from CSS display pixels to output pixels
+  const sx = gw / displaySize.w
+  const sy = gh / displaySize.h
 
-      const gifOffset = { x: offset.x * sx, y: offset.y * sy }
-      const gifCornerOffsets = cornerOffsets.map((c) => ({
-        x: c.x * sx,
-        y: c.y * sy,
-      })) as unknown as CornerOffsets
-      const gifCenterOffset = { x: centerOffset.x * sx, y: centerOffset.y * sy }
+  const scaledOffset = { x: offset.x * sx, y: offset.y * sy }
+  const scaledCornerOffsets = cornerOffsets.map((c) => ({
+    x: c.x * sx,
+    y: c.y * sy,
+  })) as unknown as CornerOffsets
+  const scaledCenterOffset = { x: centerOffset.x * sx, y: centerOffset.y * sy }
 
-      const canvas = document.createElement('canvas')
-      canvas.width = gw
-      canvas.height = gh
-      const ctx = canvas.getContext('2d')
-      if (!ctx) throw new Error('Canvas context unavailable')
+  const canvas = document.createElement('canvas')
+  canvas.width = gw
+  canvas.height = gh
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas context unavailable')
 
-      return import('gif.js').then(
-        // CJS interop: gif.js uses module.exports, webpack wraps it in .default
-        (mod) => {
-          const GIF = ((mod as Record<string, unknown>).default || mod) as new (
-            opts: Record<string, unknown>
-          ) => { addFrame: Function; on: Function; render: Function; abort: Function }
-          return new Promise<Blob>((resolve, reject) => {
-            const gif = new GIF({
-              workers: 2,
-              quality: 1,
-              width: gw,
-              height: gh,
-              workerScript: '/static/gif.worker.js',
-              repeat: 0,
-              dither: false,
-            })
+  // Frame 1: right image + mesh-warped left image
+  ctx.drawImage(rightImg, 0, 0, gw, gh)
+  drawMeshWarp(ctx, leftImg, gw, gh, {
+    cornerOffsets: scaledCornerOffsets,
+    centerOffset: scaledCenterOffset,
+    offset: scaledOffset,
+    imgLeft: 0,
+    imgTop: 0,
+  })
+  const frame1 = ctx.getImageData(0, 0, gw, gh)
 
-            // Frame 1: right image + mesh-warped left image
-            ctx.drawImage(rightImg, 0, 0, gw, gh)
-            drawMeshWarp(ctx, leftImg, gw, gh, {
-              cornerOffsets: gifCornerOffsets,
-              centerOffset: gifCenterOffset,
-              offset: gifOffset,
-              imgLeft: 0,
-              imgTop: 0,
-            })
-            gif.addFrame(ctx, { delay, copy: true })
+  // Frame 2: right image only
+  ctx.clearRect(0, 0, gw, gh)
+  ctx.drawImage(rightImg, 0, 0, gw, gh)
+  const frame2 = ctx.getImageData(0, 0, gw, gh)
 
-            // Frame 2: right image only
-            ctx.clearRect(0, 0, gw, gh)
-            ctx.drawImage(rightImg, 0, 0, gw, gh)
-            gif.addFrame(ctx, { delay, copy: true })
+  return { frames: [frame1, frame2], width: gw, height: gh }
+}
 
-            const timer = setTimeout(() => {
-              gif.abort()
-              reject(new Error('GIF generation timed out'))
-            }, 30000)
-            gif.on('finished', (blob: Blob) => {
-              clearTimeout(timer)
-              resolve(blob)
-            })
-            gif.render()
-          })
-        }
-      )
-    }
-  )
+/**
+ * Generate an animated GIF (for sharing — compact, high compatibility).
+ */
+export async function generateToggleGif(source: AnimationSource, delay: number): Promise<Blob> {
+  const { frames, width, height } = await generateFrames(source, GIF_MAX_DIM)
+
+  // CJS interop: gif.js uses module.exports, webpack wraps it in .default
+  const mod = await import('gif.js')
+  const GIF = ((mod as Record<string, unknown>).default || mod) as new (
+    opts: Record<string, unknown>
+  ) => { addFrame: Function; on: Function; render: Function; abort: Function }
+
+  return new Promise<Blob>((resolve, reject) => {
+    const gif = new GIF({
+      workers: 2,
+      quality: 1,
+      width,
+      height,
+      workerScript: '/static/gif.worker.js',
+      repeat: 0,
+      dither: false,
+    })
+
+    gif.addFrame(frames[0], { delay, copy: true })
+    gif.addFrame(frames[1], { delay, copy: true })
+
+    const timer = setTimeout(() => {
+      gif.abort()
+      reject(new Error('GIF generation timed out'))
+    }, 30000)
+    gif.on('finished', (blob: Blob) => {
+      clearTimeout(timer)
+      resolve(blob)
+    })
+    gif.render()
+  })
+}
+
+/**
+ * Generate an APNG (for download — higher quality, larger dimensions).
+ */
+export async function generateToggleApng(source: AnimationSource, delay: number): Promise<Blob> {
+  const { frames, width, height } = await generateFrames(source, APNG_MAX_DIM)
+  const UPNG = await import('upng-js')
+
+  const bufs = frames.map((f) => f.data.buffer as ArrayBuffer)
+  const apngData = UPNG.encode(bufs, width, height, 0, [delay, delay])
+  return new Blob([apngData], { type: 'image/png' })
 }
