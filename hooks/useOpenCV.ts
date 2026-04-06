@@ -29,6 +29,7 @@ interface UseOpenCVReturn {
     sensitivity?: DetectionSensitivity
   ) => Promise<Point[] | null>
   processImage: (imageDataUrl: string, corners: Point[]) => Promise<ProcessedImages>
+  processImageNoSplit: (imageDataUrl: string, corners: Point[]) => Promise<string>
 }
 
 interface ProcessedImages {
@@ -294,7 +295,73 @@ export function useOpenCV(): UseOpenCVReturn {
     [cvLoaded]
   )
 
-  return { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage }
+  /**
+   * 指定された角座標で台形補正のみ行い、分割せずに単一画像として返す（2枚モード用）
+   */
+  const processImageNoSplit = useCallback(
+    async (imageDataUrl: string, corners: Point[]): Promise<string> => {
+      if (!cvLoaded) {
+        await waitForCvLoaded()
+      }
+
+      return new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          let src = null
+          let warped = null
+          try {
+            const cv = window.cv
+
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(img, 0, 0)
+
+            src = cv.imread(canvas)
+
+            // 透視変換を適用
+            warped = applyPerspectiveTransform(src, corners, cv)
+            src.delete()
+            src = null
+
+            // 分割せずにそのまま出力
+            const outCanvas = document.createElement('canvas')
+            cv.imshow(outCanvas, warped)
+            const dataUrl = outCanvas.toDataURL('image/webp', 0.85)
+
+            warped.delete()
+            warped = null
+
+            resolve(dataUrl)
+          } catch (error) {
+            if (warped)
+              try {
+                warped.delete()
+              } catch (_) {}
+            if (src)
+              try {
+                src.delete()
+              } catch (_) {}
+            reject(error)
+          }
+        }
+        img.onerror = reject
+        img.src = imageDataUrl
+      })
+    },
+    [cvLoaded]
+  )
+
+  return {
+    cvLoaded,
+    loadState,
+    loadError,
+    retryLoad,
+    suggestCorners,
+    processImage,
+    processImageNoSplit,
+  }
 }
 
 /**
