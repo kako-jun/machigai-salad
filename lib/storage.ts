@@ -12,6 +12,8 @@ export interface SaveEntry {
   imageSize: { width: number; height: number }
   warpCorners: CornerOffsets
   centerOffset: Point
+  twoImageMode?: boolean
+  rightImageData?: string
 }
 
 const ZERO_CORNERS: CornerOffsets = [
@@ -38,6 +40,7 @@ function normalize(entry: SaveEntry): SaveEntry {
     ...entry,
     warpCorners: entry.warpCorners ?? ZERO_CORNERS,
     centerOffset: entry.centerOffset ?? { x: 0, y: 0 },
+    twoImageMode: entry.twoImageMode ?? false,
   }
 }
 
