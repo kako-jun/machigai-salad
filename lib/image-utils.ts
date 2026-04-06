@@ -132,11 +132,16 @@ async function generateFrames(
   ctx.drawImage(rightImg, 0, 0, gw, gh)
   const frame2 = ctx.getImageData(0, 0, gw, gh)
 
+  // Release canvas memory
+  canvas.width = 0
+  canvas.height = 0
+
   return { frames: [frame1, frame2], width: gw, height: gh }
 }
 
 /**
  * Generate an animated GIF (for sharing — compact, high compatibility).
+ * @param delay Frame interval in milliseconds
  */
 export async function generateToggleGif(source: AnimationSource, delay: number): Promise<Blob> {
   const { frames, width, height } = await generateFrames(source, GIF_MAX_DIM)
@@ -158,8 +163,8 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
       dither: false,
     })
 
-    gif.addFrame(frames[0], { delay, copy: true })
-    gif.addFrame(frames[1], { delay, copy: true })
+    gif.addFrame(frames[0], { delay })
+    gif.addFrame(frames[1], { delay })
 
     const timer = setTimeout(() => {
       gif.abort()
@@ -174,7 +179,8 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
 }
 
 /**
- * Generate an APNG (for download — higher quality, larger dimensions).
+ * Generate an animated PNG (for download — higher quality, larger dimensions).
+ * @param delay Frame interval in milliseconds
  */
 export async function generateToggleApng(source: AnimationSource, delay: number): Promise<Blob> {
   const { frames, width, height } = await generateFrames(source, APNG_MAX_DIM)
