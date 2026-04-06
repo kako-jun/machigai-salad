@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { showToast } from './Toast'
 import { SaveIcon } from './icons'
@@ -9,6 +9,7 @@ type LoadState = 'loading' | 'ready' | 'error'
 
 interface ImageUploadProps {
   onImageUpload: (imageDataUrl: string) => void
+  onTwoImageUpload: (left: string, right: string) => void
   cvLoaded: boolean
   loadState: LoadState
   loadError: string | null
@@ -19,6 +20,7 @@ interface ImageUploadProps {
 
 export default function ImageUpload({
   onImageUpload,
+  onTwoImageUpload,
   cvLoaded,
   loadState,
   loadError,
@@ -28,7 +30,12 @@ export default function ImageUpload({
 }: ImageUploadProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
+  const firstImageInputRef = useRef<HTMLInputElement>(null)
+  const secondImageInputRef = useRef<HTMLInputElement>(null)
   const { t } = useI18n()
+
+  const [albumPopupOpen, setAlbumPopupOpen] = useState(false)
+  const [firstImageData, setFirstImageData] = useState<string | null>(null)
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 
@@ -53,12 +60,82 @@ export default function ImageUpload({
     reader.readAsDataURL(file)
   }
 
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        resolve(event.target?.result as string)
+      }
+      reader.onerror = () => reject(new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handleFirstImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(t('imageTooBig'), 'error')
+      return
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setFirstImageData(dataUrl)
+      showToast(t('pickSecondImage'), 'info')
+      setTimeout(() => {
+        secondImageInputRef.current?.click()
+      }, 300)
+    } catch {
+      showToast(t('loadFailed'), 'error')
+    }
+  }
+
+  const handleSecondImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(t('imageTooBig'), 'error')
+      setFirstImageData(null)
+      return
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      if (firstImageData) {
+        onTwoImageUpload(firstImageData, dataUrl)
+        setFirstImageData(null)
+      }
+    } catch {
+      showToast(t('loadFailed'), 'error')
+      setFirstImageData(null)
+    }
+  }
+
   const handleCameraClick = () => {
     cameraInputRef.current?.click()
   }
 
   const handleGalleryClick = () => {
-    galleryInputRef.current?.click()
+    setAlbumPopupOpen(true)
+  }
+
+  const handleOneImageMode = () => {
+    setAlbumPopupOpen(false)
+    setTimeout(() => {
+      galleryInputRef.current?.click()
+    }, 50)
+  }
+
+  const handleTwoImageMode = () => {
+    setAlbumPopupOpen(false)
+    setTimeout(() => {
+      firstImageInputRef.current?.click()
+    }, 50)
   }
 
   return (
@@ -77,6 +154,22 @@ export default function ImageUpload({
         type="file"
         accept="image/*"
         onChange={handleFileChange}
+        className="hidden"
+        disabled={!cvLoaded}
+      />
+      <input
+        ref={firstImageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFirstImageChange}
+        className="hidden"
+        disabled={!cvLoaded}
+      />
+      <input
+        ref={secondImageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleSecondImageChange}
         className="hidden"
         disabled={!cvLoaded}
       />
@@ -210,6 +303,44 @@ export default function ImageUpload({
 
         <div className="menu-stripe-olive mt-3 self-stretch" />
       </div>
+
+      {/* Album mode popup */}
+      {albumPopupOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setAlbumPopupOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="px-4 py-3 text-center"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('albumModeTitle')}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2 p-4">
+              <button onClick={handleOneImageMode} className="btn-action w-full py-3 text-sm">
+                {t('albumModeOne')}
+              </button>
+              <button onClick={handleTwoImageMode} className="btn-ghost w-full py-3 text-sm">
+                {t('albumModeTwo')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
