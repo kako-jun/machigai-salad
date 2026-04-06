@@ -134,8 +134,12 @@ export default function ImageProcessor() {
   }
 
   /** Start two-image mode: receive both images, begin processing 1st */
-  const handleTwoImageUpload = async (leftDataUrl: string, rightDataUrl: string) => {
-    currentSaveIdRef.current = null
+  const handleTwoImageUpload = async (
+    leftDataUrl: string,
+    rightDataUrl: string,
+    restoreSaveId?: string
+  ) => {
+    if (!restoreSaveId) currentSaveIdRef.current = null
     setTwoImageMode(true)
     setProcessingSecondImage(false)
     setFirstProcessedImage(null)
@@ -198,12 +202,18 @@ export default function ImageProcessor() {
       size = await getImageSize(secondUrl)
     } catch {
       showToast(t('loadFailed'), 'error')
+      setTwoImageMode(false)
+      setProcessingSecondImage(false)
+      pendingSecondImageRef.current = null
       setPhase('upload')
       return
     }
 
     if (size.width < 100 || size.height < 100) {
       showToast(t('imageTooSmall'), 'error')
+      setTwoImageMode(false)
+      setProcessingSecondImage(false)
+      pendingSecondImageRef.current = null
       setPhase('upload')
       return
     }
@@ -462,13 +472,8 @@ export default function ImageProcessor() {
     currentSaveIdRef.current = entry.id
 
     if (entry.twoImageMode && entry.rightImageData) {
-      // Restore two-image mode save
-      setTwoImageMode(true)
-      setProcessingSecondImage(false)
-      setFirstProcessedImage(null)
-      pendingSecondImageRef.current = entry.rightImageData
-      // Start the two-image flow from first image
-      handleTwoImageUpload(entry.originalImage, entry.rightImageData)
+      // Restore two-image mode save — pass save ID to preserve overwrite behavior
+      handleTwoImageUpload(entry.originalImage, entry.rightImageData, entry.id)
       return
     }
 
