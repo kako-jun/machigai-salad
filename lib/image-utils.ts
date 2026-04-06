@@ -127,7 +127,7 @@ export function generateToggleGif(source: GifSource, delay: number): Promise<Blo
               height: gh,
               workerScript: '/static/gif.worker.js',
               repeat: 0,
-              dither: 'FloydSteinberg',
+              dither: false,
             })
 
             // Frame 1: right image + mesh-warped left image
