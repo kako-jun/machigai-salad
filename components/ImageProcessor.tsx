@@ -488,6 +488,8 @@ export default function ImageProcessor() {
 
       if (entry.secondCorners) {
         // Both corners saved — process both images directly to result
+        setOriginalImage(entry.originalImage)
+        setImageSize(entry.imageSize)
         setPhase('processing')
         try {
           const left = await processImageNoSplit(entry.originalImage, entry.corners)
