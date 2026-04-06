@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
-import { getImageSize, resizeImage, generateToggleGif } from '@/lib/image-utils'
+import { getImageSize, resizeImage, generateToggleGif, generateToggleApng } from '@/lib/image-utils'
 import { showToast } from './Toast'
 import { addSave, updateSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -165,6 +165,7 @@ export default function ImageProcessor() {
   const [sharing, setSharing] = useState(false)
   const [gifPreview, setGifPreview] = useState<{ url: string; blob: Blob } | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [apngGenerating, setApngGenerating] = useState(false)
 
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
@@ -204,7 +205,11 @@ export default function ImageProcessor() {
           text: t('shareResultText'),
         })
       } else {
-        handleGifDownload()
+        // Web Share 非対応: GIF をダウンロード
+        const a = document.createElement('a')
+        a.href = gifPreview.url
+        a.download = 'machigai-salad.gif'
+        a.click()
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
@@ -213,12 +218,32 @@ export default function ImageProcessor() {
     }
   }
 
-  const handleGifDownload = () => {
-    if (!gifPreview) return
-    const a = document.createElement('a')
-    a.href = gifPreview.url
-    a.download = 'machigai-salad.gif'
-    a.click()
+  const handleApngDownload = async () => {
+    if (!leftImage || !rightImage || apngGenerating) return
+    setApngGenerating(true)
+    try {
+      const blob = await generateToggleApng(
+        {
+          leftDataUrl: leftImage,
+          rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
+        },
+        1000
+      )
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'machigai-salad.png'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast(t('shareFailed'), 'error')
+    } finally {
+      setApngGenerating(false)
+    }
   }
 
   const handleGifClose = useCallback(() => {
@@ -449,18 +474,25 @@ export default function ImageProcessor() {
               style={{ borderTop: '1px solid var(--border-light)' }}
             >
               <button
-                onClick={handleGifDownload}
+                onClick={handleApngDownload}
+                disabled={apngGenerating}
                 className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
               >
                 <DownloadIcon size={16} />
-                {t('gifPreviewDownload')}
+                <span className="flex flex-col items-center">
+                  <span>{apngGenerating ? '...' : t('gifPreviewDownload')}</span>
+                  <span className="text-[10px] opacity-60">{t('pngFormatHint')}</span>
+                </span>
               </button>
               <button
                 onClick={handleGifShare}
                 className="btn-action flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
               >
                 <ShareResultIcon size={16} />
-                {t('gifPreviewShare')}
+                <span className="flex flex-col items-center">
+                  <span>{t('gifPreviewShare')}</span>
+                  <span className="text-[10px] opacity-60">{t('gifFormatHint')}</span>
+                </span>
               </button>
             </div>
           </div>

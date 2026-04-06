@@ -56,6 +56,8 @@ const dict = {
   shareResult: { ja: 'アニメーションをつくる', en: 'Create animation' },
   gifPreviewShare: { ja: 'シェアする', en: 'Share' },
   gifPreviewDownload: { ja: 'ダウンロード', en: 'Download' },
+  gifFormatHint: { ja: '(GIF)', en: '(GIF)' },
+  pngFormatHint: { ja: '(PNG)', en: '(PNG)' },
   gifPreviewClose: { ja: 'とじる', en: 'Close' },
   shareResultTitle: { ja: 'クネクネ動いて見えるかな？', en: 'Can you see it wiggling?' },
   shareResultText: {
