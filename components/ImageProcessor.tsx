@@ -16,12 +16,19 @@ import SavesPopup from './SavesPopup'
 
 type Phase = 'upload' | 'detecting' | 'adjust' | 'processing' | 'result'
 
-const PHASE_STEP: Record<Phase, number> = {
+const PHASE_STEP_NORMAL: Record<Phase, number> = {
   upload: 1,
   detecting: 1,
   adjust: 2,
   processing: 2,
   result: 3,
+}
+
+function getPhaseStep(phase: Phase, twoImageMode: boolean, processingSecondImage: boolean): number {
+  if (!twoImageMode) return PHASE_STEP_NORMAL[phase]
+  if (phase === 'result') return 3
+  if (processingSecondImage) return 2
+  return 1
 }
 
 export default function ImageProcessor() {
@@ -42,7 +49,14 @@ export default function ImageProcessor() {
     }
   })
 
+  // Two-image mode state
+  const [twoImageMode, setTwoImageMode] = useState(false)
+  const [processingSecondImage, setProcessingSecondImage] = useState(false)
+  const [firstProcessedImage, setFirstProcessedImage] = useState<string | null>(null)
+  const pendingSecondImageRef = useRef<string | null>(null)
+
   const lastCornersRef = useRef<Point[] | null>(null)
+  const secondCornersRef = useRef<Point[] | null>(null)
   const currentOffsetRef = useRef({ x: 0, y: 0 })
   const restoredOffsetRef = useRef<{ x: number; y: number } | null>(null)
   const ZERO_CORNERS: CornerOffsets = [
@@ -65,7 +79,15 @@ export default function ImageProcessor() {
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
 
-  const { cvLoaded, loadState, loadError, retryLoad, suggestCorners, processImage } = useOpenCV()
+  const {
+    cvLoaded,
+    loadState,
+    loadError,
+    retryLoad,
+    suggestCorners,
+    processImage,
+    processImageNoSplit,
+  } = useOpenCV()
 
   const handleImageUpload = async (imageDataUrl: string) => {
     currentSaveIdRef.current = null
@@ -111,19 +133,159 @@ export default function ImageProcessor() {
     setPhase('adjust')
   }
 
+  /** Start two-image mode: receive both images, begin processing 1st */
+  const handleTwoImageUpload = async (
+    leftDataUrl: string,
+    rightDataUrl: string,
+    restoreSaveId?: string
+  ) => {
+    if (!restoreSaveId) currentSaveIdRef.current = null
+    setTwoImageMode(true)
+    setProcessingSecondImage(false)
+    setFirstProcessedImage(null)
+    pendingSecondImageRef.current = rightDataUrl
+
+    // Process first image through the same detecting -> adjust flow
+    setPhase('detecting')
+
+    let size: { width: number; height: number }
+    try {
+      size = await getImageSize(leftDataUrl)
+    } catch {
+      showToast(t('loadFailed'), 'error')
+      setTwoImageMode(false)
+      setPhase('upload')
+      return
+    }
+
+    if (size.width < 100 || size.height < 100) {
+      showToast(t('imageTooSmall'), 'error')
+      setTwoImageMode(false)
+      setPhase('upload')
+      return
+    }
+
+    let resizedUrl = leftDataUrl
+    try {
+      resizedUrl = await resizeImage(leftDataUrl, size.width, size.height)
+      if (resizedUrl !== leftDataUrl) {
+        const newSize = await getImageSize(resizedUrl)
+        size = newSize
+      }
+    } catch {
+      // Fall through with original image
+    }
+
+    setOriginalImage(resizedUrl)
+    setImageSize(size)
+
+    try {
+      const suggestion = await suggestCorners(resizedUrl)
+      setSuggestedCorners(suggestion)
+    } catch {
+      setSuggestedCorners(null)
+    }
+
+    setPhase('adjust')
+  }
+
+  /** Start processing the second image (called after first image is done) */
+  const startSecondImageProcessing = async () => {
+    const secondUrl = pendingSecondImageRef.current
+    if (!secondUrl) return
+
+    setProcessingSecondImage(true)
+    setPhase('detecting')
+
+    let size: { width: number; height: number }
+    try {
+      size = await getImageSize(secondUrl)
+    } catch {
+      showToast(t('loadFailed'), 'error')
+      setTwoImageMode(false)
+      setProcessingSecondImage(false)
+      pendingSecondImageRef.current = null
+      setPhase('upload')
+      return
+    }
+
+    if (size.width < 100 || size.height < 100) {
+      showToast(t('imageTooSmall'), 'error')
+      setTwoImageMode(false)
+      setProcessingSecondImage(false)
+      pendingSecondImageRef.current = null
+      setPhase('upload')
+      return
+    }
+
+    let resizedUrl = secondUrl
+    try {
+      resizedUrl = await resizeImage(secondUrl, size.width, size.height)
+      if (resizedUrl !== secondUrl) {
+        const newSize = await getImageSize(resizedUrl)
+        size = newSize
+      }
+    } catch {
+      // Fall through with original image
+    }
+
+    // Update the pending ref with possibly-resized URL
+    pendingSecondImageRef.current = resizedUrl
+
+    setOriginalImage(resizedUrl)
+    setImageSize(size)
+
+    try {
+      const suggestion = await suggestCorners(resizedUrl)
+      setSuggestedCorners(suggestion)
+    } catch {
+      setSuggestedCorners(null)
+    }
+
+    setPhase('adjust')
+  }
+
   const handleCornersApply = async (adjustedCorners: Point[]) => {
     lastCornersRef.current = adjustedCorners
     setPhase('processing')
 
-    try {
-      const { leftImage, rightImage } = await processImage(originalImage!, adjustedCorners)
-      setLeftImage(leftImage)
-      setRightImage(rightImage)
-      setPhase('result')
-    } catch (error) {
-      console.error('Error processing image with corners:', error)
-      showToast(t('processError'), 'error')
-      setPhase('adjust')
+    if (twoImageMode && !processingSecondImage) {
+      // First image in two-image mode: perspective-correct only (no split)
+      try {
+        const corrected = await processImageNoSplit(originalImage!, adjustedCorners)
+        setFirstProcessedImage(corrected)
+        // Now start processing the second image
+        await startSecondImageProcessing()
+      } catch (error) {
+        console.error('Error processing first image:', error)
+        showToast(t('processError'), 'error')
+        setPhase('adjust')
+      }
+    } else if (twoImageMode && processingSecondImage) {
+      // Second image in two-image mode: perspective-correct only, then show result
+      secondCornersRef.current = adjustedCorners
+      try {
+        const corrected = await processImageNoSplit(originalImage!, adjustedCorners)
+        setLeftImage(firstProcessedImage!)
+        setRightImage(corrected)
+        setPhase('result')
+      } catch (error) {
+        console.error('Error processing second image:', error)
+        showToast(t('processError'), 'error')
+        setPhase('adjust')
+      }
+    } else {
+      // Normal single-image mode
+      try {
+        const { leftImage, rightImage } = await processImage(originalImage!, adjustedCorners)
+        setLeftImage(leftImage)
+        setRightImage(rightImage)
+        setPhase('result')
+      } catch (error) {
+        console.error('Error processing image with corners:', error)
+        showToast(t('processError'), 'error')
+        setPhase('adjust')
+      }
     }
   }
 
@@ -136,7 +298,13 @@ export default function ImageProcessor() {
     restoredWarpRef.current = null
     currentCenterRef.current = { x: 0, y: 0 }
     restoredCenterRef.current = null
-    setSuggestedCorners(lastCornersRef.current)
+
+    if (twoImageMode) {
+      // Go back to 2nd image corner adjustment (keep firstProcessedImage)
+      setSuggestedCorners(secondCornersRef.current ?? lastCornersRef.current)
+    } else {
+      setSuggestedCorners(lastCornersRef.current)
+    }
     setPhase('adjust')
   }
 
@@ -147,6 +315,7 @@ export default function ImageProcessor() {
     setRightImage(null)
     setSuggestedCorners(null)
     lastCornersRef.current = null
+    secondCornersRef.current = null
     currentOffsetRef.current = { x: 0, y: 0 }
     restoredOffsetRef.current = null
     currentWarpRef.current = ZERO_CORNERS
@@ -155,6 +324,11 @@ export default function ImageProcessor() {
     restoredCenterRef.current = null
     currentSaveIdRef.current = null
     displayRectRef.current = { w: 1, h: 1, left: 0, top: 0 }
+    // Reset two-image mode state
+    setTwoImageMode(false)
+    setProcessingSecondImage(false)
+    setFirstProcessedImage(null)
+    pendingSecondImageRef.current = null
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
@@ -265,13 +439,16 @@ export default function ImageProcessor() {
 
   const handleSave = () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
-    const data = {
+    const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
       originalImage,
       corners: lastCornersRef.current,
       offset: currentOffsetRef.current,
       imageSize,
       warpCorners: currentWarpRef.current,
       centerOffset: currentCenterRef.current,
+      twoImageMode: twoImageMode || undefined,
+      rightImageData: twoImageMode ? (pendingSecondImageRef.current ?? undefined) : undefined,
+      secondCorners: twoImageMode ? (secondCornersRef.current ?? undefined) : undefined,
     }
     // Overwrite existing entry for the same image, or create new
     const existing = currentSaveIdRef.current
@@ -294,6 +471,44 @@ export default function ImageProcessor() {
       setGifPreview(null)
     }
     currentSaveIdRef.current = entry.id
+
+    if (entry.twoImageMode && entry.rightImageData) {
+      // Restore two-image mode save
+      setTwoImageMode(true)
+      setProcessingSecondImage(true)
+      pendingSecondImageRef.current = entry.rightImageData
+      lastCornersRef.current = entry.corners
+      secondCornersRef.current = entry.secondCorners ?? null
+      restoredOffsetRef.current = entry.offset
+      currentOffsetRef.current = entry.offset
+      restoredWarpRef.current = entry.warpCorners
+      currentWarpRef.current = entry.warpCorners
+      restoredCenterRef.current = entry.centerOffset
+      currentCenterRef.current = entry.centerOffset
+
+      if (entry.secondCorners) {
+        // Both corners saved — process both images directly to result
+        setOriginalImage(entry.originalImage)
+        setImageSize(entry.imageSize)
+        setPhase('processing')
+        try {
+          const left = await processImageNoSplit(entry.originalImage, entry.corners)
+          const right = await processImageNoSplit(entry.rightImageData, entry.secondCorners)
+          setFirstProcessedImage(left)
+          setLeftImage(left)
+          setRightImage(right)
+          setPhase('result')
+        } catch (error) {
+          console.error('Error restoring two-image save:', error)
+          showToast(t('restoreFailed'), 'error')
+          handleReset()
+        }
+      } else {
+        // No saved corners — replay the full flow
+        handleTwoImageUpload(entry.originalImage, entry.rightImageData, entry.id)
+      }
+      return
+    }
 
     setOriginalImage(entry.originalImage)
     setImageSize(entry.imageSize)
@@ -319,17 +534,19 @@ export default function ImageProcessor() {
     }
   }
 
-  const currentStep = PHASE_STEP[phase]
+  const currentStep = getPhaseStep(phase, twoImageMode, processingSecondImage)
+  const stepLabels = twoImageMode
+    ? [t('step1stImage'), t('step2ndImage'), t('step3')]
+    : [t('step1'), t('step2'), t('step3')]
 
   return (
     <div className="space-y-4">
-      {phase !== 'upload' && (
-        <StepIndicator current={currentStep} labels={[t('step1'), t('step2'), t('step3')]} />
-      )}
+      {phase !== 'upload' && <StepIndicator current={currentStep} labels={stepLabels} />}
 
       {phase === 'upload' && (
         <ImageUpload
           onImageUpload={handleImageUpload}
+          onTwoImageUpload={handleTwoImageUpload}
           cvLoaded={cvLoaded}
           loadState={loadState}
           loadError={loadError}

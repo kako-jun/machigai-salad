@@ -112,6 +112,14 @@ const dict = {
   installBtn: { ja: 'インストール', en: 'Install' },
   installDismiss: { ja: 'あとで', en: 'Later' },
 
+  // Album mode popup
+  albumModeTitle: { ja: 'どっちの よみこみ？', en: 'How to load?' },
+  albumModeOne: { ja: '1まい（左右がうつってる）', en: 'One image (side by side)' },
+  albumModeTwo: { ja: '2まい（べつべつの画像）', en: 'Two separate images' },
+  pickSecondImage: { ja: '2まい目を えらんでね', en: 'Now pick the second image!' },
+  step1stImage: { ja: '1まい目', en: '1st' },
+  step2ndImage: { ja: '2まい目', en: '2nd' },
+
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },
 } as const
