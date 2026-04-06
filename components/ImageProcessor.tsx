@@ -205,7 +205,11 @@ export default function ImageProcessor() {
           text: t('shareResultText'),
         })
       } else {
-        handleApngDownload()
+        // Web Share 非対応: GIF をダウンロード
+        const a = document.createElement('a')
+        a.href = gifPreview.url
+        a.download = 'machigai-salad.gif'
+        a.click()
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
