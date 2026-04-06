@@ -126,6 +126,7 @@ export default function ImageUpload({
 
   const handleOneImageMode = () => {
     setAlbumPopupOpen(false)
+    setFirstImageData(null)
     setTimeout(() => {
       galleryInputRef.current?.click()
     }, 50)

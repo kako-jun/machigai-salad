@@ -448,6 +448,7 @@ export default function ImageProcessor() {
       centerOffset: currentCenterRef.current,
       twoImageMode: twoImageMode || undefined,
       rightImageData: twoImageMode ? (pendingSecondImageRef.current ?? undefined) : undefined,
+      secondCorners: twoImageMode ? (secondCornersRef.current ?? undefined) : undefined,
     }
     // Overwrite existing entry for the same image, or create new
     const existing = currentSaveIdRef.current
@@ -472,8 +473,38 @@ export default function ImageProcessor() {
     currentSaveIdRef.current = entry.id
 
     if (entry.twoImageMode && entry.rightImageData) {
-      // Restore two-image mode save — pass save ID to preserve overwrite behavior
-      handleTwoImageUpload(entry.originalImage, entry.rightImageData, entry.id)
+      // Restore two-image mode save
+      setTwoImageMode(true)
+      setProcessingSecondImage(true)
+      pendingSecondImageRef.current = entry.rightImageData
+      lastCornersRef.current = entry.corners
+      secondCornersRef.current = entry.secondCorners ?? null
+      restoredOffsetRef.current = entry.offset
+      currentOffsetRef.current = entry.offset
+      restoredWarpRef.current = entry.warpCorners
+      currentWarpRef.current = entry.warpCorners
+      restoredCenterRef.current = entry.centerOffset
+      currentCenterRef.current = entry.centerOffset
+
+      if (entry.secondCorners) {
+        // Both corners saved — process both images directly to result
+        setPhase('processing')
+        try {
+          const left = await processImageNoSplit(entry.originalImage, entry.corners)
+          const right = await processImageNoSplit(entry.rightImageData, entry.secondCorners)
+          setFirstProcessedImage(left)
+          setLeftImage(left)
+          setRightImage(right)
+          setPhase('result')
+        } catch (error) {
+          console.error('Error restoring two-image save:', error)
+          showToast(t('restoreFailed'), 'error')
+          handleReset()
+        }
+      } else {
+        // No saved corners — replay the full flow
+        handleTwoImageUpload(entry.originalImage, entry.rightImageData, entry.id)
+      }
       return
     }
 

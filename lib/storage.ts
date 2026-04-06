@@ -14,6 +14,7 @@ export interface SaveEntry {
   centerOffset: Point
   twoImageMode?: boolean
   rightImageData?: string
+  secondCorners?: Point[]
 }
 
 const ZERO_CORNERS: CornerOffsets = [
