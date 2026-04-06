@@ -331,10 +331,18 @@ export default function ImageUpload({
               </span>
             </div>
             <div className="flex flex-col gap-2 p-4">
-              <button onClick={handleOneImageMode} className="btn-action w-full py-3 text-sm">
+              <button
+                onClick={handleOneImageMode}
+                className="btn-action flex w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                <OneImageIcon />
                 {t('albumModeOne')}
               </button>
-              <button onClick={handleTwoImageMode} className="btn-ghost w-full py-3 text-sm">
+              <button
+                onClick={handleTwoImageMode}
+                className="btn-ghost flex w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                <TwoImageIcon />
                 {t('albumModeTwo')}
               </button>
             </div>
@@ -361,6 +369,49 @@ function GalleryIcon() {
       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
       <circle cx="8.5" cy="8.5" r="1.5" />
       <polyline points="21 15 16 10 5 21" />
+    </svg>
+  )
+}
+
+function OneImageIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  )
+}
+
+function TwoImageIcon() {
+  return (
+    <svg
+      width="28"
+      height="20"
+      viewBox="0 0 36 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="1" y="3" width="16" height="18" rx="2" ry="2" />
+      <circle cx="6.5" cy="8.5" r="1.5" />
+      <polyline points="17 15 13 11 4 21" />
+      <rect x="19" y="3" width="16" height="18" rx="2" ry="2" />
+      <circle cx="24.5" cy="8.5" r="1.5" />
+      <polyline points="35 15 31 11 22 21" />
     </svg>
   )
 }
