@@ -217,9 +217,9 @@ corrected.delete()
 
 ### LocalStorage (`lib/storage.ts`)
 
-- キー: `machigai-salad-saves`（アプリ全体で1つ）
-- 値: `SaveEntry[]` のJSON配列
-- 各エントリ: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners, centerOffset, twoImageMode?, rightImageData? }`
+- キー: `machigai-salad`（アプリ全体で1つのルートキー）
+- 値: `{ saves: SaveEntry[], lang?: "ja"|"en" }` のJSONオブジェクト
+- 各SaveEntry: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners, centerOffset, twoImageMode?, rightImageData? }`
 - 加工済み画像は保存しない（復元時にcornersから再処理）
 - `crypto.randomUUID()` でID生成
 - 同じ画像セッション内の連続保存は上書き（`updateSave`）。新画像読込時にID解放→次回は新規作成
@@ -230,8 +230,8 @@ corrected.delete()
 
 - React Context + 辞書ベースの軽量i18n（外部ライブラリ不要）
 - 対応言語: 日本語 (ja) / 英語 (en)
-- 初期値: `localStorage` → `navigator.language` の順で判定
-- 言語選択は `machigai-salad-lang` キーに記憶
+- 初期値: `localStorage`（ルートキー `machigai-salad` の `lang` フィールド） → `navigator.language` の順で判定
+- 言語選択は `lib/storage.ts` の `saveLang()` で永続化（ルートキーに統合済み）
 - `html lang` 属性も動的に切替
 - `as const` + `keyof typeof dict` で辞書キーの型安全を確保
 - metadata (OGP, title) はサーバーサイド固定（日本語のみ）

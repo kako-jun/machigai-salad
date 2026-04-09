@@ -1,8 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-
-const STORAGE_KEY = 'machigai-salad-lang'
+import { loadLang, saveLang } from './storage'
 
 export type Lang = 'ja' | 'en'
 
@@ -142,13 +141,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>('ja')
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === 'en' || stored === 'ja') {
-        setLangState(stored)
-        return
-      }
-    } catch {}
+    const stored = loadLang()
+    if (stored) {
+      setLangState(stored)
+      return
+    }
     if (!navigator.language.startsWith('ja')) {
       setLangState('en')
     }
@@ -160,9 +157,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l)
-    try {
-      localStorage.setItem(STORAGE_KEY, l)
-    } catch {}
+    saveLang(l)
   }, [])
 
   const t = useCallback((key: DictKey) => dict[key][lang], [lang])
