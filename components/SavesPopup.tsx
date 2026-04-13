@@ -36,7 +36,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (!confirm(t('deleteConfirm'))) return
-    deleteSave(id)
+    if (!deleteSave(id)) return
     setSaves((prev) => prev.filter((s) => s.id !== id))
   }
 

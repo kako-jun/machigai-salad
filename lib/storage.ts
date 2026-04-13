@@ -54,10 +54,14 @@ function normalize(entry: SaveEntry): SaveEntry {
 
 // ── low-level helpers ──
 
+let legacyCleaned = false
+
 function readRoot(): StorageRoot {
   try {
-    // Clean up old key to free quota
-    localStorage.removeItem('machigai-salad-saves')
+    if (!legacyCleaned) {
+      localStorage.removeItem('machigai-salad-saves')
+      legacyCleaned = true
+    }
 
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return { saves: [] }
@@ -140,10 +144,10 @@ export function loadLang(): Lang | undefined {
   return readRoot().lang
 }
 
-export function saveLang(lang: Lang): boolean {
+export function saveLang(lang: Lang): void {
   const root = readRoot()
   root.lang = lang
-  return writeRoot(root)
+  writeRoot(root)
 }
 
 // ── util ──

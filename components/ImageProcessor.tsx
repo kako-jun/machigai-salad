@@ -377,8 +377,9 @@ export default function ImageProcessor() {
 
   const handleGifShare = async () => {
     if (!gifPreview) return
+    const ts = fileTimestamp()
     try {
-      const file = new File([gifPreview.blob], `machigai-salad-${fileTimestamp()}.gif`, {
+      const file = new File([gifPreview.blob], `machigai-salad-${ts}.gif`, {
         type: 'image/gif',
       })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -391,7 +392,7 @@ export default function ImageProcessor() {
         // Web Share 非対応: GIF をダウンロード
         const a = document.createElement('a')
         a.href = gifPreview.url
-        a.download = `machigai-salad-${fileTimestamp()}.gif`
+        a.download = `machigai-salad-${ts}.gif`
         a.click()
       }
     } catch (e: unknown) {
