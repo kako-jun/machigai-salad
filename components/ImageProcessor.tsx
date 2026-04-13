@@ -371,7 +371,8 @@ export default function ImageProcessor() {
   const handleGifShare = async () => {
     if (!gifPreview) return
     try {
-      const file = new File([gifPreview.blob], 'machigai-salad.gif', { type: 'image/gif' })
+      const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
+      const file = new File([gifPreview.blob], `machigai-salad-${ts}.gif`, { type: 'image/gif' })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -382,7 +383,8 @@ export default function ImageProcessor() {
         // Web Share 非対応: GIF をダウンロード
         const a = document.createElement('a')
         a.href = gifPreview.url
-        a.download = 'machigai-salad.gif'
+        const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
+        a.download = `machigai-salad-${ts}.gif`
         a.click()
       }
     } catch (e: unknown) {
@@ -410,7 +412,8 @@ export default function ImageProcessor() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'machigai-salad.png'
+      const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
+      a.download = `machigai-salad-${ts}.png`
       a.click()
       URL.revokeObjectURL(url)
     } catch {
@@ -439,6 +442,10 @@ export default function ImageProcessor() {
 
   const handleSave = () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
+    if (twoImageMode && !pendingSecondImageRef.current) {
+      showToast(t('saveFailed'), 'error')
+      return
+    }
     const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
       originalImage,
       corners: lastCornersRef.current,
