@@ -1,4 +1,4 @@
-const CACHE_NAME = 'machigai-salad-v3'
+const CACHE_NAME = 'machigai-salad-2026-04-13'
 
 const PRECACHE_URLS = ['/', '/manifest.webmanifest']
 
@@ -21,6 +21,9 @@ self.addEventListener('activate', (event) => {
 // Network-first strategy: always try network, fall back to cache when offline
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
+  // Don't intercept blob: or data: URLs (used for downloads)
+  const url = event.request.url
+  if (url.startsWith('blob:') || url.startsWith('data:')) return
 
   event.respondWith(
     fetch(event.request)

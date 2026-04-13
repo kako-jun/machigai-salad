@@ -19,6 +19,16 @@
 - **2枚モードの保存ガード**
   - 2枚モードで `rightImageData` が欠損している場合に保存を拒否（サイレント失敗の防止）
 
+- **PWAでPNGダウンロードが動かない問題を修正**
+  - PWAスタンドアロンモードでは `await` 後の `a.click()` がブロックされるため、APNGをGIFと同時に事前生成する方式に変更
+  - Service Worker が blob: URL をインターセプトしないよう修正
+
+- **LocalStorage保存失敗のサイレント無視を修正**
+  - `writeRoot` の書き込み失敗を `addSave`/`updateSave` に伝搬し、UIにエラートーストを表示
+
+- **Service Workerキャッシュ名を日付形式に修正**
+  - `machigai-salad-v3` → `machigai-salad-YYYY-MM-DD` に変更し、`next.config.ts` の自動更新が機能するように修正
+
 ### 改善 🎨
 
 - **シェア促進メッセージ**
