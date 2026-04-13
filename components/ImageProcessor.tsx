@@ -707,9 +707,11 @@ export default function ImageProcessor() {
               <button
                 onClick={handleApngDownload}
                 disabled={apngGenerating}
-                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+                className="btn-ghost flex flex-1 items-start justify-center gap-1.5 py-3 text-sm"
               >
-                <DownloadIcon size={16} />
+                <span className="mt-0.5 shrink-0">
+                  <DownloadIcon size={16} />
+                </span>
                 <span className="flex flex-col items-center">
                   <span>{apngGenerating ? '...' : t('gifPreviewDownload')}</span>
                   <span className="text-[10px] opacity-60">{t('pngFormatHint')}</span>
@@ -717,9 +719,11 @@ export default function ImageProcessor() {
               </button>
               <button
                 onClick={handleGifShare}
-                className="btn-action flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+                className="btn-action flex flex-1 items-start justify-center gap-1.5 py-3 text-sm"
               >
-                <ShareResultIcon size={16} />
+                <span className="mt-0.5 shrink-0">
+                  <ShareResultIcon size={16} />
+                </span>
                 <span className="flex flex-col items-center">
                   <span>{t('gifPreviewShare')}</span>
                   <span className="text-[10px] opacity-60">{t('gifFormatHint')}</span>
