@@ -1,246 +1,364 @@
-# アーキテクチャドキュメント
+# 設計ドキュメント
 
-## 技術スタック
+## プロジェクト概要
+
+「小エビの間違いサラダ」は、紙の間違い探しをスマートフォンやブラウザで楽しく遊べるようにするWebアプリケーションです。
+
+### ターゲットユーザー
+
+- **子供**: 小学生でも使える平易な言葉とカラフルなUI
+- **家族**: 外食を楽しむ家族連れ
+- **カジュアルユーザー**: 専門知識不要で直感的に使える
+
+### コアバリュー
+
+1. **完全無料**: サーバーコスト0円
+2. **プライバシー保護**: 画像は端末内で処理、外部送信なし
+3. **使いやすさ**: 子供でも迷わず使える
+4. **楽しさ**: 絵文字とカラフルなデザイン
+
+## アーキテクチャ
+
+### システム構成
 
 ```
-Next.js 15 (静的エクスポート)
-├── React 19 - UIフレームワーク
-├── TypeScript - 型安全性
-├── Tailwind CSS - スタイリング
-└── OpenCV.js - 画像処理ライブラリ
+┌─────────────────────────────────────┐
+│   ユーザーのブラウザ                  │
+│                                     │
+│  ┌──────────────────────────────┐  │
+│  │  React 19 + Next.js 15       │  │
+│  │  (静的サイト)                 │  │
+│  └──────────────────────────────┘  │
+│              ↓                      │
+│  ┌──────────────────────────────┐  │
+│  │  OpenCV.js                   │  │
+│  │  (CDNからロード)              │  │
+│  └──────────────────────────────┘  │
+│              ↓                      │
+│  ┌──────────────────────────────┐  │
+│  │  カメラ / ファイル入力        │  │
+│  └──────────────────────────────┘  │
+└─────────────────────────────────────┘
 ```
 
-## ディレクトリ構成
+### 画像処理パイプライン
 
 ```
-machigai-salad/
-├── app/                        # Next.js App Router
-│   ├── layout.tsx             # ルートレイアウト
-│   ├── page.tsx               # トップページ
-│   └── globals.css            # グローバルスタイル
-├── components/                 # Reactコンポーネント
-│   ├── ImageProcessor.tsx     # 画像処理の統合コンポーネント
-│   ├── ImageUpload.tsx        # 画像アップロード UI
-│   ├── ImageComparison.tsx    # 画像比較 UI
-│   ├── PaperCornersAdjustment.tsx  # 角の調整 UI
-│   ├── SavesPopup.tsx         # 保存データ一覧ポップアップ
-│   ├── LangToggle.tsx         # JA/EN言語切替トグル
-│   ├── ShareButtons.tsx        # フッターSNSシェアボタン（X/LINE/Web Share/クリップボード）
-│   ├── icons.tsx              # 共有アイコン（UndoIcon, SaveIcon, ShareResultIcon）
-│   ├── PwaInstallPrompt.tsx   # PWAインストールバナー（beforeinstallprompt）
-│   └── VisitorCounter.tsx     # Nostalgicカウンター+ビルド日バージョン表示
-├── hooks/                      # カスタムフック
-│   ├── index.ts               # エクスポート
-│   └── useOpenCV.ts           # OpenCV.js管理フック
-├── lib/                        # ユーティリティライブラリ
-│   ├── i18n.tsx               # 日英i18n（React Context + 辞書）
-│   ├── image-utils.ts         # 画像ユーティリティ（リサイズ、GIF/APNG生成）
-│   ├── mesh-warp.ts           # 5点メッシュワープ（4三角形アフィン変換）
-│   ├── storage.ts             # LocalStorage保存・復元
-│   └── opencv/                # OpenCV関連
-│       ├── index.ts           # エクスポート
-│       ├── paper-detection.ts # 紙の検出ロジック
-│       └── image-transform.ts # 画像変換ロジック
-├── types/                      # 型定義
-│   ├── index.ts               # 共通型定義（Point, CornerOffsets, MAX_UNDO, OpenCV）
-│   ├── gif.js.d.ts            # gif.js型定義（GIFエンコード）
-│   └── upng-js.d.ts           # upng-js型定義（APNGエンコード）
-├── docs/                       # ドキュメント
-│   ├── architecture.md        # アーキテクチャ（このファイル）
-│   ├── design.md              # 設計ドキュメント
-│   ├── todo.md                # 開発TODO
-│   ├── changelog.md           # 変更履歴
-│   └── ...                    # その他（features, platforms, roadmap等）
-├── public/                     # 静的アセット
-│   ├── manifest.webmanifest   # PWAマニフェスト
-│   ├── sw.js                  # Service Worker
-│   ├── favicon.webp           # ブラウザタブアイコン
-│   ├── apple-touch-icon.webp  # iOS用アイコン
-│   └── static/                # PWAアイコン、OGP画像、QRコード、バナー
-├── CLAUDE.md                   # 開発者向けガイド
-├── next.config.ts             # Next.js設定
-├── tailwind.config.ts         # Tailwind設定
-└── tsconfig.json              # TypeScript設定
+カメラ撮影
+    ↓
+1. 紙の自動検出 (detectPaperContour)
+   - グレースケール変換
+   - ガウシアンブラー
+   - Cannyエッジ検出（複数しきい値で試行）
+   - 輪郭抽出
+   - 4角形検出
+    ↓
+2. 角の調整UI (PaperCornersAdjustment)
+   - 検出した4つの角を表示
+   - ドラッグで微調整可能
+   - タッチ/マウス操作対応
+    ↓
+3. 台形補正 (applyPerspectiveTransform)
+   - 透視変換行列の計算
+   - warpPerspectiveで画像変換
+    ↓
+4. 左右分割（色は加工しない）
+   - 中央で分割
+   - 2つの画像を生成
+    ↓
+5. 比較表示 (ImageComparison)
+   - タップで切り替え
+   - スムーズなアニメーション
 ```
 
 ## コンポーネント設計
 
-### ImageProcessor
+### 1. ImageProcessor (統合コンポーネント)
 
-画像処理の統合コンポーネント。`useOpenCV`フックを使用。
+**役割**: アプリ全体の状態管理と画像処理フロー制御
 
-**状態:**
+**状態**:
 
 ```typescript
-originalImage: string | null     // 元画像
-leftImage: string | null         // 分割後の左画像
-rightImage: string | null        // 分割後の右画像
-isProcessing: boolean            // 処理中フラグ
-detectedCorners: Point[] | null  // 検出した4つの角
-showCornersAdjustment: boolean   // 角調整UI表示フラグ
+// 画像データ
+originalImage: string | null          // 元画像
+leftImage: string | null              // 分割後の左画像
+rightImage: string | null             // 分割後の右画像
+
+// UI状態
+isProcessing: boolean                 // 処理中フラグ
+cvLoaded: boolean                     // OpenCV.js読み込み完了
+detectedCorners: Point[] | null       // 検出した4つの角
+showCornersAdjustment: boolean        // 角調整UI表示フラグ
 ```
 
-### ImageUpload
+**主要メソッド**:
 
-画像のアップロード/撮影を担当。
+- `handleImageUpload()`: 画像アップロード処理
+- `detectPaperCorners()`: 紙の4角を自動検出
+- `handleCornersApply()`: 調整後の角で台形補正を実行
+- `handleCornersCancel()`: 角調整をスキップ
+- `processImageWithCorners()`: 台形補正〜分割までの処理
 
-- `capture="environment"` でカメラアクセス
-- OpenCV.jsロード中はボタン無効化
+### 2. ImageUpload (画像入力UI)
 
-### PaperCornersAdjustment
+**役割**: カメラ撮影またはファイル選択
 
-自動検出した紙の4つの角を微調整。
+**特徴**:
 
-- Canvas上で画像と角を描画
-- マウス/タッチでドラッグ
-- ドラッグ中の角にグロー効果
+- `capture="environment"`: 背面カメラを優先
+- 子供向けの大きなボタンとわかりやすい説明
+- OpenCV.jsロード中はボタンを無効化
 
-### ImageComparison
+**デザイン**:
 
-左右の画像を切り替え表示。canvas描画で5点メッシュワープ（4隅+中心）を適用。
+- 🍤 小エビのアイコン
+- オレンジ〜イエローのグラデーション背景
+- 4ステップの使い方ガイド
 
-- DOM `<img>` 要素は不使用。左右両画像をcanvasで描画
-- パネルはCSS `aspect-ratio` で画像アスペクト比に追従
-- `imgRect` は `panel.clientWidth/clientHeight` から純粋な数学で計算（DOM img測定に依存しない）
-- 長押し: 左画像を非表示（右画像が見える）
-- スライド: 左画像の位置微調整
-- 四隅・中心ハンドル: メッシュワープ調整（ハンドルはDOMで残す。画像外にはみ出してドラッグできるため）
-- GIF生成: ImageProcessorから `leftDataUrl + rightDataUrl + displaySize + warpパラメータ` を受け取り、image-utils.ts が画像データから独立レンダリング（表示canvasに依存しない）
+### 3. PaperCornersAdjustment (角調整UI)
 
-## 画像処理パイプライン
+**役割**: 自動検出した紙の角を微調整
 
-### 1. 紙の自動検出 (`lib/opencv/paper-detection.ts`)
+**機能**:
+
+- Canvasに画像と4つの角を描画
+- ドラッグで角の位置を変更
+- リアルタイムで描画を更新
+
+**視覚デザイン**:
+
+- オレンジ色の丸で角を表示
+- ドラッグ中は光る（グロー効果）
+- 方向矢印の絵文字（↖️↗️↘️↙️）
+- 太い線で四角形を描画
+
+**操作**:
+
+- マウス/タッチ両対応
+- 画像サイズに応じて自動スケール
+- 画像境界外に出ないようクランプ
+
+### 4. ImageComparison (画像比較UI)
+
+**役割**: 左右の画像を切り替えて表示
+
+**動作**:
+
+- デフォルト: 左の画像を表示
+- タッチダウン/マウスダウン: 右の画像を表示
+- タッチアップ/マウスアップ: 左の画像に戻る
+- マウスが領域外に出た場合も左に戻る
+
+**デザイン**:
+
+- 画像下部にインジケーター（1つ目/2つ目）
+- スムーズなフェードアニメーション
+- 操作ガイドを常に表示
+
+## OpenCV.js活用
+
+### 紙の自動検出アルゴリズム
 
 ```typescript
 // 複数のCannyしきい値で試行
-const CANNY_THRESHOLD_PAIRS = [
-  [30, 100],
-  [50, 150],
-  [75, 200],
+const thresholdPairs = [
+  [30, 100], // 弱いエッジも検出
+  [50, 150], // 標準
+  [75, 200], // 強いエッジのみ
 ]
 
 // 複数のepsilonで四角形近似
-const APPROX_EPSILON_VALUES = [0.02, 0.03, 0.04]
+for (const epsilon of [0.02, 0.03, 0.04]) {
+  cv.approxPolyDP(contour, approx, epsilon * peri, true)
+  // 4つの角を持つ場合に採用
+}
 ```
 
-**処理フロー:**
-
-1. グレースケール変換
-2. ガウシアンブラー
-3. Cannyエッジ検出
-4. 輪郭抽出
-5. 4角形検出
-
-**検出条件:**
+**検出条件**:
 
 - 面積が画像の5%以上
 - 4つの角を持つ多角形
 - 最も大きい四角形を採用
+- 20%以上の候補が見つかったら早期終了
 
-### 2. 台形補正 (`lib/opencv/image-transform.ts`)
+### 台形補正 (透視変換)
 
 ```typescript
+// 4つの角から変換行列を計算
 const M = cv.getPerspectiveTransform(srcPoints, dstPoints)
+
+// 画像を変換
 cv.warpPerspective(src, warped, M, new cv.Size(maxWidth, maxHeight))
 ```
 
-### 3. 左右分割
+**幅・高さの計算**:
 
-画像を中央で分割。
+- 上辺と下辺の長さから最大幅を算出
+- 左辺と右辺の長さから最大高さを算出
+- 変換後は正面から見た長方形になる
 
-## フック設計
+### メモリ管理
 
-### useOpenCV
-
-OpenCV.jsをロードして画像処理機能を提供。
+OpenCV.jsのMatオブジェクトは必ず`.delete()`で解放:
 
 ```typescript
-interface UseOpenCVReturn {
-  cvLoaded: boolean
-  detectCorners: (imageDataUrl: string) => Promise<Point[] | null>
-  processImage: (imageDataUrl: string, corners: Point[] | null) => Promise<ProcessedImages>
+try {
+  const src = cv.imread(canvas)
+  const gray = new cv.Mat()
+  // ... 処理 ...
+} finally {
+  src.delete()
+  gray.delete()
+  // 全てのMatを明示的に解放
 }
 ```
 
-## 型定義 (`types/index.ts`)
+## UIデザイン原則
 
-```typescript
-export interface Point {
-  x: number
-  y: number
-}
+### 子供向けデザイン
 
-export interface OpenCV {
-  // OpenCV.jsのメソッド定義
-}
+1. **平易な言葉**
+   - 「紙の範囲を調整」→「📄 まっすぐに直そう！」
+   - 「適用」→「これでOK！」
+   - 専門用語を避ける
 
-export interface Mat {
-  // OpenCV Matオブジェクト
-}
-```
+2. **絵文字を活用**
+   - 📷 写真
+   - 💡 ヒント
+
+3. **カラフルなデザイン**
+   - オレンジ〜イエローのグラデーション
+   - 明るく楽しい配色
+   - 高コントラストで見やすく
+
+4. **大きなボタン**
+   - タッチしやすいサイズ
+   - タップ時にアニメーション（`active:scale-95`）
+   - 影付きで立体感
+
+### アクセシビリティ
+
+- タッチとマウス両対応
+- スクリーンリーダー用のalt属性
+- 十分なコントラスト比
+- 大きなタップターゲット（48px以上）
 
 ## パフォーマンス最適化
 
-1. **画像の自動縮小**: カメラ取得後に表示解像度×dpr（上限2400px）にcanvasリサイズ
-2. **OpenCV.jsの遅延ロード**: CDNから動的ロード
-3. **画像処理の非同期化**: Promiseでラップ
-4. **メモリ管理**: Matオブジェクトは必ず`.delete()`
+### 画像処理の最適化
+
+1. **早期終了**: 良い候補が見つかったら検索を打ち切り
+2. **適応的パラメータ**: 複数の設定を試行して最適なものを選択
+3. **非同期処理**: Promiseでラップしてメインスレッドをブロックしない
+
+### ロード時間の最適化
+
+1. **OpenCV.jsの遅延ロード**: 初回アクセス時にCDNから動的ロード
+2. **静的ビルド**: Next.jsで静的HTMLを事前生成
+3. **画像の最適化**: 処理後の画像はDataURLで保持
+
+## エラーハンドリング
+
+### ユーザーフレンドリーなメッセージ
 
 ```typescript
-// Good
-src.delete()
-corrected.delete()
+// 悪い例
+alert('Error: Image processing failed')
+
+// 良い例
+alert('😅 うまくいかなかったみたい。もう一度写真をとってみてね！')
 ```
 
-## PWA
+### エラーケース
 
-### マニフェスト (`public/manifest.webmanifest`)
+1. **OpenCV.jsロード失敗**
+   - ボタンを無効化
+   - 「じゅんび中...」と表示
 
-- `display: standalone` でネイティブアプリ風の全画面表示
-- `orientation: portrait` で縦向き固定
-- テーマカラー・背景色は `#FEF6DC`（アイコン背景色と統一、PWAスプラッシュが自然に繋がる）
-- アイコン: 192x192 / 512x512（webp、maskable対応）
+2. **紙の検出失敗**
+   - 調整UIをスキップ
+   - 元画像のまま処理続行
 
-### Service Worker (`public/sw.js`)
+3. **画像処理エラー**
+   - 優しいメッセージで再試行を促す
+   - 初期状態に戻る
 
-- network-first戦略: 常にネットワークを優先し、オフライン時のみキャッシュにフォールバック
-- デプロイ後にユーザーが即座に最新版を取得可能
-- 旧バージョンのキャッシュを自動削除
-- `skipWaiting` + `clients.claim` で即座に有効化
+## テスト戦略
 
-### OGP
+### 手動テストチェックリスト
 
-- `layout.tsx` で Open Graph / Twitter Card メタタグを設定
-- OGP画像: `public/static/ogp.webp`（1200x630）
+#### 基本機能
 
-## データ永続化
+- [ ] カメラで撮影できる
+- [ ] ファイルから画像を選択できる
+- [ ] OpenCV.jsが正常にロードされる
 
-### LocalStorage (`lib/storage.ts`)
+#### 紙の検出
 
-- キー: `machigai-salad`（アプリ全体で1つのルートキー）
-- 値: `{ saves: SaveEntry[], lang?: "ja"|"en" }` のJSONオブジェクト
-- 各SaveEntry: `{ id, savedAt, originalImage, corners, offset, imageSize, warpCorners, centerOffset, twoImageMode?, rightImageData? }`
-- 加工済み画像は保存しない（復元時にcornersから再処理）
-- `crypto.randomUUID()` でID生成
-- 同じ画像セッション内の連続保存は上書き（`updateSave`）。新画像読込時にID解放→次回は新規作成
+- [ ] 正面から撮った紙を検出できる
+- [ ] 斜めから撮った紙を検出できる
+- [ ] 背景が複雑でも検出できる
+- [ ] 検出失敗時も処理を続行できる
 
-## 国際化 (i18n)
+#### 角の調整
 
-### lib/i18n.tsx
+- [ ] 4つの角が正しく表示される
+- [ ] マウスでドラッグできる
+- [ ] タッチでドラッグできる（スマホ）
+- [ ] 画像境界外に出ない
+- [ ] ドラッグ中の角が光る
 
-- React Context + 辞書ベースの軽量i18n（外部ライブラリ不要）
-- 対応言語: 日本語 (ja) / 英語 (en)
-- 初期値: `localStorage`（ルートキー `machigai-salad` の `lang` フィールド） → `navigator.language` の順で判定
-- 言語選択は `lib/storage.ts` の `saveLang()` で永続化（ルートキーに統合済み）
-- `html lang` 属性も動的に切替
-- `as const` + `keyof typeof dict` で辞書キーの型安全を確保
-- metadata (OGP, title) はサーバーサイド固定（日本語のみ）
+#### 画像処理
 
-## デプロイ
+- [ ] 台形補正が正しく動作する
+- [ ] 左右に正しく分割される（色は元画像のまま）
+- [ ] 左右に正しく分割される
 
-### Cloudflare Pages
+#### 画像比較
 
-- GitHub連携で`main`ブランチへのpushで自動デプロイ
-- ビルドコマンド: `npm run build`
-- 出力ディレクトリ: `out`
-- カスタムドメイン: `machigai-salad.llll-ll.com`
+- [ ] タップで右の画像が表示される
+- [ ] 離すと左の画像に戻る
+- [ ] マウス操作でも動作する
+- [ ] アニメーションがスムーズ
+
+#### デバイス対応
+
+- [ ] iOS Safari で動作する
+- [ ] Android Chrome で動作する
+- [ ] PCブラウザで動作する
+- [ ] 縦向き・横向き両対応
+
+## セキュリティ
+
+### プライバシー保護
+
+1. **画像の外部送信なし**: すべてブラウザ内で処理
+2. **ローカルストレージ不使用**: 画像をメモリにのみ保持
+3. **外部API不使用**: OpenCV.jsのみCDNから取得
+
+### セキュアなホスティング
+
+1. **HTTPS必須**: カメラアクセスに必要
+2. **静的サイト**: サーバーサイドの脆弱性なし
+3. **依存関係の定期更新**: `npm audit`で脆弱性チェック
+
+## 今後の拡張可能性
+
+### 実装済み
+
+- ✅ 紙の自動検出
+- ✅ 台形補正
+- ✅ 角の手動調整
+- ✅ 左右分割
+- ✅ タップで比較
+- ✅ PWA化（manifest + Service Worker + OGP）
+- ✅ QRコード共有
+- ✅ ヘッダバナー
+
+### 今後の候補
+
+- 差分の自動検出
+- 画像の保存機能
+- SNSシェア機能
+- 複数の間違い探しを管理
