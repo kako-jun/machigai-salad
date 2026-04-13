@@ -339,37 +339,33 @@ export default function ImageProcessor() {
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
-      setApngUrl(null)
     }
     setPhase('upload')
   }
 
   const [sharing, setSharing] = useState(false)
   const [gifPreview, setGifPreview] = useState<{ url: string; blob: Blob } | null>(null)
-  const [apngUrl, setApngUrl] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [apngGenerating, setApngGenerating] = useState(false)
 
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
     setSharing(true)
 
-    const source = {
-      leftDataUrl: leftImage,
-      rightDataUrl: rightImage,
-      displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
-      offset: currentOffsetRef.current,
-      cornerOffsets: currentWarpRef.current,
-      centerOffset: currentCenterRef.current,
-    }
-
     try {
-      const [gifBlob, pngBlob] = await Promise.all([
-        generateToggleGif(source, 1000),
-        generateToggleApng(source, 1000),
-      ])
-      const url = URL.createObjectURL(gifBlob)
-      setGifPreview({ url, blob: gifBlob })
-      setApngUrl(URL.createObjectURL(pngBlob))
+      const blob = await generateToggleGif(
+        {
+          leftDataUrl: leftImage,
+          rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
+        },
+        1000
+      )
+      const url = URL.createObjectURL(blob)
+      setGifPreview({ url, blob })
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== 'AbortError') {
         showToast(t('shareFailed'), 'error')
@@ -405,12 +401,32 @@ export default function ImageProcessor() {
     }
   }
 
-  const handleApngDownload = () => {
-    if (!apngUrl) return
-    const a = document.createElement('a')
-    a.href = apngUrl
-    a.download = `machigai-salad-${fileTimestamp()}.png`
-    a.click()
+  const handleApngDownload = async () => {
+    if (!leftImage || !rightImage || apngGenerating) return
+    setApngGenerating(true)
+    try {
+      const blob = await generateToggleApng(
+        {
+          leftDataUrl: leftImage,
+          rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
+        },
+        1000
+      )
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `machigai-salad-${fileTimestamp()}.png`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast(t('shareFailed'), 'error')
+    } finally {
+      setApngGenerating(false)
+    }
   }
 
   const handleGifClose = useCallback(() => {
@@ -418,11 +434,7 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
-    if (apngUrl) {
-      URL.revokeObjectURL(apngUrl)
-      setApngUrl(null)
-    }
-  }, [gifPreview, apngUrl])
+  }, [gifPreview])
 
   // Escape key to close GIF preview
   useEffect(() => {
@@ -470,7 +482,6 @@ export default function ImageProcessor() {
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
-      setApngUrl(null)
     }
     currentSaveIdRef.current = entry.id
 
@@ -694,12 +705,12 @@ export default function ImageProcessor() {
             >
               <button
                 onClick={handleApngDownload}
-                disabled={!apngUrl}
+                disabled={apngGenerating}
                 className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
               >
                 <DownloadIcon size={16} />
                 <span className="flex flex-col items-center">
-                  <span>{t('gifPreviewDownload')}</span>
+                  <span>{apngGenerating ? '...' : t('gifPreviewDownload')}</span>
                   <span className="text-[10px] opacity-60">{t('pngFormatHint')}</span>
                 </span>
               </button>
