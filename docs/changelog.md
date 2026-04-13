@@ -28,6 +28,10 @@
 - **Service Workerキャッシュ名を日付形式に修正**
   - `machigai-salad-v3` → `machigai-salad-YYYY-MM-DD` に変更し、`next.config.ts` の自動更新が機能するように修正
 
+- **PWAでLocalStorage保存が失敗する問題を修正**
+  - ルートキー統合時に旧キー `machigai-salad-saves` のデータが残留し、5MB制限を圧迫していた
+  - `readRoot` で旧キーを自動削除してquotaを解放
+
 ### 改善 🎨
 
 - **シェア促進メッセージ**
