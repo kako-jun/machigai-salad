@@ -71,11 +71,12 @@ function readRoot(): StorageRoot {
   }
 }
 
-function writeRoot(root: StorageRoot): void {
+function writeRoot(root: StorageRoot): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(root))
+    return true
   } catch {
-    // quota exceeded or private-browsing — silently ignore
+    return false
   }
 }
 
@@ -98,7 +99,7 @@ export function addSave(entry: Omit<SaveEntry, 'id' | 'savedAt'>): SaveEntry | n
     while (root.saves.length > MAX_SAVES) {
       root.saves.pop()
     }
-    writeRoot(root)
+    if (!writeRoot(root)) return null
     return newEntry
   } catch {
     return null
@@ -113,7 +114,7 @@ export function updateSave(id: string, data: Omit<SaveEntry, 'id' | 'savedAt'>):
     const updated: SaveEntry = { ...data, id, savedAt: new Date().toISOString() }
     root.saves.splice(idx, 1)
     root.saves.unshift(updated)
-    writeRoot(root)
+    if (!writeRoot(root)) return null
     return updated
   } catch {
     return null
