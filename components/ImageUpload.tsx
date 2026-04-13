@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { showToast } from './Toast'
 import { SaveIcon } from './icons'
@@ -36,6 +36,12 @@ export default function ImageUpload({
 
   const [albumPopupOpen, setAlbumPopupOpen] = useState(false)
   const [firstImageData, setFirstImageData] = useState<string | null>(null)
+  const [isLineInApp, setIsLineInApp] = useState(false)
+
+  useEffect(() => {
+    // LINE in-app browser UA contains "Line/" followed by version (e.g. "Line/14.5.0")
+    setIsLineInApp(/\bLine\//i.test(navigator.userAgent))
+  }, [])
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 
@@ -84,10 +90,6 @@ export default function ImageUpload({
     try {
       const dataUrl = await readFileAsDataUrl(file)
       setFirstImageData(dataUrl)
-      showToast(t('pickSecondImage'), 'info')
-      setTimeout(() => {
-        secondImageInputRef.current?.click()
-      }, 300)
     } catch {
       showToast(t('loadFailed'), 'error')
     }
@@ -231,6 +233,30 @@ export default function ImageUpload({
         ) : (
           /* Normal state: loading or ready */
           <>
+            {/* LINE in-app browser warning */}
+            {isLineInApp && (
+              <div
+                className="flex flex-col items-center gap-2 rounded-xl px-4 py-3 text-center"
+                style={{
+                  background: 'rgba(245,197,24,0.15)',
+                  border: '1px solid rgba(212,160,16,0.4)',
+                }}
+              >
+                <p className="text-sm" style={{ color: 'var(--espresso)' }}>
+                  {t('lineInAppWarning')}
+                </p>
+                <button
+                  onClick={() => {
+                    // '_system' is a LINE in-app browser convention to open in the external browser
+                    window.open(window.location.href, '_system')
+                  }}
+                  className="btn-action px-4 py-2 text-sm"
+                >
+                  {t('lineInAppOpenExternal')}
+                </button>
+              </div>
+            )}
+
             {/* Camera shutter button */}
             <button
               onClick={handleCameraClick}
@@ -304,6 +330,51 @@ export default function ImageUpload({
 
         <div className="menu-stripe-olive mt-3 self-stretch" />
       </div>
+
+      {/* Pick second image prompt */}
+      {firstImageData && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setFirstImageData(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="px-4 py-3 text-center"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('pickSecondImage')}
+              </span>
+            </div>
+            <div className="flex flex-col gap-2 p-4">
+              <button
+                onClick={() => secondImageInputRef.current?.click()}
+                className="btn-action flex w-full items-center justify-center gap-2 py-3 text-sm"
+              >
+                <TwoImageIcon />
+                {t('pickSecondImageBtn')}
+              </button>
+              <button
+                onClick={() => setFirstImageData(null)}
+                className="btn-ghost flex w-full items-center justify-center py-3 text-sm"
+              >
+                {t('cancelTwoImage')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Album mode popup */}
       {albumPopupOpen && (

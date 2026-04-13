@@ -17,7 +17,10 @@ const dict = {
     ja: 'リンク先の商品でなくても、\nここからお買い物するだけで応援になるよ',
     en: 'Any purchase through this link\nhelps us out — thanks!',
   },
-  shareApp: { ja: 'このアプリを共有', en: 'Share this app' },
+  shareApp: {
+    ja: 'おもしろかったら ともだちにも おしえてね',
+    en: 'Had fun? Share it with your friends!',
+  },
   copied: { ja: 'コピーしたよ', en: 'Copied!' },
   shareText: {
     ja: '間違いさがし おたすけツール「小エビの間違いサラダ」',
@@ -116,8 +119,20 @@ const dict = {
   albumModeOne: { ja: '1まい（左右がうつってる）', en: 'One image (side by side)' },
   albumModeTwo: { ja: '2まい（べつべつの画像）', en: 'Two separate images' },
   pickSecondImage: { ja: '2まい目を えらんでね', en: 'Now pick the second image!' },
+  pickSecondImageBtn: { ja: '2まい目を えらぶ', en: 'Pick 2nd image' },
+  cancelTwoImage: { ja: 'やめる', en: 'Cancel' },
   step1stImage: { ja: '1まい目', en: '1st' },
   step2ndImage: { ja: '2まい目', en: '2nd' },
+
+  // LINE in-app browser warning
+  lineInAppWarning: {
+    ja: 'LINEアプリ内ではカメラが使えないことがあるよ',
+    en: 'Camera may not work inside the LINE app',
+  },
+  lineInAppOpenExternal: {
+    ja: '外部ブラウザで開く',
+    en: 'Open in browser',
+  },
 
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },
