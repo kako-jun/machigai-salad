@@ -14,6 +14,13 @@ import ImageComparison from './ImageComparison'
 import PaperCornersAdjustment from './PaperCornersAdjustment'
 import SavesPopup from './SavesPopup'
 
+/** Local timestamp string for download filenames (e.g. "20260413143052") */
+function fileTimestamp(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+}
+
 type Phase = 'upload' | 'detecting' | 'adjust' | 'processing' | 'result'
 
 const PHASE_STEP_NORMAL: Record<Phase, number> = {
@@ -371,8 +378,9 @@ export default function ImageProcessor() {
   const handleGifShare = async () => {
     if (!gifPreview) return
     try {
-      const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
-      const file = new File([gifPreview.blob], `machigai-salad-${ts}.gif`, { type: 'image/gif' })
+      const file = new File([gifPreview.blob], `machigai-salad-${fileTimestamp()}.gif`, {
+        type: 'image/gif',
+      })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -383,8 +391,7 @@ export default function ImageProcessor() {
         // Web Share 非対応: GIF をダウンロード
         const a = document.createElement('a')
         a.href = gifPreview.url
-        const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
-        a.download = `machigai-salad-${ts}.gif`
+        a.download = `machigai-salad-${fileTimestamp()}.gif`
         a.click()
       }
     } catch (e: unknown) {
@@ -412,8 +419,7 @@ export default function ImageProcessor() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14)
-      a.download = `machigai-salad-${ts}.png`
+      a.download = `machigai-salad-${fileTimestamp()}.png`
       a.click()
       URL.revokeObjectURL(url)
     } catch {

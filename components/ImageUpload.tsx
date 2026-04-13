@@ -39,7 +39,8 @@ export default function ImageUpload({
   const [isLineInApp, setIsLineInApp] = useState(false)
 
   useEffect(() => {
-    setIsLineInApp(/\bLine\b/i.test(navigator.userAgent))
+    // LINE in-app browser UA contains "Line/" followed by version (e.g. "Line/14.5.0")
+    setIsLineInApp(/\bLine\//i.test(navigator.userAgent))
   }, [])
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
@@ -246,6 +247,7 @@ export default function ImageUpload({
                 </p>
                 <button
                   onClick={() => {
+                    // '_system' is a LINE in-app browser convention to open in the external browser
                     window.open(window.location.href, '_system')
                   }}
                   className="btn-action px-4 py-2 text-sm"
@@ -334,6 +336,7 @@ export default function ImageUpload({
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
           style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setFirstImageData(null)}
           role="dialog"
           aria-modal="true"
         >
@@ -344,6 +347,7 @@ export default function ImageUpload({
               border: '1px solid var(--border)',
               boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               className="px-4 py-3 text-center"
