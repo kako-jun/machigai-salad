@@ -125,8 +125,7 @@ export function deleteSave(id: string): boolean {
   try {
     const root = readRoot()
     root.saves = root.saves.filter((s) => s.id !== id)
-    writeRoot(root)
-    return true
+    return writeRoot(root)
   } catch {
     return false
   }
@@ -138,10 +137,10 @@ export function loadLang(): Lang | undefined {
   return readRoot().lang
 }
 
-export function saveLang(lang: Lang): void {
+export function saveLang(lang: Lang): boolean {
   const root = readRoot()
   root.lang = lang
-  writeRoot(root)
+  return writeRoot(root)
 }
 
 // ── util ──
