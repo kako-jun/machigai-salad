@@ -56,6 +56,9 @@ function normalize(entry: SaveEntry): SaveEntry {
 
 function readRoot(): StorageRoot {
   try {
+    // Clean up old key to free quota
+    localStorage.removeItem('machigai-salad-saves')
+
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return { saves: [] }
     const parsed = JSON.parse(raw)
