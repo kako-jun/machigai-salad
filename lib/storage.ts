@@ -73,9 +73,12 @@ function readRoot(): StorageRoot {
 
 function writeRoot(root: StorageRoot): boolean {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(root))
+    const json = JSON.stringify(root)
+    console.log(`[storage] writing ${(json.length / 1024).toFixed(1)}KB`)
+    localStorage.setItem(STORAGE_KEY, json)
     return true
-  } catch {
+  } catch (e) {
+    console.error('[storage] write failed:', e)
     return false
   }
 }
