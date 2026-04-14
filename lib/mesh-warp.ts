@@ -94,15 +94,16 @@ function drawTexturedTriangle(
 
   ctx.save()
 
-  // Expand clip polygon by 1.5px to fill anti-aliased seams between adjacent triangles.
-  const cx = (d0.x + d1.x + d2.x) / 3
-  const cy = (d0.y + d1.y + d2.y) / 3
+  // Expand clip polygon to fill anti-aliased seams between adjacent triangles.
+  const CLIP_EXPAND_PX = 1.5
+  const centroidX = (d0.x + d1.x + d2.x) / 3
+  const centroidY = (d0.y + d1.y + d2.y) / 3
   const expand = (p: Point): Point => {
-    const dx = p.x - cx
-    const dy = p.y - cy
+    const dx = p.x - centroidX
+    const dy = p.y - centroidY
     const len = Math.sqrt(dx * dx + dy * dy)
     if (len < 1e-10) return p
-    return { x: p.x + (dx / len) * 1.5, y: p.y + (dy / len) * 1.5 }
+    return { x: p.x + (dx / len) * CLIP_EXPAND_PX, y: p.y + (dy / len) * CLIP_EXPAND_PX }
   }
   const e0 = expand(d0)
   const e1 = expand(d1)
