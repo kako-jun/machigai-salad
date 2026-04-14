@@ -62,6 +62,11 @@ export default function ImageProcessor() {
   const [firstProcessedImage, setFirstProcessedImage] = useState<string | null>(null)
   const pendingSecondImageRef = useRef<string | null>(null)
 
+  // Preserve first image data for save (overwritten by second image processing)
+  const firstOriginalImageRef = useRef<string | null>(null)
+  const firstCornersRef = useRef<Point[] | null>(null)
+  const firstImageSizeRef = useRef<{ width: number; height: number } | null>(null)
+
   const lastCornersRef = useRef<Point[] | null>(null)
   const secondCornersRef = useRef<Point[] | null>(null)
   const currentOffsetRef = useRef({ x: 0, y: 0 })
@@ -186,6 +191,10 @@ export default function ImageProcessor() {
     setOriginalImage(resizedUrl)
     setImageSize(size)
 
+    // Preserve first image data for save
+    firstOriginalImageRef.current = resizedUrl
+    firstImageSizeRef.current = size
+
     try {
       const suggestion = await suggestCorners(resizedUrl)
       setSuggestedCorners(suggestion)
@@ -257,6 +266,8 @@ export default function ImageProcessor() {
     setPhase('processing')
 
     if (twoImageMode && !processingSecondImage) {
+      // Preserve first image corners for save
+      firstCornersRef.current = adjustedCorners
       // First image in two-image mode: perspective-correct only (no split)
       try {
         const corrected = await processImageNoSplit(originalImage!, adjustedCorners)
@@ -336,6 +347,9 @@ export default function ImageProcessor() {
     setProcessingSecondImage(false)
     setFirstProcessedImage(null)
     pendingSecondImageRef.current = null
+    firstOriginalImageRef.current = null
+    firstCornersRef.current = null
+    firstImageSizeRef.current = null
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
@@ -454,10 +468,14 @@ export default function ImageProcessor() {
       return
     }
     const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
-      originalImage,
-      corners: lastCornersRef.current,
+      originalImage: twoImageMode
+        ? (firstOriginalImageRef.current ?? originalImage)!
+        : originalImage,
+      corners: twoImageMode
+        ? (firstCornersRef.current ?? lastCornersRef.current)!
+        : lastCornersRef.current,
       offset: currentOffsetRef.current,
-      imageSize,
+      imageSize: twoImageMode ? (firstImageSizeRef.current ?? imageSize)! : imageSize,
       warpCorners: currentWarpRef.current,
       centerOffset: currentCenterRef.current,
       twoImageMode: twoImageMode || undefined,
@@ -491,6 +509,9 @@ export default function ImageProcessor() {
       setTwoImageMode(true)
       setProcessingSecondImage(true)
       pendingSecondImageRef.current = entry.rightImageData
+      firstOriginalImageRef.current = entry.originalImage
+      firstCornersRef.current = entry.corners
+      firstImageSizeRef.current = entry.imageSize
       lastCornersRef.current = entry.corners
       secondCornersRef.current = entry.secondCorners ?? null
       restoredOffsetRef.current = entry.offset
