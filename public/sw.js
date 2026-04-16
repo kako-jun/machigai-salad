@@ -1,5 +1,5 @@
-// Replaced at build time by next.config.ts with the actual build date
-const CACHE_NAME = 'machigai-salad-2026-04-14'
+// Build date is stamped into CACHE_NAME at build time (in the output, not this source file)
+const CACHE_NAME = 'machigai-salad-__BUILD_DATE__'
 
 const PRECACHE_URLS = ['/', '/manifest.webmanifest']
 
