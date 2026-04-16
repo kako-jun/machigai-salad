@@ -87,7 +87,7 @@ mat.delete() // 必ず解放
 詳細は `docs/` を参照:
 
 - `docs/architecture.md` - アーキテクチャ詳細
-- `docs/design.md` - 設計ドキュメント
+- `docs/architecture.md` - 設計ドキュメント
 - `docs/todo.md` - 開発TODO
 - `docs/changelog.md` - 変更履歴
 
