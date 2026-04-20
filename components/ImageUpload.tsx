@@ -247,8 +247,9 @@ export default function ImageUpload({
                 </p>
                 <button
                   onClick={() => {
-                    // '_system' is a LINE in-app browser convention to open in the external browser
-                    window.open(window.location.href, '_system')
+                    const url = new URL(window.location.href)
+                    url.searchParams.set('openExternalBrowser', '1')
+                    window.location.href = url.toString()
                   }}
                   className="btn-action px-4 py-2 text-sm"
                 >
