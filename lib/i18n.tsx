@@ -154,6 +154,7 @@ const dict = {
   },
   copyUrl: { ja: 'URLをコピー', en: 'Copy URL' },
   urlCopied: { ja: 'コピーしたよ', en: 'Copied!' },
+  copyFailed: { ja: 'コピーできなかった...', en: "Couldn't copy..." },
   close: { ja: '閉じる', en: 'Close' },
 
   // Toast

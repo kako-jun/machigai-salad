@@ -45,6 +45,25 @@ export default function ImageUpload({
     setLineEnv(detectLineInApp(navigator.userAgent))
   }, [])
 
+  // iOS help modal: Escape key + body scroll lock + initial focus on close button
+  const iosCloseBtnRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!iosHelpOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIosHelpOpen(false)
+    }
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    // Defer focus to after the modal is painted
+    const focusTimer = setTimeout(() => iosCloseBtnRef.current?.focus(), 0)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      clearTimeout(focusTimer)
+    }
+  }, [iosHelpOpen])
+
   const handleOpenExternal = () => {
     if (lineEnv === 'android') {
       const url = new URL(window.location.href)
@@ -55,25 +74,39 @@ export default function ImageUpload({
     }
   }
 
+  const copyTextFallback = (text: string): boolean => {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    let ok = false
+    try {
+      ok = document.execCommand('copy')
+    } finally {
+      document.body.removeChild(ta)
+    }
+    return ok
+  }
+
   const handleCopyUrl = async () => {
     const url = window.location.href
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+    let copied = false
+    if (navigator.clipboard?.writeText) {
+      try {
         await navigator.clipboard.writeText(url)
-      } else {
-        const ta = document.createElement('textarea')
-        ta.value = url
-        ta.style.position = 'fixed'
-        ta.style.opacity = '0'
-        document.body.appendChild(ta)
-        ta.select()
-        document.execCommand('copy')
-        document.body.removeChild(ta)
+        copied = true
+      } catch {
+        // fall through to execCommand fallback
       }
+    }
+    if (!copied) copied = copyTextFallback(url)
+    if (copied) {
       setUrlJustCopied(true)
       setTimeout(() => setUrlJustCopied(false), 2000)
-    } catch {
-      showToast(t('loadFailed'), 'error')
+    } else {
+      showToast(t('copyFailed'), 'error')
     }
   }
 
@@ -437,9 +470,12 @@ export default function ImageUpload({
               >
                 {t('iosLineModalDesc')}
               </p>
-              <ol className="flex flex-col gap-2 pl-5 text-sm" style={{ color: 'var(--espresso)' }}>
-                <li style={{ listStyle: 'decimal' }}>{t('iosLineModalStep1')}</li>
-                <li style={{ listStyle: 'decimal' }}>{t('iosLineModalStep2')}</li>
+              <ol
+                className="flex list-decimal flex-col gap-2 pl-5 text-sm"
+                style={{ color: 'var(--espresso)' }}
+              >
+                <li>{t('iosLineModalStep1')}</li>
+                <li>{t('iosLineModalStep2')}</li>
               </ol>
               <button
                 onClick={handleCopyUrl}
@@ -448,6 +484,7 @@ export default function ImageUpload({
                 {urlJustCopied ? t('urlCopied') : t('copyUrl')}
               </button>
               <button
+                ref={iosCloseBtnRef}
                 onClick={() => setIosHelpOpen(false)}
                 className="btn-action flex w-full items-center justify-center py-2.5 text-sm"
               >

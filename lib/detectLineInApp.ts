@@ -9,7 +9,9 @@ export type LineEnv = 'android' | 'ios' | null
  * - null: not LINE in-app, or LINE on an unsupported platform (e.g. desktop)
  */
 export function detectLineInApp(ua: string): LineEnv {
-  if (!/\bLine\//i.test(ua)) return null
+  // LINE official UA: "Line/14.5.0 ..." — require Line/ followed immediately by a digit
+  // to exclude lookalikes such as "LineFor業務" or vendor strings that contain "Line".
+  if (!/(?:^|\s)Line\/\d/i.test(ua)) return null
   if (/Android/i.test(ua)) return 'android'
   if (/iPhone|iPad|iPod/i.test(ua)) return 'ios'
   return null
