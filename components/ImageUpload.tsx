@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
+import { detectLineInApp, type LineEnv } from '@/lib/detectLineInApp'
 import { showToast } from './Toast'
 import { SaveIcon } from './icons'
 
@@ -36,12 +37,78 @@ export default function ImageUpload({
 
   const [albumPopupOpen, setAlbumPopupOpen] = useState(false)
   const [firstImageData, setFirstImageData] = useState<string | null>(null)
-  const [isLineInApp, setIsLineInApp] = useState(false)
+  const [lineEnv, setLineEnv] = useState<LineEnv>(null)
+  const [iosHelpOpen, setIosHelpOpen] = useState(false)
+  const [urlJustCopied, setUrlJustCopied] = useState(false)
 
   useEffect(() => {
-    // LINE in-app browser UA contains "Line/" followed by version (e.g. "Line/14.5.0")
-    setIsLineInApp(/\bLine\//i.test(navigator.userAgent))
+    setLineEnv(detectLineInApp(navigator.userAgent))
   }, [])
+
+  // iOS help modal: Escape key + body scroll lock + initial focus on close button
+  const iosCloseBtnRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    if (!iosHelpOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIosHelpOpen(false)
+    }
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKey)
+    // Defer focus to after the modal is painted
+    const focusTimer = setTimeout(() => iosCloseBtnRef.current?.focus(), 0)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      clearTimeout(focusTimer)
+    }
+  }, [iosHelpOpen])
+
+  const handleOpenExternal = () => {
+    if (lineEnv === 'android') {
+      const url = new URL(window.location.href)
+      url.searchParams.set('openExternalBrowser', '1')
+      window.location.href = url.toString()
+    } else if (lineEnv === 'ios') {
+      setIosHelpOpen(true)
+    }
+  }
+
+  const copyTextFallback = (text: string): boolean => {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    let ok = false
+    try {
+      ok = document.execCommand('copy')
+    } finally {
+      document.body.removeChild(ta)
+    }
+    return ok
+  }
+
+  const handleCopyUrl = async () => {
+    const url = window.location.href
+    let copied = false
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(url)
+        copied = true
+      } catch {
+        // fall through to execCommand fallback
+      }
+    }
+    if (!copied) copied = copyTextFallback(url)
+    if (copied) {
+      setUrlJustCopied(true)
+      setTimeout(() => setUrlJustCopied(false), 2000)
+    } else {
+      showToast(t('copyFailed'), 'error')
+    }
+  }
 
   const MAX_FILE_SIZE = 20 * 1024 * 1024 // 20MB
 
@@ -234,7 +301,7 @@ export default function ImageUpload({
           /* Normal state: loading or ready */
           <>
             {/* LINE in-app browser warning */}
-            {isLineInApp && (
+            {lineEnv !== null && (
               <div
                 className="flex flex-col items-center gap-2 rounded-xl px-4 py-3 text-center"
                 style={{
@@ -245,14 +312,7 @@ export default function ImageUpload({
                 <p className="text-sm" style={{ color: 'var(--espresso)' }}>
                   {t('lineInAppWarning')}
                 </p>
-                <button
-                  onClick={() => {
-                    const url = new URL(window.location.href)
-                    url.searchParams.set('openExternalBrowser', '1')
-                    window.location.href = url.toString()
-                  }}
-                  className="btn-action px-4 py-2 text-sm"
-                >
+                <button onClick={handleOpenExternal} className="btn-action px-4 py-2 text-sm">
                   {t('lineInAppOpenExternal')}
                 </button>
               </div>
@@ -371,6 +431,64 @@ export default function ImageUpload({
                 className="btn-ghost flex w-full items-center justify-center py-3 text-sm"
               >
                 {t('cancelTwoImage')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* iOS LINE help modal */}
+      {iosHelpOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setIosHelpOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="px-4 py-3 text-center"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('iosLineModalTitle')}
+              </span>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <p
+                className="whitespace-pre-line text-xs leading-relaxed"
+                style={{ color: 'var(--muted)' }}
+              >
+                {t('iosLineModalDesc')}
+              </p>
+              <ol
+                className="flex list-decimal flex-col gap-2 pl-5 text-sm"
+                style={{ color: 'var(--espresso)' }}
+              >
+                <li>{t('iosLineModalStep1')}</li>
+                <li>{t('iosLineModalStep2')}</li>
+              </ol>
+              <button
+                onClick={handleCopyUrl}
+                className="btn-ghost flex w-full items-center justify-center py-2.5 text-sm"
+              >
+                {urlJustCopied ? t('urlCopied') : t('copyUrl')}
+              </button>
+              <button
+                ref={iosCloseBtnRef}
+                onClick={() => setIosHelpOpen(false)}
+                className="btn-action flex w-full items-center justify-center py-2.5 text-sm"
+              >
+                {t('close')}
               </button>
             </div>
           </div>
