@@ -136,6 +136,25 @@ const dict = {
     ja: '外部ブラウザで開く',
     en: 'Open in browser',
   },
+  iosLineModalTitle: {
+    ja: 'Safariで開いてね',
+    en: 'Please open in Safari',
+  },
+  iosLineModalDesc: {
+    ja: 'iPhoneのLINEからは カメラをつかうのが むずかしいんだ。\nしたの てじゅんで Safariで ひらいてね。',
+    en: "The LINE app on iPhone can't open the camera directly.\nFollow the steps below to open this page in Safari.",
+  },
+  iosLineModalStep1: {
+    ja: '右下の「・・・」メニューをタップ',
+    en: "Tap the '...' menu in the bottom right",
+  },
+  iosLineModalStep2: {
+    ja: '「他のアプリで開く」または「Safariで開く」を選ぶ',
+    en: "Select 'Open in another app' or 'Open in Safari'",
+  },
+  copyUrl: { ja: 'URLをコピー', en: 'Copy URL' },
+  urlCopied: { ja: 'コピーしたよ', en: 'Copied!' },
+  close: { ja: '閉じる', en: 'Close' },
 
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },
