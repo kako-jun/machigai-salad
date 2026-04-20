@@ -10,10 +10,7 @@ import {
 } from '@/lib/opencv'
 import type { DetectionSensitivity } from '@/lib/opencv'
 
-const OPENCV_CDN_URLS = [
-  'https://docs.opencv.org/4.9.0/opencv.js',
-  'https://cdn.jsdelivr.net/gh/niconiconico-community/opencv.js@4.5.5/opencv.js',
-]
+const OPENCV_URL = '/opencv.js'
 
 const LOAD_TIMEOUT_MS = 30000
 
@@ -59,92 +56,77 @@ export function useOpenCV(): UseOpenCVReturn {
     }
   }, [])
 
-  const attemptLoad = useCallback(
-    (cdnIndex = 0) => {
+  const attemptLoad = useCallback(() => {
+    if (!mountedRef.current) return
+
+    if (window.cv && window.cv.Mat) {
+      setLoadState('ready')
+      setLoadError(null)
+      return
+    }
+
+    cleanup()
+    setLoadState('loading')
+    setLoadError(null)
+
+    const script = document.createElement('script')
+    script.src = OPENCV_URL
+    script.async = true
+    scriptRef.current = script
+
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return
+      setLoadState('error')
+      setLoadError('OpenCV.js の読み込みがタイムアウトしました。ページを再読み込みしてください。')
+    }, LOAD_TIMEOUT_MS)
+
+    const onReady = () => {
+      if (!mountedRef.current) return
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      setLoadState('ready')
+      setLoadError(null)
+    }
+
+    script.onload = () => {
       if (!mountedRef.current) return
 
-      // Already loaded from a previous attempt
       if (window.cv && window.cv.Mat) {
-        setLoadState('ready')
-        setLoadError(null)
+        onReady()
         return
       }
 
-      cleanup()
-      setLoadState('loading')
-      setLoadError(null)
-
-      const url = OPENCV_CDN_URLS[cdnIndex]
-      if (!url) {
-        // All CDNs exhausted
-        if (mountedRef.current) {
-          setLoadState('error')
-          setLoadError('OpenCV.js の読み込みに失敗しました。ネットワーク接続を確認してください。')
-        }
-        return
-      }
-
-      const script = document.createElement('script')
-      script.src = url
-      script.async = true
-      scriptRef.current = script
-
-      // Timeout: try next CDN or fail
-      timeoutRef.current = setTimeout(() => {
-        if (!mountedRef.current) return
-        console.warn(`OpenCV.js load timeout from ${url}, trying next CDN...`)
-        cleanup()
-        attemptLoad(cdnIndex + 1)
-      }, LOAD_TIMEOUT_MS)
-
-      const onReady = () => {
-        if (!mountedRef.current) return
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
-          timeoutRef.current = null
-        }
-        setLoadState('ready')
-        setLoadError(null)
-      }
-
-      script.onload = () => {
-        if (!mountedRef.current) return
-
-        // cv object already fully initialized
-        if (window.cv && window.cv.Mat) {
+      if (window.cv) {
+        const prev = window.cv.onRuntimeInitialized
+        window.cv.onRuntimeInitialized = () => {
+          if (prev) prev()
           onReady()
-          return
-        }
-
-        // Wait for WASM initialization
-        if (window.cv) {
-          const prev = window.cv.onRuntimeInitialized
-          window.cv.onRuntimeInitialized = () => {
-            if (prev) prev()
-            onReady()
-          }
         }
       }
+    }
 
-      script.onerror = () => {
-        if (!mountedRef.current) return
-        console.warn(`OpenCV.js failed to load from ${url}, trying next CDN...`)
-        cleanup()
-        attemptLoad(cdnIndex + 1)
+    script.onerror = () => {
+      if (!mountedRef.current) return
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
       }
+      setLoadState('error')
+      setLoadError('OpenCV.js の読み込みに失敗しました。ページを再読み込みしてください。')
+    }
 
-      document.body.appendChild(script)
-    },
-    [cleanup]
-  )
+    document.body.appendChild(script)
+  }, [cleanup])
 
   const retryLoad = useCallback(() => {
-    attemptLoad(0)
+    attemptLoad()
   }, [attemptLoad])
 
   useEffect(() => {
     mountedRef.current = true
-    attemptLoad(0)
+    attemptLoad()
 
     return () => {
       mountedRef.current = false

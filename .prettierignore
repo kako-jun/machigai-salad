@@ -6,3 +6,4 @@ dist
 *.min.js
 *.min.css
 package-lock.json
+public/opencv.js

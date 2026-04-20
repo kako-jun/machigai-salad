@@ -39,7 +39,10 @@ const dict = {
   loadFailed: { ja: 'よみこめなかったよ', en: "Oops, couldn't load!" },
   imageTooBig: { ja: 'しゃしんが おおきすぎるよ', en: 'This photo is too big!' },
   imageTooSmall: { ja: 'しゃしんが ちいさすぎるよ', en: 'This photo is too small!' },
-  checkNetwork: { ja: 'ネットワーク接続を確認してね', en: 'Check your internet and try again' },
+  checkNetwork: {
+    ja: 'ページを もう1回ひらいてみてね',
+    en: 'Please reload the page and try again',
+  },
   retryLoad: { ja: 'もう1回ためす', en: 'Try again' },
 
   // ImageProcessor — steps
