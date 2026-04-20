@@ -3,6 +3,11 @@ import type { NextConfig } from 'next'
 // Use JST (UTC+9) for build date to match user's timezone
 const BUILD_DATE = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
 
+const basePath =
+  process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true'
+    ? '/machigai-salad'
+    : ''
+
 const nextConfig: NextConfig = {
   output: 'export',
   images: {
@@ -10,12 +15,9 @@ const nextConfig: NextConfig = {
   },
   env: {
     BUILD_DATE,
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  // GitHub Pages用のbasePath設定（環境変数で制御）
-  basePath:
-    process.env.NODE_ENV === 'production' && process.env.GITHUB_PAGES === 'true'
-      ? '/machigai-salad'
-      : '',
+  basePath,
 }
 
 export default nextConfig

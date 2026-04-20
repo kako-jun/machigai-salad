@@ -10,7 +10,7 @@ import {
 } from '@/lib/opencv'
 import type { DetectionSensitivity } from '@/lib/opencv'
 
-const OPENCV_URL = '/opencv.js'
+const OPENCV_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/opencv.js`
 
 const LOAD_TIMEOUT_MS = 30000
 
@@ -77,7 +77,7 @@ export function useOpenCV(): UseOpenCVReturn {
     timeoutRef.current = setTimeout(() => {
       if (!mountedRef.current) return
       setLoadState('error')
-      setLoadError('OpenCV.js の読み込みがタイムアウトしました。ページを再読み込みしてください。')
+      setLoadError('opencv-load-timeout')
     }, LOAD_TIMEOUT_MS)
 
     const onReady = () => {
@@ -104,7 +104,10 @@ export function useOpenCV(): UseOpenCVReturn {
           if (prev) prev()
           onReady()
         }
+        return
       }
+
+      console.warn('OpenCV.js loaded but window.cv is undefined; waiting for timeout')
     }
 
     script.onerror = () => {
@@ -114,7 +117,7 @@ export function useOpenCV(): UseOpenCVReturn {
         timeoutRef.current = null
       }
       setLoadState('error')
-      setLoadError('OpenCV.js の読み込みに失敗しました。ページを再読み込みしてください。')
+      setLoadError('opencv-load-failed')
     }
 
     document.body.appendChild(script)
