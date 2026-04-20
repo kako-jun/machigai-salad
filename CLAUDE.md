@@ -105,7 +105,8 @@ Cloudflare Pages の GitHub 連携で自動デプロイ:
 ### OpenCV.jsがロードされない
 
 - コンソールでエラー確認
-- CDN接続を確認
+- `public/opencv.js`（同一オリジン同梱）が配信されているか確認
+- 更新時は `public/opencv.js` を差し替える（バージョンは `opencv.js@1.2.1`）
 
 ### カメラにアクセスできない
 
