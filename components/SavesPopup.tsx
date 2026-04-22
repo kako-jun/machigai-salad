@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { loadAllSaves, deleteSave, formatSaveDate } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -16,10 +16,41 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
   const { t } = useI18n()
 
   useEffect(() => {
-    if (open) {
-      setSaves(loadAllSaves())
+    if (!open) return
+    let cancelled = false
+    loadAllSaves()
+      .then((entries) => {
+        if (!cancelled) setSaves(entries)
+      })
+      .catch((e) => {
+        console.error('[machigai-salad] loadAllSaves failed:', e)
+        if (!cancelled) setSaves([])
+      })
+    return () => {
+      cancelled = true
     }
   }, [open])
+
+  // Build object URLs for thumbnails and revoke when the set changes or component unmounts
+  const thumbUrls = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const s of saves) {
+      map[s.id] = URL.createObjectURL(s.originalImage)
+    }
+    return map
+  }, [saves])
+
+  useEffect(() => {
+    return () => {
+      for (const url of Object.values(thumbUrls)) {
+        try {
+          URL.revokeObjectURL(url)
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [thumbUrls])
 
   // Escape key to close
   useEffect(() => {
@@ -33,10 +64,11 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
 
   if (!open) return null
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (!confirm(t('deleteConfirm'))) return
-    if (!deleteSave(id)) return
+    const ok = await deleteSave(id)
+    if (!ok) return
     setSaves((prev) => prev.filter((s) => s.id !== id))
   }
 
@@ -100,7 +132,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
                 {/* Thumbnail */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={entry.originalImage}
+                  src={thumbUrls[entry.id]}
                   alt=""
                   className="h-12 w-12 flex-shrink-0 rounded object-cover"
                   style={{ border: '1px solid var(--border-light)' }}

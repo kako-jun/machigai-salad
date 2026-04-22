@@ -4,7 +4,13 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
-import { getImageSize, resizeImage, generateToggleGif, generateToggleApng } from '@/lib/image-utils'
+import {
+  getImageSize,
+  resizeImage,
+  generateToggleGif,
+  generateToggleApng,
+  dataUrlToBlob,
+} from '@/lib/image-utils'
 import { showToast } from './Toast'
 import { addSave, updateSave, loadAllSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -47,14 +53,36 @@ export default function ImageProcessor() {
   const [suggestedCorners, setSuggestedCorners] = useState<Point[] | null>(null)
   const [phase, setPhase] = useState<Phase>('upload')
   const [popupOpen, setPopupOpen] = useState(false)
-  const [saveCount, setSaveCount] = useState(() => {
-    if (typeof window === 'undefined') return 0
-    try {
-      return loadAllSaves().length
-    } catch {
-      return 0
+  const [saveCount, setSaveCount] = useState(0)
+
+  // Load initial save count from IDB (async)
+  useEffect(() => {
+    let cancelled = false
+    loadAllSaves()
+      .then((entries) => {
+        if (!cancelled) setSaveCount(entries.length)
+      })
+      .catch(() => {
+        // ignore
+      })
+    return () => {
+      cancelled = true
     }
-  })
+  }, [])
+
+  // Revoke any outstanding loaded object URLs on unmount
+  useEffect(() => {
+    return () => {
+      for (const url of loadedObjectUrlsRef.current) {
+        try {
+          URL.revokeObjectURL(url)
+        } catch {
+          // ignore
+        }
+      }
+      loadedObjectUrlsRef.current = []
+    }
+  }, [])
 
   // Two-image mode state
   const [twoImageMode, setTwoImageMode] = useState(false)
@@ -90,6 +118,18 @@ export default function ImageProcessor() {
   })
   /** Current save entry ID — overwrite this entry on subsequent saves until new image */
   const currentSaveIdRef = useRef<string | null>(null)
+  /** Object URLs created for loaded saves (blob:) — revoked on reset/unmount */
+  const loadedObjectUrlsRef = useRef<string[]>([])
+  const revokeLoadedObjectUrls = useCallback(() => {
+    for (const url of loadedObjectUrlsRef.current) {
+      try {
+        URL.revokeObjectURL(url)
+      } catch {
+        // ignore
+      }
+    }
+    loadedObjectUrlsRef.current = []
+  }, [])
 
   const {
     cvLoaded,
@@ -354,6 +394,7 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
+    revokeLoadedObjectUrls()
     setPhase('upload')
   }
 
@@ -461,39 +502,59 @@ export default function ImageProcessor() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [gifPreview, handleGifClose])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!originalImage || !imageSize || !lastCornersRef.current) return
     if (twoImageMode && !pendingSecondImageRef.current) {
       showToast(t('saveFailed'), 'error')
       return
     }
-    const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
-      originalImage: twoImageMode
+    try {
+      const leftSource = twoImageMode
         ? (firstOriginalImageRef.current ?? originalImage)!
-        : originalImage,
-      corners: twoImageMode
-        ? (firstCornersRef.current ?? lastCornersRef.current)!
-        : lastCornersRef.current,
-      offset: currentOffsetRef.current,
-      imageSize: twoImageMode ? (firstImageSizeRef.current ?? imageSize)! : imageSize,
-      warpCorners: currentWarpRef.current,
-      centerOffset: currentCenterRef.current,
-      twoImageMode: twoImageMode || undefined,
-      rightImageData: twoImageMode ? (pendingSecondImageRef.current ?? undefined) : undefined,
-      secondCorners: twoImageMode ? (secondCornersRef.current ?? undefined) : undefined,
-    }
-    // Overwrite existing entry for the same image, or create new
-    const existing = currentSaveIdRef.current
-    const updated = existing ? updateSave(existing, data) : null
-    const result = updated ?? addSave(data)
-    if (result) {
-      currentSaveIdRef.current = result.id
-      if (!updated) setSaveCount((c) => c + 1)
-      setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 1500)
-    } else {
+        : originalImage
+      const rightSource = twoImageMode ? pendingSecondImageRef.current : null
+
+      const [originalBlob, rightBlob] = await Promise.all([
+        dataUrlToBlob(leftSource),
+        rightSource ? dataUrlToBlob(rightSource) : Promise.resolve(undefined),
+      ])
+
+      const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
+        originalImage: originalBlob,
+        corners: twoImageMode
+          ? (firstCornersRef.current ?? lastCornersRef.current)!
+          : lastCornersRef.current,
+        offset: currentOffsetRef.current,
+        imageSize: twoImageMode ? (firstImageSizeRef.current ?? imageSize)! : imageSize,
+        warpCorners: currentWarpRef.current,
+        centerOffset: currentCenterRef.current,
+        twoImageMode: twoImageMode || undefined,
+        rightImageData: rightBlob,
+        secondCorners: twoImageMode ? (secondCornersRef.current ?? undefined) : undefined,
+      }
+      // Overwrite existing entry for the same image, or create new
+      const existing = currentSaveIdRef.current
+      const updated = existing ? await updateSave(existing, data) : null
+      const result = updated ?? (await addSave(data))
+      if (result) {
+        currentSaveIdRef.current = result.id
+        if (!updated) setSaveCount((c) => c + 1)
+        setSaveSuccess(true)
+        setTimeout(() => setSaveSuccess(false), 1500)
+      } else {
+        showToast(t('saveFailed'), 'error')
+      }
+    } catch (e) {
+      console.error('[machigai-salad] save failed:', e)
       showToast(t('saveFailed'), 'error')
     }
+  }
+
+  /** Convert a Blob from a save entry into an object URL tracked for cleanup. */
+  const trackObjectUrl = (blob: Blob): string => {
+    const url = URL.createObjectURL(blob)
+    loadedObjectUrlsRef.current.push(url)
+    return url
   }
 
   const handleLoad = async (entry: SaveEntry) => {
@@ -502,14 +563,20 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
+    // Revoke previously-loaded object URLs (if any) before creating new ones
+    revokeLoadedObjectUrls()
     currentSaveIdRef.current = entry.id
 
+    // Materialize Blobs into object URLs for downstream consumers
+    const originalUrl = trackObjectUrl(entry.originalImage)
+
     if (entry.twoImageMode && entry.rightImageData) {
+      const rightUrl = trackObjectUrl(entry.rightImageData)
       // Restore two-image mode save
       setTwoImageMode(true)
       setProcessingSecondImage(true)
-      pendingSecondImageRef.current = entry.rightImageData
-      firstOriginalImageRef.current = entry.originalImage
+      pendingSecondImageRef.current = rightUrl
+      firstOriginalImageRef.current = originalUrl
       firstCornersRef.current = entry.corners
       firstImageSizeRef.current = entry.imageSize
       lastCornersRef.current = entry.corners
@@ -523,12 +590,12 @@ export default function ImageProcessor() {
 
       if (entry.secondCorners) {
         // Both corners saved — process both images directly to result
-        setOriginalImage(entry.originalImage)
+        setOriginalImage(originalUrl)
         setImageSize(entry.imageSize)
         setPhase('processing')
         try {
-          const left = await processImageNoSplit(entry.originalImage, entry.corners)
-          const right = await processImageNoSplit(entry.rightImageData, entry.secondCorners)
+          const left = await processImageNoSplit(originalUrl, entry.corners)
+          const right = await processImageNoSplit(rightUrl, entry.secondCorners)
           setFirstProcessedImage(left)
           setLeftImage(left)
           setRightImage(right)
@@ -540,12 +607,12 @@ export default function ImageProcessor() {
         }
       } else {
         // No saved corners — replay the full flow
-        handleTwoImageUpload(entry.originalImage, entry.rightImageData, entry.id)
+        handleTwoImageUpload(originalUrl, rightUrl, entry.id)
       }
       return
     }
 
-    setOriginalImage(entry.originalImage)
+    setOriginalImage(originalUrl)
     setImageSize(entry.imageSize)
     setSuggestedCorners(entry.corners)
     lastCornersRef.current = entry.corners
@@ -558,7 +625,7 @@ export default function ImageProcessor() {
     setPhase('processing')
 
     try {
-      const { leftImage, rightImage } = await processImage(entry.originalImage, entry.corners)
+      const { leftImage, rightImage } = await processImage(originalUrl, entry.corners)
       setLeftImage(leftImage)
       setRightImage(rightImage)
       setPhase('result')
@@ -674,7 +741,11 @@ export default function ImageProcessor() {
         open={popupOpen}
         onClose={() => {
           setPopupOpen(false)
-          setSaveCount(loadAllSaves().length)
+          loadAllSaves()
+            .then((entries) => setSaveCount(entries.length))
+            .catch(() => {
+              // ignore
+            })
         }}
         onLoad={handleLoad}
       />
