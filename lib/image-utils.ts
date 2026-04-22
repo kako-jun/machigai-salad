@@ -12,9 +12,18 @@ const GIF_MAX_DIM = 480
 /** APNG download image max dimension (higher quality than GIF) */
 const APNG_MAX_DIM = 800
 
-/** Convert a base64 data URL to a Blob (CSP-friendly — no `fetch` on data: URLs). */
-export function dataUrlToBlob(dataUrl: string): Blob {
-  const [header, data] = dataUrl.split(',')
+/**
+ * Convert a URL (data: or blob:) to a Blob.
+ * - data: URLs use an atob-based fast path (CSP-friendly — no `fetch`).
+ * - blob: URLs fall through to `fetch` so restored saves (where the source
+ *   is an object URL backed by an IDB Blob) can be re-saved without errors.
+ */
+export async function dataUrlToBlob(url: string): Promise<Blob> {
+  if (url.startsWith('blob:')) {
+    const res = await fetch(url)
+    return await res.blob()
+  }
+  const [header, data] = url.split(',')
   const mimeMatch = header.match(/^data:([^;,]+)(?:;[^,]*?)?;base64$/i)
   if (!mimeMatch) throw new Error('Invalid data URL')
   const mime = mimeMatch[1]
