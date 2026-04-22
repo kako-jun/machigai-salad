@@ -12,6 +12,12 @@ const GIF_MAX_DIM = 480
 /** APNG download image max dimension (higher quality than GIF) */
 const APNG_MAX_DIM = 800
 
+/** Convert a data URL (or any fetchable URL) to a Blob. */
+export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl)
+  return await res.blob()
+}
+
 export function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()

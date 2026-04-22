@@ -1,26 +1,27 @@
+import { createStore, get, set, del, keys as idbKeys, getMany } from 'idb-keyval'
 import type { Point, CornerOffsets } from '@/types'
 import type { Lang } from './i18n'
 
+/** localStorage key for non-saves state (currently lang only) */
 const STORAGE_KEY = 'machigai-salad'
 const MAX_SAVES = 5
 
-/** Root shape stored under the single localStorage key */
+/** Root shape stored under the single localStorage key (saves moved to IDB) */
 interface StorageRoot {
-  saves: SaveEntry[]
   lang?: Lang
 }
 
 export interface SaveEntry {
   id: string
   savedAt: string // ISO string
-  originalImage: string // data URL
+  originalImage: Blob
   corners: Point[]
   offset: { x: number; y: number }
   imageSize: { width: number; height: number }
   warpCorners: CornerOffsets
   centerOffset: Point
   twoImageMode?: boolean
-  rightImageData?: string
+  rightImageData?: Blob
   secondCorners?: Point[]
 }
 
@@ -31,18 +32,30 @@ const ZERO_CORNERS: CornerOffsets = [
   { x: 0, y: 0 },
 ]
 
+// ── IDB store ──
+
+/**
+ * Lazily-initialized IDB custom store. Deferred so SSR / non-browser environments
+ * don't touch `indexedDB` at import time.
+ */
+let _store: ReturnType<typeof createStore> | null = null
+function store() {
+  if (!_store) _store = createStore('machigai-salad', 'saves')
+  return _store
+}
+
 function isValidEntry(s: unknown): s is SaveEntry {
+  if (typeof s !== 'object' || s === null) return false
+  const e = s as SaveEntry
   return (
-    typeof s === 'object' &&
-    s !== null &&
-    'id' in s &&
-    'originalImage' in s &&
-    'corners' in s &&
-    Array.isArray((s as SaveEntry).corners)
+    typeof e.id === 'string' &&
+    typeof e.savedAt === 'string' &&
+    e.originalImage instanceof Blob &&
+    Array.isArray(e.corners)
   )
 }
 
-/** Ensure all fields exist (migrate old saves missing warpCorners/centerOffset) */
+/** Ensure all fields exist on an entry loaded from IDB */
 function normalize(entry: SaveEntry): SaveEntry {
   return {
     ...entry,
@@ -52,29 +65,21 @@ function normalize(entry: SaveEntry): SaveEntry {
   }
 }
 
-// ── low-level helpers ──
-
-let legacyCleaned = false
+// ── localStorage root (lang only) ──
 
 function readRoot(): StorageRoot {
   try {
-    if (!legacyCleaned) {
-      localStorage.removeItem('machigai-salad-saves')
-      legacyCleaned = true
-    }
-
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { saves: [] }
+    if (!raw) return {}
     const parsed = JSON.parse(raw)
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return { saves: [] }
+      return {}
     }
     return {
-      saves: Array.isArray(parsed.saves) ? parsed.saves.filter(isValidEntry).map(normalize) : [],
       lang: parsed.lang === 'ja' || parsed.lang === 'en' ? parsed.lang : undefined,
     }
   } catch {
-    return { saves: [] }
+    return {}
   }
 }
 
@@ -82,63 +87,78 @@ function writeRoot(root: StorageRoot): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(root))
     return true
-  } catch {
+  } catch (e) {
+    console.error('[machigai-salad] localStorage write failed:', e)
     return false
   }
 }
 
-// ── saves ──
+// ── saves (IDB) ──
 
-export function loadAllSaves(): SaveEntry[] {
-  return readRoot().saves
+export async function loadAllSaves(): Promise<SaveEntry[]> {
+  try {
+    const ks = await idbKeys(store())
+    if (ks.length === 0) return []
+    const values = await getMany<SaveEntry>(ks as IDBValidKey[], store())
+    const entries = values.filter(isValidEntry).map(normalize)
+    // savedAt DESC (newest first)
+    entries.sort((a, b) => (a.savedAt < b.savedAt ? 1 : a.savedAt > b.savedAt ? -1 : 0))
+    return entries
+  } catch (e) {
+    console.error('[machigai-salad] IDB loadAllSaves failed:', e)
+    return []
+  }
 }
 
-export function addSave(entry: Omit<SaveEntry, 'id' | 'savedAt'>): SaveEntry | null {
+export async function addSave(entry: Omit<SaveEntry, 'id' | 'savedAt'>): Promise<SaveEntry | null> {
   try {
-    const root = readRoot()
     const now = new Date()
     const newEntry: SaveEntry = {
       ...entry,
       id: crypto.randomUUID(),
       savedAt: now.toISOString(),
     }
-    root.saves.unshift(newEntry)
-    while (root.saves.length > MAX_SAVES) {
-      root.saves.pop()
+    await set(newEntry.id, newEntry, store())
+    // Enforce MAX_SAVES by deleting oldest extras
+    const all = await loadAllSaves()
+    if (all.length > MAX_SAVES) {
+      const extras = all.slice(MAX_SAVES)
+      await Promise.all(extras.map((e) => del(e.id, store())))
     }
-    if (!writeRoot(root)) return null
     return newEntry
-  } catch {
+  } catch (e) {
+    console.error('[machigai-salad] IDB addSave failed:', e)
     return null
   }
 }
 
-export function updateSave(id: string, data: Omit<SaveEntry, 'id' | 'savedAt'>): SaveEntry | null {
+export async function updateSave(
+  id: string,
+  data: Omit<SaveEntry, 'id' | 'savedAt'>
+): Promise<SaveEntry | null> {
   try {
-    const root = readRoot()
-    const idx = root.saves.findIndex((s) => s.id === id)
-    if (idx === -1) return null
+    const existing = await get<SaveEntry>(id, store())
+    if (!existing) return null
     const updated: SaveEntry = { ...data, id, savedAt: new Date().toISOString() }
-    root.saves.splice(idx, 1)
-    root.saves.unshift(updated)
-    if (!writeRoot(root)) return null
+    await set(id, updated, store())
     return updated
-  } catch {
+  } catch (e) {
+    console.error('[machigai-salad] IDB updateSave failed:', e)
     return null
   }
 }
 
-export function deleteSave(id: string): boolean {
+export async function deleteSave(id: string): Promise<boolean> {
   try {
-    const root = readRoot()
-    root.saves = root.saves.filter((s) => s.id !== id)
-    return writeRoot(root)
-  } catch {
+    await del(id, store())
+    return true
+  } catch (e) {
+    console.error('[machigai-salad] IDB deleteSave failed:', e)
     return false
   }
 }
 
-// ── lang ──
+// ── lang (localStorage) ──
 
 export function loadLang(): Lang | undefined {
   return readRoot().lang

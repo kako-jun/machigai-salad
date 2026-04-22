@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "gif.js": "^0.2.0",
+    "idb-keyval": "^6.2.2",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
