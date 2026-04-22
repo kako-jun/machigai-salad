@@ -79,8 +79,8 @@ function readRoot(): StorageRoot {
     }
     // Drop legacy `saves` field (moved to IndexedDB)
     if ('saves' in parsed) {
-      const { saves: _drop, ...rest } = parsed
-      void _drop
+      const { saves: _legacySaves, ...rest } = parsed
+      void _legacySaves
       localStorage.setItem(STORAGE_KEY, JSON.stringify(rest))
       return {
         lang: rest.lang === 'ja' || rest.lang === 'en' ? rest.lang : undefined,
@@ -159,6 +159,17 @@ export async function updateSave(
   } catch (e) {
     console.error('[machigai-salad] IDB updateSave failed:', e)
     return null
+  }
+}
+
+export async function countSaves(): Promise<number> {
+  if (typeof window === 'undefined') return 0
+  try {
+    const ks = await idbKeys(store())
+    return ks.length
+  } catch (e) {
+    console.error('[machigai-salad] IDB countSaves failed:', e)
+    return 0
   }
 }
 

@@ -12,7 +12,7 @@ import {
   dataUrlToBlob,
 } from '@/lib/image-utils'
 import { showToast } from './Toast'
-import { addSave, updateSave, loadAllSaves } from '@/lib/storage'
+import { addSave, updateSave, countSaves } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
 import { SaveIcon, ShareResultIcon, DownloadIcon } from './icons'
 import ImageUpload from './ImageUpload'
@@ -58,9 +58,9 @@ export default function ImageProcessor() {
   // Load initial save count from IDB (async)
   useEffect(() => {
     let cancelled = false
-    loadAllSaves()
-      .then((entries) => {
-        if (!cancelled) setSaveCount(entries.length)
+    countSaves()
+      .then((n) => {
+        if (!cancelled) setSaveCount(n)
       })
       .catch(() => {
         // ignore
@@ -539,7 +539,11 @@ export default function ImageProcessor() {
       const result = updated ?? (await addSave(data))
       if (result) {
         currentSaveIdRef.current = result.id
-        if (!updated) setSaveCount((c) => c + 1)
+        if (!updated) {
+          // MAX_SAVES刈り込みが起きても正確な件数にするため countSaves を使う
+          const n = await countSaves()
+          setSaveCount(n)
+        }
         setSaveSuccess(true)
         setTimeout(() => setSaveSuccess(false), 1500)
       } else {

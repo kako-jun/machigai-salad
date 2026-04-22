@@ -15,7 +15,7 @@ const APNG_MAX_DIM = 800
 /** Convert a base64 data URL to a Blob (CSP-friendly — no `fetch` on data: URLs). */
 export function dataUrlToBlob(dataUrl: string): Blob {
   const [header, data] = dataUrl.split(',')
-  const mimeMatch = header.match(/^data:([^;]+);base64$/)
+  const mimeMatch = header.match(/^data:([^;,]+)(?:;[^,]*?)?;base64$/i)
   if (!mimeMatch) throw new Error('Invalid data URL')
   const mime = mimeMatch[1]
   const binary = atob(data)

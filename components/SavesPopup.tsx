@@ -35,6 +35,10 @@ export default function SavesPopup({ open, onClose, onLoad, onDelete }: SavesPop
 
   // Build object URLs for thumbnails and revoke on cleanup (StrictMode-safe).
   useEffect(() => {
+    if (saves.length === 0) {
+      setThumbUrls({})
+      return
+    }
     const map: Record<string, string> = {}
     for (const s of saves) map[s.id] = URL.createObjectURL(s.originalImage)
     setThumbUrls(map)
