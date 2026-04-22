@@ -495,6 +495,10 @@ export default function ImageComparison({
     : null
 
   const panelHeight = panelRef.current?.clientHeight ?? 0
+  // Panel can be narrower than its container (mx-auto centering for portrait images).
+  // Handles live in a sibling wrapper whose origin is the container's left edge, so shift
+  // them by the panel's left offset to stay aligned with the image content.
+  const panelLeft = panelRef.current?.offsetLeft ?? 0
 
   // Panel aspect ratio for sizing (replaces the DOM img element's sizing role)
   const panelAspectRatio = naturalSize ? `${naturalSize.w} / ${naturalSize.h}` : undefined
@@ -566,7 +570,7 @@ export default function ImageComparison({
       {/* Image panel — canvas renders both images, no DOM <img> */}
       <div
         ref={panelRef}
-        className="relative flex touch-none select-none items-center justify-center overflow-hidden"
+        className="relative mx-auto flex touch-none select-none items-center justify-center overflow-hidden"
         style={{
           borderRadius: 14,
           border: `2px solid ${activeColor}40`,
@@ -575,6 +579,9 @@ export default function ImageComparison({
           transition: 'border-color 0.2s ease',
           minHeight: 'min(280px, calc(100dvh - var(--panel-margin)))',
           maxHeight: 'calc(100dvh - var(--panel-margin))',
+          maxWidth: naturalSize
+            ? `calc((100dvh - var(--panel-margin)) * ${naturalSize.w} / ${naturalSize.h})`
+            : undefined,
           aspectRatio: panelAspectRatio,
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
@@ -596,7 +603,7 @@ export default function ImageComparison({
               key={`corner-${i}`}
               className="absolute"
               style={{
-                left: pos.x + cornerOffsets[i].x + offset.x - HANDLE_HIT_RADIUS,
+                left: panelLeft + pos.x + cornerOffsets[i].x + offset.x - HANDLE_HIT_RADIUS,
                 top: pos.y + cornerOffsets[i].y + offset.y - HANDLE_HIT_RADIUS - panelHeight,
                 width: HANDLE_HIT_RADIUS * 2,
                 height: HANDLE_HIT_RADIUS * 2,
@@ -645,7 +652,7 @@ export default function ImageComparison({
             <div
               className="absolute"
               style={{
-                left: centerPosition.x + centerOffset.x + offset.x - HANDLE_HIT_RADIUS,
+                left: panelLeft + centerPosition.x + centerOffset.x + offset.x - HANDLE_HIT_RADIUS,
                 top: centerPosition.y + centerOffset.y + offset.y - HANDLE_HIT_RADIUS - panelHeight,
                 width: HANDLE_HIT_RADIUS * 2,
                 height: HANDLE_HIT_RADIUS * 2,
