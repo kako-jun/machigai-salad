@@ -9,17 +9,49 @@ interface SavesPopupProps {
   open: boolean
   onClose: () => void
   onLoad: (entry: SaveEntry) => void
+  onDelete?: () => void
 }
 
-export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
+export default function SavesPopup({ open, onClose, onLoad, onDelete }: SavesPopupProps) {
   const [saves, setSaves] = useState<SaveEntry[]>([])
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({})
   const { t } = useI18n()
 
   useEffect(() => {
-    if (open) {
-      setSaves(loadAllSaves())
+    if (!open) return
+    let cancelled = false
+    loadAllSaves()
+      .then((entries) => {
+        if (!cancelled) setSaves(entries)
+      })
+      .catch((e) => {
+        console.error('[machigai-salad] loadAllSaves failed:', e)
+        if (!cancelled) setSaves([])
+      })
+    return () => {
+      cancelled = true
     }
   }, [open])
+
+  // Build object URLs for thumbnails and revoke on cleanup (StrictMode-safe).
+  useEffect(() => {
+    if (saves.length === 0) {
+      setThumbUrls({})
+      return
+    }
+    const map: Record<string, string> = {}
+    for (const s of saves) map[s.id] = URL.createObjectURL(s.originalImage)
+    setThumbUrls(map)
+    return () => {
+      for (const url of Object.values(map)) {
+        try {
+          URL.revokeObjectURL(url)
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [saves])
 
   // Escape key to close
   useEffect(() => {
@@ -33,11 +65,13 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
 
   if (!open) return null
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (!confirm(t('deleteConfirm'))) return
-    if (!deleteSave(id)) return
+    const ok = await deleteSave(id)
+    if (!ok) return
     setSaves((prev) => prev.filter((s) => s.id !== id))
+    onDelete?.()
   }
 
   return (
@@ -100,7 +134,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
                 {/* Thumbnail */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={entry.originalImage}
+                  src={thumbUrls[entry.id]}
                   alt=""
                   className="h-12 w-12 flex-shrink-0 rounded object-cover"
                   style={{ border: '1px solid var(--border-light)' }}

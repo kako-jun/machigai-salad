@@ -4,6 +4,15 @@
 
 ### 修正 🐛
 
+- **「ほぞん」が quota 不足で必ず失敗する問題を修正（localStorage → IndexedDB 移行）** (#19)
+  - 1枚モード・2枚モード共に MAX_SAVES=5 に満たない時点で「ほぞんできなかった...」トーストが必ず出る状態だった
+  - 原因: 保存エントリに data URL（最大 2400px WebP、1件 400KB-1.5MB）を格納していたため、モバイル Safari/Chrome の localStorage 1オリジン枠 5-10MB に 2-3件で到達
+  - 修正: 保存先を IndexedDB に移行。DB名は `machigai-salad`（他リポの localStorage キー命名ルールに統一）、object store 名は `saves`
+  - 画像は Blob で直接格納（data URL の base64 +33% を排除）
+  - 言語設定（`lang`）は引き続き localStorage に保存
+  - 後方互換性なし。旧 localStorage の saves は読み込み側が消えたため実害なし
+  - 依存追加: `idb-keyval`
+
 - **OpenCV.js を自前ホスティング化（外部CDN配信停止への対応）**
   - `docs.opencv.org/4.9.0/opencv.js` が 403、フォールバック `jsdelivr gh/niconiconico-community/opencv.js` も 404 を返すようになり、カメラ起動時「じゅんびちゅう」が30秒×2で詰まった後「ネットワーク接続を確認してね」に到達していた
   - `public/opencv.js` (opencv.js@1.2.1, 約7.6MB) を同梱し、`/opencv.js` から配信

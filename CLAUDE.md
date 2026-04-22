@@ -32,7 +32,7 @@ lib/
   opencv/      # OpenCV画像処理（紙検出、透視変換）
   image-utils.ts # 画像ユーティリティ（リサイズ、GIF/PNG生成）
   i18n.tsx     # 日英i18n
-  storage.ts   # LocalStorage保存・復元
+  storage.ts   # 保存データは IndexedDB、言語設定は localStorage
 types/         # TypeScript型定義（Point, CornerOffsets, MAX_UNDO, gif.js, upng-js）
 public/        # 静的アセット（PWAアイコン、OGP画像、QRコード、gif.worker.js等）
 docs/          # 詳細ドキュメント

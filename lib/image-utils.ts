@@ -12,6 +12,18 @@ const GIF_MAX_DIM = 480
 /** APNG download image max dimension (higher quality than GIF) */
 const APNG_MAX_DIM = 800
 
+/** Convert a base64 data URL to a Blob (CSP-friendly — no `fetch` on data: URLs). */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(',')
+  const mimeMatch = header.match(/^data:([^;,]+)(?:;[^,]*?)?;base64$/i)
+  if (!mimeMatch) throw new Error('Invalid data URL')
+  const mime = mimeMatch[1]
+  const binary = atob(data)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 export function getImageSize(dataUrl: string): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image()
