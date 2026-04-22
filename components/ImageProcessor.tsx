@@ -358,8 +358,15 @@ export default function ImageProcessor() {
     restoredCenterRef.current = null
 
     if (twoImageMode) {
-      // Go back to 2nd image corner adjustment (keep firstProcessedImage)
-      setSuggestedCorners(secondCornersRef.current ?? lastCornersRef.current)
+      // Restart from the 1st image corner adjustment. The 2nd image is still
+      // held in pendingSecondImageRef, so startSecondImageProcessing() will
+      // re-run automatically once the 1st corners are re-applied.
+      setProcessingSecondImage(false)
+      if (firstOriginalImageRef.current) setOriginalImage(firstOriginalImageRef.current)
+      if (firstImageSizeRef.current) setImageSize(firstImageSizeRef.current)
+      setSuggestedCorners(firstCornersRef.current ?? lastCornersRef.current)
+      setFirstProcessedImage(null)
+      secondCornersRef.current = null
     } else {
       setSuggestedCorners(lastCornersRef.current)
     }
