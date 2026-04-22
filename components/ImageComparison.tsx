@@ -582,7 +582,7 @@ export default function ImageComparison({
           minHeight: 'min(280px, calc(100dvh - var(--panel-margin)))',
           maxHeight: 'calc(100dvh - var(--panel-margin))',
           maxWidth: naturalSize
-            ? `calc((100dvh - var(--panel-margin)) * ${naturalSize.w} / ${naturalSize.h})`
+            ? `min(calc((100dvh - var(--panel-margin)) * ${naturalSize.w} / ${naturalSize.h}), 100%)`
             : undefined,
           aspectRatio: panelAspectRatio,
           cursor: isDragging ? 'grabbing' : 'grab',
