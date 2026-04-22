@@ -517,8 +517,8 @@ export default function ImageProcessor() {
         : originalImage
       const rightSource = twoImageMode ? pendingSecondImageRef.current : null
 
-      const originalBlob = dataUrlToBlob(leftSource)
-      const rightBlob = rightSource ? dataUrlToBlob(rightSource) : undefined
+      const originalBlob = await dataUrlToBlob(leftSource)
+      const rightBlob = rightSource ? await dataUrlToBlob(rightSource) : undefined
 
       const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
         originalImage: originalBlob,
