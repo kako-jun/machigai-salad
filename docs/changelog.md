@@ -4,6 +4,16 @@
 
 ### 修正 🐛
 
+- **比較ステップで縦長画像が左詰めになる問題を修正（パネル水平中央寄せ）** (#20)
+  - 正方形より縦長の画像を開くと、パネルが親コンテナの左に詰まって表示されていた
+  - panel に `mx-auto` と `maxWidth` 計算を追加して水平中央寄せ
+  - ハンドル位置も panel の `offsetLeft` に追従
+
+- **IndexedDB 移行後のリグレッション一括修正** (#23)
+  - **横長画像がモバイル画面を突き抜けて横スクロールバーが出る問題**: `mx-auto` + `aspect-ratio` の shrink-to-fit が `maxHeight × aspectRatio` を採用して親幅を超えていた。panel `maxWidth` を `min(calc(...), 100%)` でクランプ
+  - **保存済みから復元して再保存すると「ほぞんできなかった」になる問題**: atob ベースの `dataUrlToBlob` が `blob:` URL（IDB Blob から `createObjectURL`）を受け付けず throw していた。async 化して `blob:` URL は `fetch` フォールバック、`data:` URL は atob fast-path の併用に変更
+  - **2枚モードで「角の調整にもどる」が1枚目に戻れない問題**: `handleBackToAdjust` が2枚目の corners のみ復元していたため、ユーザーは1枚目を再調整できなかった。1枚目の state/refs に戻して `processingSecondImage=false` にリセット、1枚目適用後に2枚目フローが自動で走る形に変更
+
 - **「ほぞん」が quota 不足で必ず失敗する問題を修正（localStorage → IndexedDB 移行）** (#19)
   - 1枚モード・2枚モード共に MAX_SAVES=5 に満たない時点で「ほぞんできなかった...」トーストが必ず出る状態だった
   - 原因: 保存エントリに data URL（最大 2400px WebP、1件 400KB-1.5MB）を格納していたため、モバイル Safari/Chrome の localStorage 1オリジン枠 5-10MB に 2-3件で到達
