@@ -154,6 +154,8 @@ export default function ImageComparison({
     h: number
     left: number
     top: number
+    panelLeft: number
+    panelHeight: number
   } | null>(null)
 
   // --- Load both images as Image objects (no DOM <img>) ---
@@ -195,7 +197,7 @@ export default function ImageComparison({
     const ph = panel.clientHeight
     if (!pw || !ph) return
     const rect = computeImgRect(pw, ph, naturalSize.w, naturalSize.h)
-    setImgRect(rect)
+    setImgRect({ ...rect, panelLeft: panel.offsetLeft, panelHeight: ph })
     onDisplaySizeRef.current?.(rect)
   }, [naturalSize])
 
@@ -494,7 +496,11 @@ export default function ImageComparison({
     ? { x: imgRect.left + imgRect.w / 2, y: imgRect.top + imgRect.h / 2 }
     : null
 
-  const panelHeight = panelRef.current?.clientHeight ?? 0
+  // Panel may be narrower than its shared parent (mx-auto centering for portrait images).
+  // Handles live in a sibling wrapper whose origin is the parent's left edge, so shift
+  // them by the panel's left offset to stay aligned with the image content.
+  const panelLeft = imgRect?.panelLeft ?? 0
+  const panelHeight = imgRect?.panelHeight ?? 0
 
   // Panel aspect ratio for sizing (replaces the DOM img element's sizing role)
   const panelAspectRatio = naturalSize ? `${naturalSize.w} / ${naturalSize.h}` : undefined
@@ -566,7 +572,7 @@ export default function ImageComparison({
       {/* Image panel — canvas renders both images, no DOM <img> */}
       <div
         ref={panelRef}
-        className="relative flex touch-none select-none items-center justify-center overflow-hidden"
+        className="relative mx-auto flex touch-none select-none items-center justify-center overflow-hidden"
         style={{
           borderRadius: 14,
           border: `2px solid ${activeColor}40`,
@@ -575,6 +581,9 @@ export default function ImageComparison({
           transition: 'border-color 0.2s ease',
           minHeight: 'min(280px, calc(100dvh - var(--panel-margin)))',
           maxHeight: 'calc(100dvh - var(--panel-margin))',
+          maxWidth: naturalSize
+            ? `calc((100dvh - var(--panel-margin)) * ${naturalSize.w} / ${naturalSize.h})`
+            : undefined,
           aspectRatio: panelAspectRatio,
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
@@ -596,7 +605,7 @@ export default function ImageComparison({
               key={`corner-${i}`}
               className="absolute"
               style={{
-                left: pos.x + cornerOffsets[i].x + offset.x - HANDLE_HIT_RADIUS,
+                left: panelLeft + pos.x + cornerOffsets[i].x + offset.x - HANDLE_HIT_RADIUS,
                 top: pos.y + cornerOffsets[i].y + offset.y - HANDLE_HIT_RADIUS - panelHeight,
                 width: HANDLE_HIT_RADIUS * 2,
                 height: HANDLE_HIT_RADIUS * 2,
@@ -645,7 +654,7 @@ export default function ImageComparison({
             <div
               className="absolute"
               style={{
-                left: centerPosition.x + centerOffset.x + offset.x - HANDLE_HIT_RADIUS,
+                left: panelLeft + centerPosition.x + centerOffset.x + offset.x - HANDLE_HIT_RADIUS,
                 top: centerPosition.y + centerOffset.y + offset.y - HANDLE_HIT_RADIUS - panelHeight,
                 width: HANDLE_HIT_RADIUS * 2,
                 height: HANDLE_HIT_RADIUS * 2,
