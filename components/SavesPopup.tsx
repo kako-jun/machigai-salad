@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { loadAllSaves, deleteSave, formatSaveDate } from '@/lib/storage'
 import type { SaveEntry } from '@/lib/storage'
@@ -9,10 +9,12 @@ interface SavesPopupProps {
   open: boolean
   onClose: () => void
   onLoad: (entry: SaveEntry) => void
+  onDelete?: () => void
 }
 
-export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
+export default function SavesPopup({ open, onClose, onLoad, onDelete }: SavesPopupProps) {
   const [saves, setSaves] = useState<SaveEntry[]>([])
+  const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({})
   const { t } = useI18n()
 
   useEffect(() => {
@@ -31,18 +33,13 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
     }
   }, [open])
 
-  // Build object URLs for thumbnails and revoke when the set changes or component unmounts
-  const thumbUrls = useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const s of saves) {
-      map[s.id] = URL.createObjectURL(s.originalImage)
-    }
-    return map
-  }, [saves])
-
+  // Build object URLs for thumbnails and revoke on cleanup (StrictMode-safe).
   useEffect(() => {
+    const map: Record<string, string> = {}
+    for (const s of saves) map[s.id] = URL.createObjectURL(s.originalImage)
+    setThumbUrls(map)
     return () => {
-      for (const url of Object.values(thumbUrls)) {
+      for (const url of Object.values(map)) {
         try {
           URL.revokeObjectURL(url)
         } catch {
@@ -50,7 +47,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
         }
       }
     }
-  }, [thumbUrls])
+  }, [saves])
 
   // Escape key to close
   useEffect(() => {
@@ -70,6 +67,7 @@ export default function SavesPopup({ open, onClose, onLoad }: SavesPopupProps) {
     const ok = await deleteSave(id)
     if (!ok) return
     setSaves((prev) => prev.filter((s) => s.id !== id))
+    onDelete?.()
   }
 
   return (

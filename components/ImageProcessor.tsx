@@ -401,6 +401,7 @@ export default function ImageProcessor() {
   const [sharing, setSharing] = useState(false)
   const [gifPreview, setGifPreview] = useState<{ url: string; blob: Blob } | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [apngGenerating, setApngGenerating] = useState(false)
 
   const handleCreateGif = async () => {
@@ -503,21 +504,21 @@ export default function ImageProcessor() {
   }, [gifPreview, handleGifClose])
 
   const handleSave = async () => {
+    if (saving) return
     if (!originalImage || !imageSize || !lastCornersRef.current) return
     if (twoImageMode && !pendingSecondImageRef.current) {
       showToast(t('saveFailed'), 'error')
       return
     }
+    setSaving(true)
     try {
       const leftSource = twoImageMode
         ? (firstOriginalImageRef.current ?? originalImage)!
         : originalImage
       const rightSource = twoImageMode ? pendingSecondImageRef.current : null
 
-      const [originalBlob, rightBlob] = await Promise.all([
-        dataUrlToBlob(leftSource),
-        rightSource ? dataUrlToBlob(rightSource) : Promise.resolve(undefined),
-      ])
+      const originalBlob = dataUrlToBlob(leftSource)
+      const rightBlob = rightSource ? dataUrlToBlob(rightSource) : undefined
 
       const data: Omit<SaveEntry, 'id' | 'savedAt'> = {
         originalImage: originalBlob,
@@ -547,6 +548,8 @@ export default function ImageProcessor() {
     } catch (e) {
       console.error('[machigai-salad] save failed:', e)
       showToast(t('saveFailed'), 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -700,6 +703,7 @@ export default function ImageProcessor() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
             <button
               onClick={handleSave}
+              disabled={saving}
               className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
               style={saveSuccess ? { color: '#2d8a4e', borderColor: '#2d8a4e' } : undefined}
             >
@@ -739,14 +743,8 @@ export default function ImageProcessor() {
 
       <SavesPopup
         open={popupOpen}
-        onClose={() => {
-          setPopupOpen(false)
-          loadAllSaves()
-            .then((entries) => setSaveCount(entries.length))
-            .catch(() => {
-              // ignore
-            })
-        }}
+        onClose={() => setPopupOpen(false)}
+        onDelete={() => setSaveCount((c) => Math.max(0, c - 1))}
         onLoad={handleLoad}
       />
 
