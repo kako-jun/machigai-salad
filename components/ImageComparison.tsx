@@ -154,6 +154,8 @@ export default function ImageComparison({
     h: number
     left: number
     top: number
+    panelLeft: number
+    panelHeight: number
   } | null>(null)
 
   // --- Load both images as Image objects (no DOM <img>) ---
@@ -195,7 +197,7 @@ export default function ImageComparison({
     const ph = panel.clientHeight
     if (!pw || !ph) return
     const rect = computeImgRect(pw, ph, naturalSize.w, naturalSize.h)
-    setImgRect(rect)
+    setImgRect({ ...rect, panelLeft: panel.offsetLeft, panelHeight: ph })
     onDisplaySizeRef.current?.(rect)
   }, [naturalSize])
 
@@ -494,11 +496,11 @@ export default function ImageComparison({
     ? { x: imgRect.left + imgRect.w / 2, y: imgRect.top + imgRect.h / 2 }
     : null
 
-  const panelHeight = panelRef.current?.clientHeight ?? 0
-  // Panel can be narrower than its container (mx-auto centering for portrait images).
-  // Handles live in a sibling wrapper whose origin is the container's left edge, so shift
+  // Panel may be narrower than its shared parent (mx-auto centering for portrait images).
+  // Handles live in a sibling wrapper whose origin is the parent's left edge, so shift
   // them by the panel's left offset to stay aligned with the image content.
-  const panelLeft = panelRef.current?.offsetLeft ?? 0
+  const panelLeft = imgRect?.panelLeft ?? 0
+  const panelHeight = imgRect?.panelHeight ?? 0
 
   // Panel aspect ratio for sizing (replaces the DOM img element's sizing role)
   const panelAspectRatio = naturalSize ? `${naturalSize.w} / ${naturalSize.h}` : undefined
