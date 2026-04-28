@@ -132,25 +132,29 @@ const dict = {
     ja: 'LINEアプリ内ではカメラが使えないことがあるよ',
     en: 'Camera may not work inside the LINE app',
   },
+  lineInAppWarningIos: {
+    ja: 'ふつうのブラウザで ひらくと、ホーム画面に おけて べんりだよ',
+    en: 'Open in your usual browser to add it to your home screen',
+  },
   lineInAppOpenExternal: {
     ja: '外部ブラウザで開く',
     en: 'Open in browser',
   },
   iosLineModalTitle: {
-    ja: 'Safariで開いてね',
-    en: 'Please open in Safari',
+    ja: 'ブラウザで開いてね',
+    en: 'Open in your browser',
   },
   iosLineModalDesc: {
-    ja: 'iPhoneのLINEからは カメラをつかうのが むずかしいんだ。\nしたの てじゅんで Safariで ひらいてね。',
-    en: "The LINE app on iPhone can't open the camera directly.\nFollow the steps below to open this page in Safari.",
+    ja: 'ふつうのブラウザで ひらくと、ホーム画面に おけて つぎから すぐ あそべるよ。\nしたの てじゅんで ひらいてね。',
+    en: 'Opening this in your usual browser lets you add it to your home screen for quick access next time.\nFollow the steps below.',
   },
   iosLineModalStep1: {
     ja: '右下の「・・・」メニューをタップ',
     en: "Tap the '...' menu in the bottom right",
   },
   iosLineModalStep2: {
-    ja: '「他のアプリで開く」または「Safariで開く」を選ぶ',
-    en: "Select 'Open in another app' or 'Open in Safari'",
+    ja: '「ブラウザで開く」を選ぶ',
+    en: "Select 'Open in browser'",
   },
   copyUrl: { ja: 'URLをコピー', en: 'Copy URL' },
   urlCopied: { ja: 'コピーしたよ', en: 'Copied!' },
