@@ -310,7 +310,7 @@ export default function ImageUpload({
                 }}
               >
                 <p className="text-sm" style={{ color: 'var(--espresso)' }}>
-                  {t('lineInAppWarning')}
+                  {lineEnv === 'ios' ? t('lineInAppWarningIos') : t('lineInAppWarning')}
                 </p>
                 <button onClick={handleOpenExternal} className="btn-action px-4 py-2 text-sm">
                   {t('lineInAppOpenExternal')}
