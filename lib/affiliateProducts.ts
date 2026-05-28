@@ -17,15 +17,15 @@ export interface AffiliateProduct {
 
 export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
   {
-    url: 'https://amzn.to/4fcMoyG',
+    url: 'https://amzn.to/4wVSk5q',
     title: 'サイゼリヤのまちがいさがし',
-    imageUrl: 'https://m.media-amazon.com/images/P/4405072728.01._SL500_.jpg',
+    imageUrl: 'https://m.media-amazon.com/images/P/B07FFNXLQ8.01._SL500_.jpg',
     caption: 'このアプリのこうかはばつぐんだ！',
   },
   {
-    url: 'https://amzn.to/4fJEJbg',
+    url: 'https://amzn.to/4a8NR5B',
     title: '頭がよくなる 超いじわる まちがいさがし',
-    imageUrl: 'https://m.media-amazon.com/images/P/478162331X.01._SL500_.jpg',
+    imageUrl: 'https://m.media-amazon.com/images/P/B0DB7QQX1J.01._SL500_.jpg',
     caption: 'さらなる高みへ！',
   },
   {
