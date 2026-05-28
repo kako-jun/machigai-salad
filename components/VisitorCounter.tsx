@@ -45,7 +45,13 @@ export default function VisitorCounter() {
       style={{ color: 'var(--muted)', opacity: 0.6 }}
     >
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-        <nostalgic-counter id={COUNTER_ID} type="total" format="text"></nostalgic-counter> visits
+        <nostalgic-counter
+          id={COUNTER_ID}
+          type="total"
+          format="text"
+          style={{ fontFamily: 'inherit' }}
+        ></nostalgic-counter>{' '}
+        visits
       </span>
       <span>v{buildDate}</span>
     </div>
