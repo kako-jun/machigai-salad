@@ -6,6 +6,7 @@ import LangToggle from '@/components/LangToggle'
 import PwaInstallPrompt from '@/components/PwaInstallPrompt'
 import VisitorCounter from '@/components/VisitorCounter'
 import ShareButtons from '@/components/ShareButtons'
+import AffiliateGrid from '@/components/AffiliateGrid'
 
 export default function Home() {
   const { t } = useI18n()
@@ -60,6 +61,10 @@ export default function Home() {
         <footer className="menu-card mt-6 px-5 py-4">
           <div className="menu-stripe mb-3" />
           <div className="flex flex-col items-center gap-4">
+            {/* Amazon affiliate × 3 商品グリッド */}
+            <AffiliateGrid />
+
+            {/* その他の Amazon リンク（上記以外の商品でも応援になる） */}
             <a
               href="https://amzn.to/4uWSrNa"
               target="_blank"
