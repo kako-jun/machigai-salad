@@ -220,7 +220,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       setLangState(stored)
       return
     }
-    if (!navigator.language.startsWith('ja')) {
+    // navigator.languages (優先言語リスト全体) を見る。
+    // Android Chrome では navigator.language がブラウザUI言語を返すため、
+    // システム言語が ja でもブラウザが en 設定だと 'en' になってしまう。
+    // リスト全体に 'ja' が含まれていれば日本語ユーザーと判定する。
+    const langs: readonly string[] =
+      Array.isArray(navigator.languages) && navigator.languages.length > 0
+        ? navigator.languages
+        : [navigator.language ?? '']
+    if (!langs.some((l) => l.toLowerCase().startsWith('ja'))) {
       setLangState('en')
     }
   }, [])
