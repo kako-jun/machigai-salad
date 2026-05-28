@@ -550,7 +550,7 @@ export default function ImageProcessor() {
 
   const handleCreateCrossfadeVideo = async () => {
     if (!leftImage || !rightImage || crossfadeGenerating) return
-    const mimeType = getCrossfadeVideoMimeType()
+    const mimeType = crossfadeVideoMimeType
     if (!mimeType) {
       showToast(t('crossfadeVideoUnsupported'), 'error')
       return
