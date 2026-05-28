@@ -4,6 +4,11 @@
 
 **https://machigai-salad.llll-ll.com**
 
+<p align="center">
+  <a href="https://nostalgic.llll-ll.com"><img src="https://api.nostalgic.llll-ll.com/visit?action=get&id=github-b66ce845&format=image" alt="Visitors"></a>
+  <a href="https://nostalgic.llll-ll.com/yokoso"><img src="https://api.nostalgic.llll-ll.com/yokoso?action=get&id=github-b66ce845&format=image" alt="Welcome"></a>
+</p>
+
 ## 特徴
 
 - **完全プライバシー保護** — 画像は一切アップロードされず、すべてブラウザ内で処理
