@@ -252,7 +252,9 @@ export async function generateCrossfadeVideo(
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')!
+  const ctxOrNull = canvas.getContext('2d')
+  if (!ctxOrNull) throw new Error('Canvas context unavailable')
+  const ctx = ctxOrNull
 
   const stream = canvas.captureStream(fps)
   const chunks: BlobPart[] = []
@@ -261,7 +263,8 @@ export async function generateCrossfadeVideo(
     if (e.data.size > 0) chunks.push(e.data)
   }
 
-  const totalFrames = Math.round((durationMs / 1000) * fps)
+  // Ensure at least 2 frames to avoid division-by-zero in the interpolation below.
+  const totalFrames = Math.max(Math.round((durationMs / 1000) * fps), 2)
   const frameMs = 1000 / fps
 
   return new Promise((resolve, reject) => {
@@ -276,26 +279,33 @@ export async function generateCrossfadeVideo(
     let frameIndex = 0
 
     function drawFrame() {
+      // All frames drawn — signal 100% and stop recording.
       if (frameIndex >= totalFrames) {
+        onProgress?.(1)
         recorder.stop()
         return
       }
 
-      const t = frameIndex / (totalFrames - 1) // 0 to 1
-      // round trip: 0→0.5 maps alpha 0→1, 0.5→1 maps alpha 1→0
+      const t = frameIndex / (totalFrames - 1) // 0 to 1 (totalFrames >= 2 guaranteed above)
+      // Round trip: first half (t: 0→0.5) fades frame2→frame1, second half fades back.
       const half = t <= 0.5 ? t * 2 : (1 - t) * 2
-      // ease-in-out
+      // ease-in-out so the reversal point feels smooth
       const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
 
-      // Blend frame1 (left overlay) and frame2 (right only)
-      // alpha=0 → frame2 only (right), alpha=1 → frame1 (left overlay)
+      // Blend frame1 (left overlay) and frame2 (right only).
+      // Both source frames are fully opaque (alpha=255), so blending RGB channels is enough;
+      // the alpha channel is set to 255 explicitly to avoid any transparency artefacts.
       const blended = ctx.createImageData(width, height)
       for (let i = 0; i < blended.data.length; i++) {
-        blended.data[i] = frame2.data[i] * (1 - alpha) + frame1.data[i] * alpha
+        if (i % 4 === 3) {
+          blended.data[i] = 255
+        } else {
+          blended.data[i] = frame2.data[i] * (1 - alpha) + frame1.data[i] * alpha
+        }
       }
       ctx.putImageData(blended, 0, 0)
 
-      onProgress?.(frameIndex / totalFrames)
+      onProgress?.(frameIndex / (totalFrames - 1))
       frameIndex++
 
       setTimeout(drawFrame, frameMs)
