@@ -548,6 +548,34 @@ export default function ImageProcessor() {
     }
   }, [crossfadePreview])
 
+  const handleCrossfadeShare = async () => {
+    if (!crossfadePreview) return
+    const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
+    const ts = fileTimestamp()
+    const filename = `machigai-salad-${ts}.${ext}`
+    try {
+      const blob = await fetch(crossfadePreview.url).then((r) => r.blob())
+      const file = new File([blob], filename, { type: crossfadePreview.mimeType.split(';')[0] })
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: t('shareResultTitle'),
+          text: t('shareResultText'),
+        })
+      } else {
+        // Web Share 非対応: ダウンロードにフォールバック
+        const a = document.createElement('a')
+        a.href = crossfadePreview.url
+        a.download = filename
+        a.click()
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        showToast(t('shareFailed'), 'error')
+      }
+    }
+  }
+
   const handleCreateCrossfadeVideo = async () => {
     if (!leftImage || !rightImage || crossfadeGenerating) return
     const mimeType = crossfadeVideoMimeType
@@ -1093,19 +1121,30 @@ export default function ImageProcessor() {
                   const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
                   const a = document.createElement('a')
                   a.href = crossfadePreview.url
-                  a.download = `machigai-salad-reveal.${ext}`
+                  a.download = `machigai-salad-${fileTimestamp()}.${ext}`
                   a.click()
                 }}
-                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+                className="btn-ghost flex flex-1 items-start justify-center gap-1.5 py-3 text-sm"
               >
-                <DownloadIcon size={16} />
-                {t('crossfadeVideoDownload')}
+                <span className="mt-0.5 shrink-0">
+                  <DownloadIcon size={16} />
+                </span>
+                <span className="flex flex-col items-center">
+                  <span>{t('crossfadeVideoDownload')}</span>
+                  <span className="text-[10px] opacity-60">{t('videoFormatHint')}</span>
+                </span>
               </button>
               <button
-                onClick={handleCrossfadeClose}
-                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+                onClick={handleCrossfadeShare}
+                className="btn-action flex flex-1 items-start justify-center gap-1.5 py-3 text-sm"
               >
-                {t('crossfadeVideoClose')}
+                <span className="mt-0.5 shrink-0">
+                  <ShareResultIcon size={16} />
+                </span>
+                <span className="flex flex-col items-center">
+                  <span>{t('crossfadeVideoShare')}</span>
+                  <span className="text-[10px] opacity-60">{t('videoFormatHint')}</span>
+                </span>
               </button>
             </div>
           </div>
