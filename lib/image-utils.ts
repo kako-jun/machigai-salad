@@ -318,7 +318,10 @@ export async function generateCrossfadeVideo(
     onProgress?.(i / (totalFrames - 1))
   }
 
-  await encoder.flush()
+  // Skip flush if encoding failed to avoid triggering additional errors
+  if (firstError === null) {
+    await encoder.flush()
+  }
   encoder.close()
 
   if (firstError !== null) throw firstError
