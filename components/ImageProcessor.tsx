@@ -432,6 +432,7 @@ export default function ImageProcessor() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
   const [apngGenerating, setApngGenerating] = useState(false)
+  const [animSelectOpen, setAnimSelectOpen] = useState(false)
   const [crossfadeGenerating, setCrossfadeGenerating] = useState(false)
   const [crossfadeProgress, setCrossfadeProgress] = useState(0)
   const [crossfadePreview, setCrossfadePreview] = useState<{
@@ -439,8 +440,13 @@ export default function ImageProcessor() {
     mimeType: string
   } | null>(null)
 
+  const handleOpenAnimSelect = () => {
+    setAnimSelectOpen(true)
+  }
+
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
+    setAnimSelectOpen(false)
     setSharing(true)
 
     try {
@@ -542,6 +548,7 @@ export default function ImageProcessor() {
       showToast(t('crossfadeVideoUnsupported'), 'error')
       return
     }
+    setAnimSelectOpen(false)
     setCrossfadeGenerating(true)
     setCrossfadeProgress(0)
     try {
@@ -828,41 +835,33 @@ export default function ImageProcessor() {
               {t('saveBtn')}
             </button>
             <button
-              onClick={handleCreateGif}
-              disabled={sharing}
+              onClick={handleOpenAnimSelect}
+              disabled={sharing || crossfadeGenerating}
               className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
             >
-              <ShareResultIcon size={16} />
-              {t('shareResult')}
+              {crossfadeGenerating ? (
+                <>
+                  <svg
+                    className="animate-spin"
+                    width={16}
+                    height={16}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  {t('crossfadeVideoGenerating').replace('{progress}', String(crossfadeProgress))}
+                </>
+              ) : (
+                <>
+                  <ShareResultIcon size={16} />
+                  {t('shareResult')}
+                </>
+              )}
             </button>
-            {getCrossfadeVideoMimeType() !== null && (
-              <button
-                onClick={handleCreateCrossfadeVideo}
-                disabled={crossfadeGenerating}
-                className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
-              >
-                {crossfadeGenerating ? (
-                  <>
-                    <svg
-                      className="animate-spin"
-                      width={16}
-                      height={16}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      style={{ color: 'var(--muted)' }}
-                    >
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    {t('crossfadeVideoGenerating').replace('{progress}', String(crossfadeProgress))}
-                  </>
-                ) : (
-                  t('crossfadeVideoBtn')
-                )}
-              </button>
-            )}
             <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
               {t('retryBtn')}
             </button>
@@ -876,6 +875,68 @@ export default function ImageProcessor() {
         onDelete={() => setSaveCount((c) => Math.max(0, c - 1))}
         onLoad={handleLoad}
       />
+
+      {/* Animation Type Selection Modal */}
+      {animSelectOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setAnimSelectOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('animSelectTitle')}
+              </span>
+              <button
+                onClick={() => setAnimSelectOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
+                style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <button
+                onClick={handleCreateGif}
+                disabled={sharing}
+                className="btn-action flex flex-col items-center gap-1 px-5 py-3 text-sm"
+              >
+                <span className="font-bold">{t('animSelectToggle')}</span>
+                <span className="text-[11px] opacity-80">{t('animSelectToggleDesc')}</span>
+              </button>
+              {getCrossfadeVideoMimeType() !== null && (
+                <button
+                  onClick={handleCreateCrossfadeVideo}
+                  className="btn-ghost flex flex-col items-center gap-1 px-5 py-3 text-sm"
+                >
+                  <span className="font-bold">{t('animSelectCrossfade')}</span>
+                  <span className="text-[11px] opacity-60">{t('animSelectCrossfadeDesc')}</span>
+                </button>
+              )}
+              <button
+                onClick={() => setAnimSelectOpen(false)}
+                className="btn-ghost px-5 py-2 text-sm"
+              >
+                {t('animSelectClose')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* GIF Preview Modal */}
       {gifPreview && (
