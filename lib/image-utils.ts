@@ -206,113 +206,127 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
  */
 const VIDEO_MAX_DIM = 480
 
-/** Target bitrate for crossfade video (bps). 200 kbps is sufficient for slow gradients. */
-const VIDEO_BITRATE = 200_000
+/** Target bitrate for crossfade video (bps). 2 Mbps for H.264 at 480px. */
+const VIDEO_BITRATE = 2_000_000
+
+/** Frames per second for crossfade video. 24fps gives smooth slow crossfade. */
+const VIDEO_FPS = 24
 
 /**
  * Check if crossfade video generation is supported in the current browser.
- * Returns the best supported MIME type, or null if unsupported.
- * MP4/H.264 is tried first because it has the broadest smartphone and SNS compatibility.
+ * Requires WebCodecs (VideoEncoder + VideoFrame) — Chrome 94+, Safari 16.4+, Firefox 130+.
  */
-export function getCrossfadeVideoMimeType(): string | null {
-  if (typeof MediaRecorder === 'undefined') return null
-  // MP4 first — best compatibility with iOS (Safari 17+), Android, and most SNS players.
-  // WebM fallback for desktop Chrome/Firefox where MP4 recording may not be available.
-  const types = [
-    'video/mp4;codecs=avc1',
-    'video/mp4',
-    'video/webm;codecs=vp9',
-    'video/webm;codecs=vp8',
-    'video/webm',
-  ]
-  for (const t of types) {
-    if (MediaRecorder.isTypeSupported(t)) return t
-  }
-  return null
+export function isWebCodecsSupported(): boolean {
+  return typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined'
 }
 
 /**
  * Generate a slow crossfade video: frame1 → frame2 → frame1 (round trip).
- * Uses MediaRecorder + canvas.captureStream.
+ * Uses WebCodecs (VideoEncoder) + mp4-muxer for fast off-realtime encoding.
  * @param durationMs Total duration in milliseconds (default: 60000 = 60s)
- * @param fps Frames per second (default: 10 — sufficient for a slow crossfade)
- * @param mimeType MIME type returned by getCrossfadeVideoMimeType()
  * @param onProgress Callback with progress 0-1
  */
 export async function generateCrossfadeVideo(
   source: AnimationSource,
-  mimeType: string,
+  signal: AbortSignal,
   durationMs = 60000,
-  fps = 10,
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
+  if (!isWebCodecsSupported()) throw new Error('WebCodecs not supported')
+
+  const { Muxer, ArrayBufferTarget } = await import('mp4-muxer')
+
   const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM)
   const [frame1, frame2] = frames
 
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctxOrNull = canvas.getContext('2d')
-  if (!ctxOrNull) throw new Error('Canvas context unavailable')
-  const ctx = ctxOrNull
+  // Pre-compute blended ImageData for every frame (CPU blending, no setTimeout throttle).
+  const totalFrames = Math.max(Math.round((durationMs / 1000) * VIDEO_FPS), 2)
 
-  const stream = canvas.captureStream(fps)
-  const chunks: BlobPart[] = []
-  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: VIDEO_BITRATE })
-  recorder.ondataavailable = (e) => {
-    if (e.data.size > 0) chunks.push(e.data)
+  const muxer = new Muxer({
+    target: new ArrayBufferTarget(),
+    video: { codec: 'avc', width, height, frameRate: VIDEO_FPS },
+    fastStart: 'in-memory',
+  })
+
+  // Choose AVC level by coded area (same logic as orber).
+  const codedArea = Math.ceil(width / 16) * 16 * Math.ceil(height / 16) * 16
+  const codecString = codedArea <= 921_600 ? 'avc1.42E01F' : 'avc1.42E02A'
+
+  let firstError: unknown = null
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+    error: (e) => {
+      if (firstError === null) firstError = e
+    },
+  })
+  encoder.configure({
+    codec: codecString,
+    width,
+    height,
+    framerate: VIDEO_FPS,
+    bitrate: VIDEO_BITRATE,
+    hardwareAcceleration: 'prefer-hardware',
+  })
+
+  // Off-screen canvas for VideoFrame capture.
+  const canvas = new OffscreenCanvas(width, height)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('OffscreenCanvas context unavailable')
+
+  const microsecondsPerFrame = 1_000_000 / VIDEO_FPS
+
+  for (let i = 0; i < totalFrames; i++) {
+    if (firstError !== null) break
+    if (signal.aborted) {
+      encoder.close()
+      throw new DOMException('Aborted', 'AbortError')
+    }
+
+    const t = i / (totalFrames - 1) // 0 to 1
+    // Round trip: first half fades frame2→frame1, second half fades back.
+    const half = t <= 0.5 ? t * 2 : (1 - t) * 2
+    // ease-in-out so the reversal point feels smooth
+    const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
+
+    // Blend frame1 (left overlay) and frame2 (right only).
+    // Alpha channel fixed at 255 — both source frames are fully opaque.
+    const blended = ctx.createImageData(width, height)
+    for (let p = 0; p < blended.data.length; p++) {
+      blended.data[p] = p % 4 === 3 ? 255 : frame2.data[p] * (1 - alpha) + frame1.data[p] * alpha
+    }
+    ctx.putImageData(blended, 0, 0)
+
+    let vframe: VideoFrame
+    try {
+      vframe = new VideoFrame(canvas as unknown as CanvasImageSource, {
+        timestamp: Math.round(i * microsecondsPerFrame),
+        duration: Math.round(microsecondsPerFrame),
+      })
+    } catch (e) {
+      if (firstError === null) firstError = e
+      break
+    }
+    try {
+      encoder.encode(vframe, { keyFrame: i % VIDEO_FPS === 0 })
+    } catch (e) {
+      if (firstError === null) firstError = e
+      vframe.close()
+      break
+    }
+    vframe.close()
+
+    onProgress?.(i / (totalFrames - 1))
   }
 
-  // Ensure at least 2 frames to avoid division-by-zero in the interpolation below.
-  const totalFrames = Math.max(Math.round((durationMs / 1000) * fps), 2)
-  const frameMs = 1000 / fps
+  await encoder.flush()
+  encoder.close()
 
-  return new Promise((resolve, reject) => {
-    recorder.onstop = () => {
-      canvas.width = 0
-      canvas.height = 0
-      resolve(new Blob(chunks, { type: mimeType.split(';')[0] }))
-    }
-    recorder.onerror = reject
-    recorder.start()
+  if (firstError !== null) throw firstError
 
-    let frameIndex = 0
+  muxer.finalize()
+  onProgress?.(1)
 
-    function drawFrame() {
-      // All frames drawn — signal 100% and stop recording.
-      if (frameIndex >= totalFrames) {
-        onProgress?.(1)
-        recorder.stop()
-        return
-      }
-
-      const t = frameIndex / (totalFrames - 1) // 0 to 1 (totalFrames >= 2 guaranteed above)
-      // Round trip: first half (t: 0→0.5) fades frame2→frame1, second half fades back.
-      const half = t <= 0.5 ? t * 2 : (1 - t) * 2
-      // ease-in-out so the reversal point feels smooth
-      const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
-
-      // Blend frame1 (left overlay) and frame2 (right only).
-      // Both source frames are fully opaque (alpha=255), so blending RGB channels is enough;
-      // the alpha channel is set to 255 explicitly to avoid any transparency artefacts.
-      const blended = ctx.createImageData(width, height)
-      for (let i = 0; i < blended.data.length; i++) {
-        if (i % 4 === 3) {
-          blended.data[i] = 255
-        } else {
-          blended.data[i] = frame2.data[i] * (1 - alpha) + frame1.data[i] * alpha
-        }
-      }
-      ctx.putImageData(blended, 0, 0)
-
-      onProgress?.(frameIndex / (totalFrames - 1))
-      frameIndex++
-
-      setTimeout(drawFrame, frameMs)
-    }
-
-    drawFrame()
-  })
+  return new Blob([muxer.target.buffer], { type: 'video/mp4' })
 }
 
 /**

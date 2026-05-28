@@ -68,8 +68,8 @@ const dict = {
   },
   animSelectCrossfade: { ja: 'おわかりいただけただろうか動画', en: 'Wiggle crossfade video' },
   animSelectCrossfadeDesc: {
-    ja: 'じわーっと60秒 / ダウンロード: WebM・MP4',
-    en: 'Slow 60s crossfade / Download as WebM or MP4',
+    ja: 'じわーっと60秒 / シェア・ダウンロード: MP4',
+    en: 'Slow 60s crossfade / Share or download as MP4',
   },
   animSelectClose: { ja: 'とじる', en: 'Close' },
   // GIF/APNG popup (after quick toggle selected)
@@ -85,7 +85,7 @@ const dict = {
   },
   crossfadeVideoDownload: { ja: 'ダウンロード', en: 'Download' },
   crossfadeVideoShare: { ja: 'シェアする', en: 'Share' },
-  videoFormatHint: { ja: '(WebM・MP4)', en: '(WebM or MP4)' },
+  videoFormatHint: { ja: '(MP4)', en: '(MP4)' },
   crossfadeVideoUnsupported: {
     ja: 'このブラウザでは動画生成に対応していないよ',
     en: 'Video generation is not supported in this browser',

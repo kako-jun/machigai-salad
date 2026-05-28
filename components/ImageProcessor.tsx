@@ -9,7 +9,7 @@ import {
   resizeImage,
   generateToggleGif,
   generateToggleApng,
-  getCrossfadeVideoMimeType,
+  isWebCodecsSupported,
   generateCrossfadeVideo,
   dataUrlToBlob,
 } from '@/lib/image-utils'
@@ -361,6 +361,8 @@ export default function ImageProcessor() {
    * フォールバックして整合性を保つ。
    */
   const handleBackToAdjust = () => {
+    crossfadeAbortRef.current?.abort()
+    crossfadeAbortRef.current = null
     setLeftImage(null)
     setRightImage(null)
     currentOffsetRef.current = { x: 0, y: 0 }
@@ -427,6 +429,8 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(crossfadePreview.url)
       setCrossfadePreview(null)
     }
+    crossfadeAbortRef.current?.abort()
+    crossfadeAbortRef.current = null
     setAnimSelectOpen(false)
     revokeLoadedObjectUrls()
     setPhase('upload')
@@ -440,12 +444,11 @@ export default function ImageProcessor() {
   const [animSelectOpen, setAnimSelectOpen] = useState(false)
   const [crossfadeGenerating, setCrossfadeGenerating] = useState(false)
   const [crossfadeProgress, setCrossfadeProgress] = useState(0)
-  const [crossfadePreview, setCrossfadePreview] = useState<{
-    url: string
-    mimeType: string
-  } | null>(null)
-  // Cache mimeType check — result is constant for the lifetime of the page.
-  const crossfadeVideoMimeType = useMemo(() => getCrossfadeVideoMimeType(), [])
+  const [crossfadePreview, setCrossfadePreview] = useState<{ url: string } | null>(null)
+  // Cache WebCodecs support check — result is constant for the lifetime of the page.
+  const crossfadeSupported = useMemo(() => isWebCodecsSupported(), [])
+  // AbortController for in-progress crossfade encoding — cancelled on navigation/reset.
+  const crossfadeAbortRef = useRef<AbortController | null>(null)
 
   const handleOpenAnimSelect = () => {
     setAnimSelectOpen(true)
@@ -550,12 +553,11 @@ export default function ImageProcessor() {
 
   const handleCrossfadeShare = async () => {
     if (!crossfadePreview) return
-    const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
     const ts = fileTimestamp()
-    const filename = `machigai-salad-${ts}.${ext}`
+    const filename = `machigai-salad-${ts}.mp4`
     try {
       const blob = await fetch(crossfadePreview.url).then((r) => r.blob())
-      const file = new File([blob], filename, { type: crossfadePreview.mimeType.split(';')[0] })
+      const file = new File([blob], filename, { type: 'video/mp4' })
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -578,14 +580,15 @@ export default function ImageProcessor() {
 
   const handleCreateCrossfadeVideo = async () => {
     if (!leftImage || !rightImage || crossfadeGenerating) return
-    const mimeType = crossfadeVideoMimeType
-    if (!mimeType) {
+    if (!crossfadeSupported) {
       showToast(t('crossfadeVideoUnsupported'), 'error')
       return
     }
     setAnimSelectOpen(false)
     setCrossfadeGenerating(true)
     setCrossfadeProgress(0)
+    const abortController = new AbortController()
+    crossfadeAbortRef.current = abortController
     try {
       const blob = await generateCrossfadeVideo(
         {
@@ -596,16 +599,20 @@ export default function ImageProcessor() {
           cornerOffsets: currentWarpRef.current,
           centerOffset: currentCenterRef.current,
         },
-        mimeType,
+        abortController.signal,
         60000,
-        15,
         (progress) => setCrossfadeProgress(Math.round(progress * 100))
       )
-      const url = URL.createObjectURL(blob)
-      setCrossfadePreview({ url, mimeType })
-    } catch {
-      showToast(t('crossfadeVideoError'), 'error')
+      if (!abortController.signal.aborted) {
+        const url = URL.createObjectURL(blob)
+        setCrossfadePreview({ url })
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name !== 'AbortError') {
+        showToast(t('crossfadeVideoError'), 'error')
+      }
     } finally {
+      crossfadeAbortRef.current = null
       setCrossfadeGenerating(false)
     }
   }
@@ -973,7 +980,7 @@ export default function ImageProcessor() {
                 <span className="font-bold">{t('animSelectToggle')}</span>
                 <span className="text-[11px] opacity-80">{t('animSelectToggleDesc')}</span>
               </button>
-              {crossfadeVideoMimeType !== null && (
+              {crossfadeSupported && (
                 <button
                   onClick={handleCreateCrossfadeVideo}
                   className="btn-ghost flex flex-col items-center gap-1 px-5 py-3 text-sm"
@@ -1118,10 +1125,9 @@ export default function ImageProcessor() {
             >
               <button
                 onClick={() => {
-                  const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
                   const a = document.createElement('a')
                   a.href = crossfadePreview.url
-                  a.download = `machigai-salad-${fileTimestamp()}.${ext}`
+                  a.download = `machigai-salad-${fileTimestamp()}.mp4`
                   a.click()
                 }}
                 className="btn-ghost flex flex-1 items-start justify-center gap-1.5 py-3 text-sm"
