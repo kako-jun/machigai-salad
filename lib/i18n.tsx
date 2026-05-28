@@ -61,7 +61,7 @@ const dict = {
   shareResult: { ja: 'アニメーションをつくる', en: 'Create animation' },
   // Animation type selection modal
   animSelectTitle: { ja: 'どんなアニメーションにする？', en: 'Which animation?' },
-  animSelectToggle: { ja: 'クネクネ切り替え', en: 'Wiggle toggle' },
+  animSelectToggle: { ja: 'クネクネ動画', en: 'Wiggle video' },
   animSelectToggleDesc: {
     ja: 'シェア: GIF / ダウンロード: PNG',
     en: 'Share as GIF / Download as PNG',
