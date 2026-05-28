@@ -199,6 +199,96 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
   })
 }
 
+/** Video crossfade max dimension */
+const VIDEO_MAX_DIM = 640
+
+/**
+ * Check if crossfade video generation is supported in the current browser.
+ * Returns the best supported MIME type, or null if unsupported.
+ */
+export function getCrossfadeVideoMimeType(): string | null {
+  if (typeof MediaRecorder === 'undefined') return null
+  const types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t
+  }
+  return null
+}
+
+/**
+ * Generate a slow crossfade video: frame1 → frame2 → frame1 (round trip).
+ * Uses MediaRecorder + canvas.captureStream.
+ * @param durationMs Total duration in milliseconds (default: 60000 = 60s)
+ * @param fps Frames per second (default: 15)
+ * @param mimeType MIME type returned by getCrossfadeVideoMimeType()
+ * @param onProgress Callback with progress 0-1
+ */
+export async function generateCrossfadeVideo(
+  source: AnimationSource,
+  mimeType: string,
+  durationMs = 60000,
+  fps = 15,
+  onProgress?: (progress: number) => void
+): Promise<Blob> {
+  const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM)
+  const [frame1, frame2] = frames
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')!
+
+  const stream = canvas.captureStream(fps)
+  const chunks: BlobPart[] = []
+  const recorder = new MediaRecorder(stream, { mimeType })
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data)
+  }
+
+  const totalFrames = Math.round((durationMs / 1000) * fps)
+  const frameMs = 1000 / fps
+
+  return new Promise((resolve, reject) => {
+    recorder.onstop = () => {
+      canvas.width = 0
+      canvas.height = 0
+      resolve(new Blob(chunks, { type: mimeType.split(';')[0] }))
+    }
+    recorder.onerror = reject
+    recorder.start()
+
+    let frameIndex = 0
+
+    function drawFrame() {
+      if (frameIndex >= totalFrames) {
+        recorder.stop()
+        return
+      }
+
+      const t = frameIndex / (totalFrames - 1) // 0 to 1
+      // round trip: 0→0.5 maps alpha 0→1, 0.5→1 maps alpha 1→0
+      const half = t <= 0.5 ? t * 2 : (1 - t) * 2
+      // ease-in-out
+      const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
+
+      // Blend frame1 (left overlay) and frame2 (right only)
+      // alpha=0 → frame2 only (right), alpha=1 → frame1 (left overlay)
+      const blended = ctx.createImageData(width, height)
+      for (let i = 0; i < blended.data.length; i++) {
+        blended.data[i] = frame2.data[i] * (1 - alpha) + frame1.data[i] * alpha
+      }
+      ctx.putImageData(blended, 0, 0)
+
+      onProgress?.(frameIndex / totalFrames)
+      frameIndex++
+
+      setTimeout(drawFrame, frameMs)
+    }
+
+    drawFrame()
+  })
+}
+
 /**
  * Generate an animated PNG (for download — higher quality, larger dimensions).
  * @param delay Frame interval in milliseconds

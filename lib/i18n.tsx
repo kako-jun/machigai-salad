@@ -64,6 +64,22 @@ const dict = {
   gifFormatHint: { ja: '(GIF)', en: '(GIF)' },
   pngFormatHint: { ja: '(PNG)', en: '(PNG)' },
   gifPreviewClose: { ja: 'とじる', en: 'Close' },
+  crossfadeVideoBtn: {
+    ja: 'おわかりいただけただろうか動画の作成',
+    en: 'Create a slow reveal video',
+  },
+  crossfadeVideoGenerating: {
+    ja: '動画を作成ちゅう... ({progress}%)',
+    en: 'Creating video... ({progress}%)',
+  },
+  crossfadeVideoDownload: { ja: 'ダウンロード', en: 'Download' },
+  crossfadeVideoClose: { ja: 'とじる', en: 'Close' },
+  crossfadeVideoUnsupported: {
+    ja: 'このブラウザでは動画生成に対応していないよ',
+    en: 'Video generation is not supported in this browser',
+  },
+  crossfadeVideoError: { ja: '動画の作成に失敗したよ...', en: "Couldn't create the video..." },
+  crossfadeVideoTitle: { ja: 'おわかりいただけただろうか？', en: 'Can you spot the difference?' },
   shareResultTitle: { ja: 'クネクネ動いて見えるかな？', en: 'Can you see it wiggling?' },
   shareResultText: {
     ja: '「小エビの間違いサラダ」で間違いさがしを比較したよ！',

@@ -9,6 +9,8 @@ import {
   resizeImage,
   generateToggleGif,
   generateToggleApng,
+  getCrossfadeVideoMimeType,
+  generateCrossfadeVideo,
   dataUrlToBlob,
 } from '@/lib/image-utils'
 import { showToast } from './Toast'
@@ -430,6 +432,12 @@ export default function ImageProcessor() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
   const [apngGenerating, setApngGenerating] = useState(false)
+  const [crossfadeGenerating, setCrossfadeGenerating] = useState(false)
+  const [crossfadeProgress, setCrossfadeProgress] = useState(0)
+  const [crossfadePreview, setCrossfadePreview] = useState<{
+    url: string
+    mimeType: string
+  } | null>(null)
 
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
@@ -520,6 +528,46 @@ export default function ImageProcessor() {
     }
   }, [gifPreview])
 
+  const handleCrossfadeClose = useCallback(() => {
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
+    }
+  }, [crossfadePreview])
+
+  const handleCreateCrossfadeVideo = async () => {
+    if (!leftImage || !rightImage || crossfadeGenerating) return
+    const mimeType = getCrossfadeVideoMimeType()
+    if (!mimeType) {
+      showToast(t('crossfadeVideoUnsupported'), 'error')
+      return
+    }
+    setCrossfadeGenerating(true)
+    setCrossfadeProgress(0)
+    try {
+      const blob = await generateCrossfadeVideo(
+        {
+          leftDataUrl: leftImage,
+          rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
+        },
+        mimeType,
+        60000,
+        15,
+        (progress) => setCrossfadeProgress(Math.round(progress * 100))
+      )
+      const url = URL.createObjectURL(blob)
+      setCrossfadePreview({ url, mimeType })
+    } catch {
+      showToast(t('crossfadeVideoError'), 'error')
+    } finally {
+      setCrossfadeGenerating(false)
+    }
+  }
+
   // Escape key to close GIF preview
   useEffect(() => {
     if (!gifPreview) return
@@ -596,6 +644,10 @@ export default function ImageProcessor() {
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
+    }
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
     }
     // Revoke previously-loaded object URLs (if any) before creating new ones
     revokeLoadedObjectUrls()
@@ -783,6 +835,34 @@ export default function ImageProcessor() {
               <ShareResultIcon size={16} />
               {t('shareResult')}
             </button>
+            {getCrossfadeVideoMimeType() !== null && (
+              <button
+                onClick={handleCreateCrossfadeVideo}
+                disabled={crossfadeGenerating}
+                className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
+              >
+                {crossfadeGenerating ? (
+                  <>
+                    <svg
+                      className="animate-spin"
+                      width={16}
+                      height={16}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      style={{ color: 'var(--muted)' }}
+                    >
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    {t('crossfadeVideoGenerating').replace('{progress}', String(crossfadeProgress))}
+                  </>
+                ) : (
+                  t('crossfadeVideoBtn')
+                )}
+              </button>
+            )}
             <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
               {t('retryBtn')}
             </button>
@@ -867,6 +947,67 @@ export default function ImageProcessor() {
                   <span>{t('gifPreviewShare')}</span>
                   <span className="text-[10px] opacity-60">{t('gifFormatHint')}</span>
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Crossfade Video Modal */}
+      {crossfadePreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={handleCrossfadeClose}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('crossfadeVideoTitle')}
+              </span>
+              <button
+                onClick={handleCrossfadeClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
+                style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div
+              className="flex gap-2 px-4 py-3"
+              style={{ borderTop: '1px solid var(--border-light)' }}
+            >
+              <button
+                onClick={() => {
+                  const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
+                  const a = document.createElement('a')
+                  a.href = crossfadePreview.url
+                  a.download = `machigai-salad-reveal.${ext}`
+                  a.click()
+                }}
+                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                <DownloadIcon size={16} />
+                {t('crossfadeVideoDownload')}
+              </button>
+              <button
+                onClick={handleCrossfadeClose}
+                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                {t('crossfadeVideoClose')}
               </button>
             </div>
           </div>
