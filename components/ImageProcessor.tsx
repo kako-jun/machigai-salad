@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
@@ -9,6 +9,8 @@ import {
   resizeImage,
   generateToggleGif,
   generateToggleApng,
+  getCrossfadeVideoMimeType,
+  generateCrossfadeVideo,
   dataUrlToBlob,
 } from '@/lib/image-utils'
 import { showToast } from './Toast'
@@ -421,6 +423,11 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
+    }
+    setAnimSelectOpen(false)
     revokeLoadedObjectUrls()
     setPhase('upload')
   }
@@ -430,9 +437,23 @@ export default function ImageProcessor() {
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
   const [apngGenerating, setApngGenerating] = useState(false)
+  const [animSelectOpen, setAnimSelectOpen] = useState(false)
+  const [crossfadeGenerating, setCrossfadeGenerating] = useState(false)
+  const [crossfadeProgress, setCrossfadeProgress] = useState(0)
+  const [crossfadePreview, setCrossfadePreview] = useState<{
+    url: string
+    mimeType: string
+  } | null>(null)
+  // Cache mimeType check — result is constant for the lifetime of the page.
+  const crossfadeVideoMimeType = useMemo(() => getCrossfadeVideoMimeType(), [])
+
+  const handleOpenAnimSelect = () => {
+    setAnimSelectOpen(true)
+  }
 
   const handleCreateGif = async () => {
     if (!leftImage || !rightImage || sharing) return
+    setAnimSelectOpen(false)
     setSharing(true)
 
     try {
@@ -520,6 +541,47 @@ export default function ImageProcessor() {
     }
   }, [gifPreview])
 
+  const handleCrossfadeClose = useCallback(() => {
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
+    }
+  }, [crossfadePreview])
+
+  const handleCreateCrossfadeVideo = async () => {
+    if (!leftImage || !rightImage || crossfadeGenerating) return
+    const mimeType = crossfadeVideoMimeType
+    if (!mimeType) {
+      showToast(t('crossfadeVideoUnsupported'), 'error')
+      return
+    }
+    setAnimSelectOpen(false)
+    setCrossfadeGenerating(true)
+    setCrossfadeProgress(0)
+    try {
+      const blob = await generateCrossfadeVideo(
+        {
+          leftDataUrl: leftImage,
+          rightDataUrl: rightImage,
+          displaySize: { w: displayRectRef.current.w, h: displayRectRef.current.h },
+          offset: currentOffsetRef.current,
+          cornerOffsets: currentWarpRef.current,
+          centerOffset: currentCenterRef.current,
+        },
+        mimeType,
+        60000,
+        15,
+        (progress) => setCrossfadeProgress(Math.round(progress * 100))
+      )
+      const url = URL.createObjectURL(blob)
+      setCrossfadePreview({ url, mimeType })
+    } catch {
+      showToast(t('crossfadeVideoError'), 'error')
+    } finally {
+      setCrossfadeGenerating(false)
+    }
+  }
+
   // Escape key to close GIF preview
   useEffect(() => {
     if (!gifPreview) return
@@ -529,6 +591,26 @@ export default function ImageProcessor() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [gifPreview, handleGifClose])
+
+  // Escape key to close animation-select modal
+  useEffect(() => {
+    if (!animSelectOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAnimSelectOpen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [animSelectOpen])
+
+  // Escape key to close crossfade preview modal
+  useEffect(() => {
+    if (!crossfadePreview) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCrossfadeClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [crossfadePreview, handleCrossfadeClose])
 
   const handleSave = async () => {
     if (saving) return
@@ -596,6 +678,10 @@ export default function ImageProcessor() {
     if (gifPreview) {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
+    }
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
     }
     // Revoke previously-loaded object URLs (if any) before creating new ones
     revokeLoadedObjectUrls()
@@ -776,12 +862,32 @@ export default function ImageProcessor() {
               {t('saveBtn')}
             </button>
             <button
-              onClick={handleCreateGif}
-              disabled={sharing}
+              onClick={handleOpenAnimSelect}
+              disabled={sharing || crossfadeGenerating}
               className="btn-action flex items-center gap-1.5 px-5 py-3 text-sm"
             >
-              <ShareResultIcon size={16} />
-              {t('shareResult')}
+              {crossfadeGenerating ? (
+                <>
+                  <svg
+                    className="animate-spin"
+                    width={16}
+                    height={16}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  {t('crossfadeVideoGenerating').replace('{progress}', String(crossfadeProgress))}
+                </>
+              ) : (
+                <>
+                  <ShareResultIcon size={16} />
+                  {t('shareResult')}
+                </>
+              )}
             </button>
             <button onClick={handleReset} className="btn-ghost px-5 py-3 text-sm">
               {t('retryBtn')}
@@ -796,6 +902,68 @@ export default function ImageProcessor() {
         onDelete={() => setSaveCount((c) => Math.max(0, c - 1))}
         onLoad={handleLoad}
       />
+
+      {/* Animation Type Selection Modal */}
+      {animSelectOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={() => setAnimSelectOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('animSelectTitle')}
+              </span>
+              <button
+                onClick={() => setAnimSelectOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
+                style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <button
+                onClick={handleCreateGif}
+                disabled={sharing}
+                className="btn-action flex flex-col items-center gap-1 px-5 py-3 text-sm"
+              >
+                <span className="font-bold">{t('animSelectToggle')}</span>
+                <span className="text-[11px] opacity-80">{t('animSelectToggleDesc')}</span>
+              </button>
+              {crossfadeVideoMimeType !== null && (
+                <button
+                  onClick={handleCreateCrossfadeVideo}
+                  className="btn-ghost flex flex-col items-center gap-1 px-5 py-3 text-sm"
+                >
+                  <span className="font-bold">{t('animSelectCrossfade')}</span>
+                  <span className="text-[11px] opacity-60">{t('animSelectCrossfadeDesc')}</span>
+                </button>
+              )}
+              <button
+                onClick={() => setAnimSelectOpen(false)}
+                className="btn-ghost px-5 py-2 text-sm"
+              >
+                {t('animSelectClose')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* GIF Preview Modal */}
       {gifPreview && (
@@ -867,6 +1035,77 @@ export default function ImageProcessor() {
                   <span>{t('gifPreviewShare')}</span>
                   <span className="text-[10px] opacity-60">{t('gifFormatHint')}</span>
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Crossfade Video Modal */}
+      {crossfadePreview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(60,36,21,0.4)' }}
+          onClick={handleCrossfadeClose}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            style={{
+              background: 'var(--parchment)',
+              border: '1px solid var(--border)',
+              boxShadow: '0 8px 32px rgba(60,36,21,0.2)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border-light)' }}
+            >
+              <span className="text-sm font-bold" style={{ color: 'var(--espresso)' }}>
+                {t('crossfadeVideoTitle')}
+              </span>
+              <button
+                onClick={handleCrossfadeClose}
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm"
+                style={{ color: 'var(--muted)', background: 'var(--border-light)' }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex justify-center px-4 py-3">
+              <video
+                src={crossfadePreview.url}
+                autoPlay
+                loop
+                playsInline
+                controls
+                className="max-h-64 w-full rounded-lg object-contain"
+              />
+            </div>
+            <div
+              className="flex gap-2 px-4 py-3"
+              style={{ borderTop: '1px solid var(--border-light)' }}
+            >
+              <button
+                onClick={() => {
+                  const ext = crossfadePreview.mimeType.includes('mp4') ? 'mp4' : 'webm'
+                  const a = document.createElement('a')
+                  a.href = crossfadePreview.url
+                  a.download = `machigai-salad-reveal.${ext}`
+                  a.click()
+                }}
+                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                <DownloadIcon size={16} />
+                {t('crossfadeVideoDownload')}
+              </button>
+              <button
+                onClick={handleCrossfadeClose}
+                className="btn-ghost flex flex-1 items-center justify-center gap-1.5 py-3 text-sm"
+              >
+                {t('crossfadeVideoClose')}
               </button>
             </div>
           </div>

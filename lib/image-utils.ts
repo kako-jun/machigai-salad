@@ -200,6 +200,122 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
 }
 
 /**
+ * Video crossfade max dimension.
+ * Kept equal to GIF_MAX_DIM — a 60s, 10fps, 200kbps video at 480px
+ * weighs roughly 1–2 MB, which is lightweight and compatible with most SNS.
+ */
+const VIDEO_MAX_DIM = 480
+
+/** Target bitrate for crossfade video (bps). 200 kbps is sufficient for slow gradients. */
+const VIDEO_BITRATE = 200_000
+
+/**
+ * Check if crossfade video generation is supported in the current browser.
+ * Returns the best supported MIME type, or null if unsupported.
+ * MP4/H.264 is tried first because it has the broadest smartphone and SNS compatibility.
+ */
+export function getCrossfadeVideoMimeType(): string | null {
+  if (typeof MediaRecorder === 'undefined') return null
+  // MP4 first — best compatibility with iOS (Safari 17+), Android, and most SNS players.
+  // WebM fallback for desktop Chrome/Firefox where MP4 recording may not be available.
+  const types = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ]
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t
+  }
+  return null
+}
+
+/**
+ * Generate a slow crossfade video: frame1 → frame2 → frame1 (round trip).
+ * Uses MediaRecorder + canvas.captureStream.
+ * @param durationMs Total duration in milliseconds (default: 60000 = 60s)
+ * @param fps Frames per second (default: 10 — sufficient for a slow crossfade)
+ * @param mimeType MIME type returned by getCrossfadeVideoMimeType()
+ * @param onProgress Callback with progress 0-1
+ */
+export async function generateCrossfadeVideo(
+  source: AnimationSource,
+  mimeType: string,
+  durationMs = 60000,
+  fps = 10,
+  onProgress?: (progress: number) => void
+): Promise<Blob> {
+  const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM)
+  const [frame1, frame2] = frames
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctxOrNull = canvas.getContext('2d')
+  if (!ctxOrNull) throw new Error('Canvas context unavailable')
+  const ctx = ctxOrNull
+
+  const stream = canvas.captureStream(fps)
+  const chunks: BlobPart[] = []
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: VIDEO_BITRATE })
+  recorder.ondataavailable = (e) => {
+    if (e.data.size > 0) chunks.push(e.data)
+  }
+
+  // Ensure at least 2 frames to avoid division-by-zero in the interpolation below.
+  const totalFrames = Math.max(Math.round((durationMs / 1000) * fps), 2)
+  const frameMs = 1000 / fps
+
+  return new Promise((resolve, reject) => {
+    recorder.onstop = () => {
+      canvas.width = 0
+      canvas.height = 0
+      resolve(new Blob(chunks, { type: mimeType.split(';')[0] }))
+    }
+    recorder.onerror = reject
+    recorder.start()
+
+    let frameIndex = 0
+
+    function drawFrame() {
+      // All frames drawn — signal 100% and stop recording.
+      if (frameIndex >= totalFrames) {
+        onProgress?.(1)
+        recorder.stop()
+        return
+      }
+
+      const t = frameIndex / (totalFrames - 1) // 0 to 1 (totalFrames >= 2 guaranteed above)
+      // Round trip: first half (t: 0→0.5) fades frame2→frame1, second half fades back.
+      const half = t <= 0.5 ? t * 2 : (1 - t) * 2
+      // ease-in-out so the reversal point feels smooth
+      const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
+
+      // Blend frame1 (left overlay) and frame2 (right only).
+      // Both source frames are fully opaque (alpha=255), so blending RGB channels is enough;
+      // the alpha channel is set to 255 explicitly to avoid any transparency artefacts.
+      const blended = ctx.createImageData(width, height)
+      for (let i = 0; i < blended.data.length; i++) {
+        if (i % 4 === 3) {
+          blended.data[i] = 255
+        } else {
+          blended.data[i] = frame2.data[i] * (1 - alpha) + frame1.data[i] * alpha
+        }
+      }
+      ctx.putImageData(blended, 0, 0)
+
+      onProgress?.(frameIndex / (totalFrames - 1))
+      frameIndex++
+
+      setTimeout(drawFrame, frameMs)
+    }
+
+    drawFrame()
+  })
+}
+
+/**
  * Generate an animated PNG (for download — higher quality, larger dimensions).
  * @param delay Frame interval in milliseconds
  */
