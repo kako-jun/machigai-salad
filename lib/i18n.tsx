@@ -85,7 +85,7 @@ const dict = {
   },
   crossfadeVideoDownload: { ja: 'ダウンロード', en: 'Download' },
   crossfadeVideoShare: { ja: 'シェアする', en: 'Share' },
-  videoFormatHint: { ja: '(WebM・MP4)', en: '(WebM/MP4)' },
+  videoFormatHint: { ja: '(WebM・MP4)', en: '(WebM or MP4)' },
   crossfadeVideoUnsupported: {
     ja: 'このブラウザでは動画生成に対応していないよ',
     en: 'Video generation is not supported in this browser',
