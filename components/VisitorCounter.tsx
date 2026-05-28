@@ -51,7 +51,7 @@ export default function VisitorCounter() {
           format="text"
           style={{ fontFamily: 'inherit' }}
         ></nostalgic-counter>{' '}
-        visits
+        views
       </span>
       <span>v{buildDate}</span>
     </div>
