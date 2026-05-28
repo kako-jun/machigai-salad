@@ -59,15 +59,12 @@ export default function AffiliateGrid() {
               {/* キャプション + タイトル */}
               <div className="mt-2 text-center">
                 {p.caption && (
-                  <div
-                    className="line-clamp-2 text-xs leading-tight"
-                    style={{ color: 'var(--muted)' }}
-                  >
+                  <div className="text-xs leading-tight" style={{ color: 'var(--muted)' }}>
                     {p.caption}
                   </div>
                 )}
                 <div
-                  className="mt-0.5 truncate text-xs leading-tight"
+                  className="mt-0.5 text-xs leading-tight"
                   style={{ color: 'var(--muted)', opacity: 0.7 }}
                 >
                   {p.title}

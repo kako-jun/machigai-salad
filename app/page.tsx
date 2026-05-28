@@ -66,7 +66,7 @@ export default function Home() {
 
             {/* その他の Amazon リンク（上記以外の商品でも応援になる） */}
             <a
-              href="https://amzn.to/4uWSrNa"
+              href="https://amzn.to/4fcMoyG"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-ghost flex w-full flex-col items-center gap-1 px-5 py-3 text-center"
