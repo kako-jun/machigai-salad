@@ -347,6 +347,17 @@ export default function ImageProcessor() {
     }
   }
 
+  /**
+   * 「角の調整にもどる」ボタンのハンドラ。
+   *
+   * 2枚モード時は pendingSecondImageRef.current に2枚目の data URL が
+   * 生存していることを前提とする。startSecondImageProcessing() は
+   * 1枚目のコーナーが再確定されたタイミングで自動的に再実行される。
+   *
+   * pendingSecondImageRef.current が null の場合（通常は起こりえないが
+   * 将来の変更で成功時に null 化された場合など）は handleReset() に
+   * フォールバックして整合性を保つ。
+   */
   const handleBackToAdjust = () => {
     setLeftImage(null)
     setRightImage(null)
@@ -358,6 +369,14 @@ export default function ImageProcessor() {
     restoredCenterRef.current = null
 
     if (twoImageMode) {
+      // Guard: pendingSecondImageRef must be alive for re-processing to work.
+      // If it has been cleared, fall back to a full reset rather than leaving
+      // the UI in a broken state.
+      if (!pendingSecondImageRef.current) {
+        showToast(t('restoreFailed'), 'error')
+        handleReset()
+        return
+      }
       // Restart from the 1st image corner adjustment. The 2nd image is still
       // held in pendingSecondImageRef, so startSecondImageProcessing() will
       // re-run automatically once the 1st corners are re-applied.
@@ -718,7 +737,23 @@ export default function ImageProcessor() {
               className="btn-ghost flex items-center gap-1.5 px-5 py-3 text-sm"
               style={saveSuccess ? { color: '#2d8a4e', borderColor: '#2d8a4e' } : undefined}
             >
-              {saveSuccess ? (
+              {saving ? (
+                <svg
+                  width={16}
+                  height={16}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="animate-spin opacity-50"
+                >
+                  <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                  <path d="M12 2a10 10 0 0 1 10 10" />
+                </svg>
+              ) : saveSuccess ? (
                 <svg
                   width={16}
                   height={16}
