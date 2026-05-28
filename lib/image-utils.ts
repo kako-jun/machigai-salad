@@ -199,16 +199,32 @@ export async function generateToggleGif(source: AnimationSource, delay: number):
   })
 }
 
-/** Video crossfade max dimension */
-const VIDEO_MAX_DIM = 640
+/**
+ * Video crossfade max dimension.
+ * Kept equal to GIF_MAX_DIM — a 60s, 10fps, 200kbps video at 480px
+ * weighs roughly 1–2 MB, which is lightweight and compatible with most SNS.
+ */
+const VIDEO_MAX_DIM = 480
+
+/** Target bitrate for crossfade video (bps). 200 kbps is sufficient for slow gradients. */
+const VIDEO_BITRATE = 200_000
 
 /**
  * Check if crossfade video generation is supported in the current browser.
  * Returns the best supported MIME type, or null if unsupported.
+ * MP4/H.264 is tried first because it has the broadest smartphone and SNS compatibility.
  */
 export function getCrossfadeVideoMimeType(): string | null {
   if (typeof MediaRecorder === 'undefined') return null
-  const types = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+  // MP4 first — best compatibility with iOS (Safari 17+), Android, and most SNS players.
+  // WebM fallback for desktop Chrome/Firefox where MP4 recording may not be available.
+  const types = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ]
   for (const t of types) {
     if (MediaRecorder.isTypeSupported(t)) return t
   }
@@ -219,7 +235,7 @@ export function getCrossfadeVideoMimeType(): string | null {
  * Generate a slow crossfade video: frame1 → frame2 → frame1 (round trip).
  * Uses MediaRecorder + canvas.captureStream.
  * @param durationMs Total duration in milliseconds (default: 60000 = 60s)
- * @param fps Frames per second (default: 15)
+ * @param fps Frames per second (default: 10 — sufficient for a slow crossfade)
  * @param mimeType MIME type returned by getCrossfadeVideoMimeType()
  * @param onProgress Callback with progress 0-1
  */
@@ -227,7 +243,7 @@ export async function generateCrossfadeVideo(
   source: AnimationSource,
   mimeType: string,
   durationMs = 60000,
-  fps = 15,
+  fps = 10,
   onProgress?: (progress: number) => void
 ): Promise<Blob> {
   const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM)
@@ -240,7 +256,7 @@ export async function generateCrossfadeVideo(
 
   const stream = canvas.captureStream(fps)
   const chunks: BlobPart[] = []
-  const recorder = new MediaRecorder(stream, { mimeType })
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: VIDEO_BITRATE })
   recorder.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data)
   }
