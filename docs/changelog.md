@@ -4,6 +4,15 @@
 
 ### 修正 🐛
 
+- **「ほぞん」中の視覚フィードバックがない問題を修正** (#28)
+  - async 化後、保存処理中は `disabled` になるだけでスピナー等の表示がなく、ユーザーに「何も起きていない」ように見えた
+  - 修正: `saving === true` 中はボタンアイコンをグレーの回転スピナー SVG に切り替え（`animate-spin`）、既存の保存成功時チェックマークと同じ方式で実装
+
+- **`handleBackToAdjust` の `pendingSecondImageRef` null ガードを追加** (#26)
+  - 2枚モードで「かどの調整にもどる」を押したとき、`pendingSecondImageRef.current` が null だった場合のフォールバック処理がなく、将来の変更で即破綻するリスクがあった
+  - 修正: null の場合は `restoreFailed` トーストを表示して `handleReset()` にフォールバック
+  - あわせて `handleBackToAdjust` の JSDoc で `pendingSecondImageRef` の生存契約を明示
+
 - **比較ステップで縦長画像が左詰めになる問題を修正（パネル水平中央寄せ）** (#20)
   - 正方形より縦長の画像を開くと、パネルが親コンテナの左に詰まって表示されていた
   - panel に `mx-auto` と `maxWidth` 計算を追加して水平中央寄せ
