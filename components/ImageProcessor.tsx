@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
@@ -423,6 +423,11 @@ export default function ImageProcessor() {
       URL.revokeObjectURL(gifPreview.url)
       setGifPreview(null)
     }
+    if (crossfadePreview) {
+      URL.revokeObjectURL(crossfadePreview.url)
+      setCrossfadePreview(null)
+    }
+    setAnimSelectOpen(false)
     revokeLoadedObjectUrls()
     setPhase('upload')
   }
@@ -439,6 +444,8 @@ export default function ImageProcessor() {
     url: string
     mimeType: string
   } | null>(null)
+  // Cache mimeType check — result is constant for the lifetime of the page.
+  const crossfadeVideoMimeType = useMemo(() => getCrossfadeVideoMimeType(), [])
 
   const handleOpenAnimSelect = () => {
     setAnimSelectOpen(true)
@@ -584,6 +591,26 @@ export default function ImageProcessor() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [gifPreview, handleGifClose])
+
+  // Escape key to close animation-select modal
+  useEffect(() => {
+    if (!animSelectOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAnimSelectOpen(false)
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [animSelectOpen])
+
+  // Escape key to close crossfade preview modal
+  useEffect(() => {
+    if (!crossfadePreview) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCrossfadeClose()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [crossfadePreview, handleCrossfadeClose])
 
   const handleSave = async () => {
     if (saving) return
@@ -918,7 +945,7 @@ export default function ImageProcessor() {
                 <span className="font-bold">{t('animSelectToggle')}</span>
                 <span className="text-[11px] opacity-80">{t('animSelectToggleDesc')}</span>
               </button>
-              {getCrossfadeVideoMimeType() !== null && (
+              {crossfadeVideoMimeType !== null && (
                 <button
                   onClick={handleCreateCrossfadeVideo}
                   className="btn-ghost flex flex-col items-center gap-1 px-5 py-3 text-sm"
@@ -1046,6 +1073,16 @@ export default function ImageProcessor() {
               >
                 ✕
               </button>
+            </div>
+            <div className="flex justify-center px-4 py-3">
+              <video
+                src={crossfadePreview.url}
+                autoPlay
+                loop
+                playsInline
+                controls
+                className="max-h-64 w-full rounded-lg object-contain"
+              />
             </div>
             <div
               className="flex gap-2 px-4 py-3"
