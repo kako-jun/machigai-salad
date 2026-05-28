@@ -14,10 +14,7 @@ export default function AffiliateGrid() {
   const { t } = useI18n()
 
   return (
-    <section aria-label={t('affiliateHeading')} className="w-full">
-      <h2 className="mb-4 text-center text-xs tracking-wide" style={{ color: 'var(--muted)' }}>
-        {t('affiliateHeading')}
-      </h2>
+    <section aria-label={t('amazonSupport')} className="w-full">
       <ul className="m-0 grid w-full list-none grid-cols-3 gap-3 p-0 sm:gap-4">
         {AFFILIATE_PRODUCTS.map((p) => (
           <li key={p.url}>
@@ -80,8 +77,11 @@ export default function AffiliateGrid() {
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-center text-xs" style={{ color: 'var(--muted)', opacity: 0.7 }}>
-        {t('affiliateDisclosure')}
+      <p
+        className="mt-3 whitespace-pre-line text-center text-xs"
+        style={{ color: 'var(--muted)', opacity: 0.7 }}
+      >
+        {t('amazonHint')}
       </p>
     </section>
   )

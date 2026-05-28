@@ -17,11 +17,6 @@ const dict = {
     ja: 'リンク先の商品でなくても、\nここからお買い物するだけで応援になるよ',
     en: 'Any purchase through this link\nhelps us out — thanks!',
   },
-  affiliateHeading: { ja: 'Amazon で応援する', en: 'Support on Amazon' },
-  affiliateDisclosure: {
-    ja: 'Amazonアソシエイトとして、適格販売により収入を得ています',
-    en: 'As an Amazon Associate, I earn from qualifying purchases.',
-  },
   shareApp: {
     ja: 'おもしろかったら ともだちにも おしえてね',
     en: 'Had fun? Share it with your friends!',

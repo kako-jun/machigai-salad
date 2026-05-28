@@ -101,9 +101,6 @@ export default function Home() {
                 </svg>
                 {t('amazonSupport')}
               </span>
-              <span className="whitespace-pre-line text-xs" style={{ color: 'var(--muted)' }}>
-                {t('amazonHint')}
-              </span>
             </a>
 
             {/* QR Code + Share buttons */}
