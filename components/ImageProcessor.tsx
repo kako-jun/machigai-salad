@@ -561,8 +561,8 @@ export default function ImageProcessor() {
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: t('shareResultTitle'),
-          text: t('shareResultText'),
+          title: t('crossfadeVideoTitle'),
+          text: t('crossfadeShareText'),
         })
       } else {
         // Web Share 非対応: ダウンロードにフォールバック

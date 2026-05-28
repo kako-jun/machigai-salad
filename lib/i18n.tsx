@@ -23,8 +23,8 @@ const dict = {
   },
   copied: { ja: 'コピーしたよ', en: 'Copied!' },
   shareText: {
-    ja: '間違いさがし おたすけツール「小エビの間違いサラダ」',
-    en: 'Machigai Salad — Your spot-the-difference helper!',
+    ja: '間違いさがし おたすけツール「小エビの間違いサラダ」 #間違いサラダ',
+    en: 'Machigai Salad — Your spot-the-difference helper! #MachigaiSalad',
   },
   authorSite: { ja: '作者のサイト', en: "Maker's site" },
 
@@ -94,8 +94,12 @@ const dict = {
   crossfadeVideoTitle: { ja: 'おわかりいただけただろうか？', en: 'Wiggle crossfade video ready' },
   shareResultTitle: { ja: 'クネクネ動いて見えるかな？', en: 'Can you see it wiggling?' },
   shareResultText: {
-    ja: '「小エビの間違いサラダ」で間違いさがしを比較したよ！',
-    en: 'I compared a spot-the-difference puzzle with Machigai Salad!',
+    ja: '「小エビの間違いサラダ」でクネクネ動画を作ったよ！ #間違いサラダ https://machigai-salad.llll-ll.com',
+    en: 'I made a wiggle video with Machigai Salad! #MachigaiSalad https://machigai-salad.llll-ll.com',
+  },
+  crossfadeShareText: {
+    ja: '「小エビの間違いサラダ」でおわかりいただけただろうか動画を作ったよ！ #間違いサラダ https://machigai-salad.llll-ll.com',
+    en: 'I made a crossfade video with Machigai Salad! #MachigaiSalad https://machigai-salad.llll-ll.com',
   },
   shareFailed: { ja: 'シェアできなかった...', en: "Couldn't share..." },
   shareOnX: { ja: 'Xでシェア', en: 'Share on X' },
