@@ -372,6 +372,7 @@ export default function ImageProcessor() {
       // Guard: pendingSecondImageRef must be alive for re-processing to work.
       // If it has been cleared, fall back to a full reset rather than leaving
       // the UI in a broken state.
+      // NOTE: handleReset does NOT call handleBackToAdjust — no circular call.
       if (!pendingSecondImageRef.current) {
         showToast(t('restoreFailed'), 'error')
         handleReset()
@@ -738,17 +739,19 @@ export default function ImageProcessor() {
               style={saveSuccess ? { color: '#2d8a4e', borderColor: '#2d8a4e' } : undefined}
             >
               {saving ? (
+                // Spinner: use --muted (var(--muted)=#7a5c2e) per DESIGN.md secondary text role.
+                // Track ring at 25% opacity, arc at full opacity to form a classic spinner.
                 <svg
                   width={16}
                   height={16}
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="var(--muted)"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   aria-hidden="true"
-                  className="animate-spin opacity-50"
+                  className="animate-spin"
                 >
                   <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
                   <path d="M12 2a10 10 0 0 1 10 10" />
