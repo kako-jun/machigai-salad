@@ -61,15 +61,15 @@ const dict = {
   shareResult: { ja: 'アニメーションをつくる', en: 'Create animation' },
   // Animation type selection modal
   animSelectTitle: { ja: 'どんなアニメーションにする？', en: 'Which animation?' },
-  animSelectToggle: { ja: 'パタパタ切り替え', en: 'Quick toggle' },
+  animSelectToggle: { ja: 'クネクネ切り替え', en: 'Wiggle toggle' },
   animSelectToggleDesc: {
     ja: 'シェア: GIF / ダウンロード: PNG',
     en: 'Share as GIF / Download as PNG',
   },
   animSelectCrossfade: { ja: 'おわかりいただけただろうか動画', en: 'Slow reveal video' },
   animSelectCrossfadeDesc: {
-    ja: 'じわーっと60秒 / ダウンロード: 動画',
-    en: 'Slow 60s crossfade / Download as video',
+    ja: 'じわーっと60秒 / ダウンロード: WebM / MP4',
+    en: 'Slow 60s crossfade / Download as WebM / MP4',
   },
   animSelectClose: { ja: 'とじる', en: 'Close' },
   // GIF/APNG popup (after quick toggle selected)
