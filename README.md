@@ -1,7 +1,7 @@
 # 小エビの間違いサラダ (Machigai Salad)
 
 <p>
-  <a href="https://nostalgic.llll-ll.com"><img src="https://api.nostalgic.llll-ll.com/visit?action=get&id=github-b66ce845&format=image&theme=github" alt="Visitors" align="middle"></a>
+  <a href="https://nostalgic.llll-ll.com"><img src="https://api.nostalgic.llll-ll.com/visit?action=increment&id=github-b66ce845&format=image&theme=github" alt="Visitors" align="middle"></a>
   <a href="https://nostalgic.llll-ll.com/yokoso"><img src="https://api.nostalgic.llll-ll.com/yokoso?action=get&id=github-b66ce845&format=image" alt="Welcome" align="middle"></a>
 </p>
 
