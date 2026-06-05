@@ -106,10 +106,12 @@ export interface AnimationSource {
 /**
  * Generate animation frames at the given max dimension.
  * Returns raw ImageData for each frame (frame 1: overlay, frame 2: right only).
+ * @param evenDims Floor width/height to even numbers (H.264 requires even dimensions)
  */
 async function generateFrames(
   source: AnimationSource,
-  maxDim: number
+  maxDim: number,
+  evenDims = false
 ): Promise<{ frames: ImageData[]; width: number; height: number }> {
   const { leftDataUrl, rightDataUrl, displaySize, offset, cornerOffsets, centerOffset } = source
   const [leftImg, rightImg] = await Promise.all([loadImage(leftDataUrl), loadImage(rightDataUrl)])
@@ -117,8 +119,12 @@ async function generateFrames(
   const w = rightImg.width
   const h = rightImg.height
   const scale = Math.min(1, maxDim / Math.max(w, h))
-  const gw = Math.round(w * scale)
-  const gh = Math.round(h * scale)
+  let gw = Math.round(w * scale)
+  let gh = Math.round(h * scale)
+  if (evenDims) {
+    gw = Math.max(2, gw & ~1)
+    gh = Math.max(2, gh & ~1)
+  }
 
   // Scale warp parameters from CSS display pixels to output pixels
   const sx = gw / displaySize.w
@@ -236,7 +242,7 @@ export async function generateCrossfadeVideo(
 
   const { Muxer, ArrayBufferTarget } = await import('mp4-muxer')
 
-  const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM)
+  const { frames, width, height } = await generateFrames(source, VIDEO_MAX_DIM, true)
   const [frame1, frame2] = frames
 
   // Pre-compute blended ImageData for every frame (CPU blending, no setTimeout throttle).
