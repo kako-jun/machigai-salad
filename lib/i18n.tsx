@@ -129,15 +129,10 @@ const dict = {
   redetect: { ja: 'もう1回けんしゅつ', en: 'Re-detect' },
   undo: { ja: 'もどす', en: 'Undo' },
   detectionSensitivityLabel: { ja: 'けんしゅつ', en: 'Detection' },
-  detectionCurrentPrefix: { ja: 'いま', en: 'Current' },
   detectionFound: { ja: '紙っぽい枠を見つけたよ', en: 'Paper-like frame found' },
   detectionFallback: {
     ja: '見つからなかったので 仮の枠だよ',
     en: 'Using a placeholder frame',
-  },
-  detectionFallbackHint: {
-    ja: 'きびしめ・ふつう・あまめで同じ形なら、検出できていない状態です',
-    en: 'If all modes look the same, detection is falling back.',
   },
   sensitivityStrict: { ja: 'きびしめ', en: 'Strict' },
   sensitivityNormal: { ja: 'ふつう', en: 'Normal' },

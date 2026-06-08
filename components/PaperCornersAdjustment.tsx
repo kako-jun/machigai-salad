@@ -544,11 +544,6 @@ export default function PaperCornersAdjustment({
                 )
               })}
             </div>
-            <p className="text-[11px] leading-tight" style={{ color: 'var(--muted)' }}>
-              {detecting
-                ? '...'
-                : `${t('detectionCurrentPrefix')}: ${t(SENSITIVITY_I18N[currentSensitivity])}`}
-            </p>
           </div>
         )}
       </div>
@@ -568,7 +563,6 @@ export default function PaperCornersAdjustment({
             {t('detectionSensitivityLabel')}: {t(SENSITIVITY_I18N[currentSensitivity])} /{' '}
             {usingFallback ? t('detectionFallback') : t('detectionFound')}
           </div>
-          {usingFallback && <div className="mt-0.5">{t('detectionFallbackHint')}</div>}
         </div>
       )}
 
