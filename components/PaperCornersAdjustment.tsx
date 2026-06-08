@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Point } from '@/types'
 import { MAX_UNDO } from '@/types'
 import { useI18n } from '@/lib/i18n'
+import type { DetectionSensitivity } from '@/lib/opencv'
 import { UndoIcon } from './icons'
 
 /** Minimum canvas dimension in CSS pixels — tiny images are scaled up to this */
@@ -20,7 +21,7 @@ interface PaperCornersAdjustmentProps {
   onApply: (corners: Point[]) => void
   onCancel: () => void
   /** 感度を変えて再検出する。結果のcornersまたはnullを返す */
-  onRedetect?: (sensitivity: 'strict' | 'normal' | 'loose') => Promise<Point[] | null>
+  onRedetect?: (sensitivity: DetectionSensitivity) => Promise<Point[] | null>
 }
 
 function getDefaultCorners(imageSize: { width: number; height: number }): Point[] {
@@ -237,9 +238,8 @@ function findSnapPosition(
   return null
 }
 
-const SENSITIVITY_CYCLE = ['strict', 'normal', 'loose'] as const
 const SENSITIVITY_I18N: Record<
-  string,
+  DetectionSensitivity,
   'sensitivityStrict' | 'sensitivityNormal' | 'sensitivityLoose'
 > = {
   strict: 'sensitivityStrict',
@@ -273,7 +273,8 @@ export default function PaperCornersAdjustment({
   const cornersHistoryRef = useRef<Point[][]>([])
   const [undoCount, setUndoCount] = useState(0)
   const [scale, setScale] = useState(1)
-  const [sensitivityIndex, setSensitivityIndex] = useState(2) // 初期検出がnormal。次クリックでstrict(0)→normal(1)→loose(2)の順
+  const [currentSensitivity, setCurrentSensitivity] = useState<DetectionSensitivity>('normal')
+  const [usingFallback, setUsingFallback] = useState(initialCorners === null)
   const [detecting, setDetecting] = useState(false)
 
   // 画像の読み込みとキャンバスサイズ設定
@@ -467,20 +468,20 @@ export default function PaperCornersAdjustment({
     setDraggingIndex(null)
   }
 
-  const handleRedetect = async () => {
+  const handleRedetect = async (sensitivity: DetectionSensitivity) => {
     if (!onRedetect || detecting) return
     pushCornersHistory()
-    const nextIndex = (sensitivityIndex + 1) % SENSITIVITY_CYCLE.length
-    setSensitivityIndex(nextIndex)
-    const sensitivity = SENSITIVITY_CYCLE[nextIndex]
+    setCurrentSensitivity(sensitivity)
     setDetecting(true)
     try {
       const result = await onRedetect(sensitivity)
       if (result) {
         setCorners(result)
+        setUsingFallback(false)
       } else {
         // 検出失敗 → デフォルト矩形にフォールバック
         setCorners(getDefaultCorners(imageSize))
+        setUsingFallback(true)
       }
     } finally {
       setDetecting(false)
@@ -520,35 +521,56 @@ export default function PaperCornersAdjustment({
           {t('cornersInstruction')}
         </p>
         {onRedetect && (
-          <button
-            onClick={handleRedetect}
-            disabled={detecting}
-            className="relative ml-2 flex-shrink-0 rounded-lg px-2 py-1 text-center text-xs leading-tight"
-            style={{
-              color: 'var(--muted)',
-              border: '1px solid var(--border-light)',
-            }}
-          >
-            {/* 常にテキストを描画して幅を確保。検出中は非表示にして...を重ねる */}
-            <span style={{ visibility: detecting ? 'hidden' : 'visible' }}>
-              {t('redetect')}
-              <br />
-              <span style={{ opacity: 0.7 }}>
-                （
-                {t(
-                  SENSITIVITY_I18N[
-                    SENSITIVITY_CYCLE[(sensitivityIndex + 1) % SENSITIVITY_CYCLE.length]
-                  ]
-                )}
-                ）
-              </span>
-            </span>
-            {detecting && (
-              <span className="absolute inset-0 flex items-center justify-center">...</span>
-            )}
-          </button>
+          <div className="ml-2 flex flex-shrink-0 flex-col items-end gap-1">
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--border-light)] bg-white/35 p-1">
+              {(['strict', 'normal', 'loose'] as const).map((sensitivity) => {
+                const active = currentSensitivity === sensitivity
+                return (
+                  <button
+                    key={sensitivity}
+                    onClick={() => handleRedetect(sensitivity)}
+                    disabled={detecting}
+                    aria-pressed={active}
+                    className="relative min-w-[3.8rem] rounded-md px-2 py-1 text-center text-xs leading-tight transition"
+                    style={{
+                      color: active ? '#3b2a11' : 'var(--muted)',
+                      background: active ? 'rgba(245,197,24,0.35)' : 'transparent',
+                      border: active ? '1px solid rgba(212,160,16,0.55)' : '1px solid transparent',
+                      opacity: detecting ? 0.65 : 1,
+                    }}
+                  >
+                    {t(SENSITIVITY_I18N[sensitivity])}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-[11px] leading-tight" style={{ color: 'var(--muted)' }}>
+              {detecting
+                ? '...'
+                : `${t('detectionCurrentPrefix')}: ${t(SENSITIVITY_I18N[currentSensitivity])}`}
+            </p>
+          </div>
         )}
       </div>
+
+      {onRedetect && (
+        <div
+          className="rounded-xl px-4 py-2 text-xs leading-relaxed"
+          style={{
+            color: usingFallback ? '#8a4d16' : 'var(--muted)',
+            background: usingFallback ? 'rgba(255, 153, 0, 0.11)' : 'rgba(107,127,62,0.1)',
+            border: usingFallback
+              ? '1px solid rgba(255, 153, 0, 0.24)'
+              : '1px solid rgba(107,127,62,0.22)',
+          }}
+        >
+          <div className="font-medium">
+            {t('detectionSensitivityLabel')}: {t(SENSITIVITY_I18N[currentSensitivity])} /{' '}
+            {usingFallback ? t('detectionFallback') : t('detectionFound')}
+          </div>
+          {usingFallback && <div className="mt-0.5">{t('detectionFallbackHint')}</div>}
+        </div>
+      )}
 
       {/* Undo — above the canvas, right-aligned */}
       <div className="flex justify-end px-2">
