@@ -32,6 +32,6 @@ export const AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     url: 'https://amzn.to/3PseBXZ',
     title: 'ピタゴラスイッチ ピタゴラゴール1号',
     imageUrl: 'https://m.media-amazon.com/images/P/B00OPTZRF0.01._SL500_.jpg',
-    caption: 'ピタゴラスイッチのくねくね人が元ネタ！',
+    caption: 'うちのは旗が折れて声だけになった！',
   },
 ]
