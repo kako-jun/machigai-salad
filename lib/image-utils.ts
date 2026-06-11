@@ -289,16 +289,17 @@ export async function generateCrossfadeVideo(
     }
 
     const t = i / (totalFrames - 1) // 0 to 1
-    // Round trip: first half fades frame2→frame1, second half fades back.
+    // Round trip: first half fades frame1→frame2, second half fades back.
     const half = t <= 0.5 ? t * 2 : (1 - t) * 2
     // ease-in-out so the reversal point feels smooth
     const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
 
     // Blend frame1 (left overlay) and frame2 (right only).
+    // Start on frame1 (left) so the video opens on the same image as the GIF.
     // Alpha channel fixed at 255 — both source frames are fully opaque.
     const blended = ctx.createImageData(width, height)
     for (let p = 0; p < blended.data.length; p++) {
-      blended.data[p] = p % 4 === 3 ? 255 : frame2.data[p] * (1 - alpha) + frame1.data[p] * alpha
+      blended.data[p] = p % 4 === 3 ? 255 : frame1.data[p] * (1 - alpha) + frame2.data[p] * alpha
     }
     ctx.putImageData(blended, 0, 0)
 
