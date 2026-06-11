@@ -219,6 +219,16 @@ const VIDEO_BITRATE = 2_000_000
 const VIDEO_FPS = 24
 
 /**
+ * Crossfade pacing (ease-out-in strength). Splits the round-trip time between
+ * the clean end images and the dissolving middle:
+ *   1.0 → linear (constant speed both ways, equal time everywhere)
+ *   1.2 → eases off the end images, a touch more time in the dissolve  ← current
+ *   2.0 → strongly favours the 50/50 ghost, barely shows the clean images
+ * Higher = shorter time on the left/right images, longer in transition.
+ */
+const CROSSFADE_EASE = 1.2
+
+/**
  * Check if crossfade video generation is supported in the current browser.
  * Requires WebCodecs (VideoEncoder + VideoFrame) — Chrome 94+, Safari 16.4+, Firefox 130+.
  */
@@ -291,8 +301,12 @@ export async function generateCrossfadeVideo(
     const t = i / (totalFrames - 1) // 0 to 1
     // Round trip: first half fades frame1→frame2, second half fades back.
     const half = t <= 0.5 ? t * 2 : (1 - t) * 2
-    // ease-in-out so the reversal point feels smooth
-    const alpha = half < 0.5 ? 2 * half * half : 1 - Math.pow(-2 * half + 2, 2) / 2
+    // ease-out-in: accelerate off the clean end images, decelerate through the
+    // dissolve — so we spend less time pinned at left/right and more mid-fade.
+    const alpha =
+      half < 0.5
+        ? 0.5 * (1 - Math.pow(1 - 2 * half, CROSSFADE_EASE))
+        : 0.5 + 0.5 * Math.pow(2 * half - 1, CROSSFADE_EASE)
 
     // Blend frame1 (left overlay) and frame2 (right only).
     // Start on frame1 (left) so the video opens on the same image as the GIF.
