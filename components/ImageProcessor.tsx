@@ -941,14 +941,14 @@ export default function ImageProcessor() {
       {/* Animation Type Selection Modal */}
       {animSelectOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={() => setAnimSelectOpen(false)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-sm overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',
@@ -1003,14 +1003,14 @@ export default function ImageProcessor() {
       {/* GIF Preview Modal */}
       {gifPreview && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={handleGifClose}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-sm overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',
@@ -1079,14 +1079,14 @@ export default function ImageProcessor() {
       {/* Crossfade Video Modal */}
       {crossfadePreview && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={handleCrossfadeClose}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-sm overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',

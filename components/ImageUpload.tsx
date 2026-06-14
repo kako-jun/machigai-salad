@@ -395,14 +395,14 @@ export default function ImageUpload({
       {/* Pick second image prompt */}
       {firstImageData && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={() => setFirstImageData(null)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-xs overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',
@@ -440,14 +440,14 @@ export default function ImageUpload({
       {/* iOS LINE help modal */}
       {iosHelpOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={() => setIosHelpOpen(false)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-xs overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',
@@ -498,14 +498,14 @@ export default function ImageUpload({
       {/* Album mode popup */}
       {albumPopupOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
           style={{ background: 'rgba(60,36,21,0.4)' }}
           onClick={() => setAlbumPopupOpen(false)}
           role="dialog"
           aria-modal="true"
         >
           <div
-            className="mx-4 w-full max-w-xs overflow-hidden rounded-2xl"
+            className="my-auto w-full max-w-xs overflow-hidden rounded-2xl"
             style={{
               background: 'var(--parchment)',
               border: '1px solid var(--border)',

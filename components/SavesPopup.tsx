@@ -76,7 +76,7 @@ export default function SavesPopup({ open, onClose, onLoad, onDelete }: SavesPop
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex justify-center overflow-y-auto p-4"
       style={{ background: 'rgba(60,36,21,0.4)' }}
       onClick={onClose}
       role="dialog"
@@ -84,7 +84,7 @@ export default function SavesPopup({ open, onClose, onLoad, onDelete }: SavesPop
       aria-label={t('savesTitle')}
     >
       <div
-        className="mx-4 max-h-[70vh] w-full max-w-sm overflow-hidden rounded-2xl"
+        className="my-auto max-h-[70vh] w-full max-w-sm overflow-hidden rounded-2xl"
         style={{
           background: 'var(--parchment)',
           border: '1px solid var(--border)',

@@ -118,7 +118,10 @@ Font smoothing: `-webkit-font-smoothing: antialiased`.
 - Background: `var(--parchment)`
 - Border radius: `16px`
 - Box shadow: `0 8px 32px rgba(60,36,21,0.2)`
-- Max height: `70vh`, scrollable
+- Inset / centering: the overlay is `fixed inset-0 flex justify-center overflow-y-auto p-4`; the panel is `w-full max-w-sm`/`max-w-xs my-auto` with **no `mx-*`**
+  - Horizontal: spacing comes from the overlay's `p-4`, never `mx-*` on the panel — `w-full` + `mx-*` overflows the viewport by the margin on screens narrower than the panel's max-width, causing right-shift + horizontal scroll (see #39)
+  - Vertical: `overflow-y-auto` on the overlay + `my-auto` on the panel keeps the panel centered when it fits and lets it scroll (without top-clipping) when taller than the viewport — needed because most panels have no `max-h` and would otherwise clip their footer on short/landscape screens
+- Max height: only SavesPopup caps at `70vh` with an inner `overflow-y-auto` list; the image/preview panels have no `max-h` and rely on the overlay scroll above
 
 ### Toast Notifications
 
