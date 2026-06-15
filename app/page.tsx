@@ -13,7 +13,13 @@ export default function Home() {
 
   return (
     <main className="relative z-10 min-h-screen">
-      <div className="mx-auto max-w-lg px-4 py-6">
+      {/* overflow-x-clip: warp handles in the comparison view sit just outside the
+          image (HANDLE_HIT_RADIUS) and can be dragged out by MAX_CORNER_OFFSET, which
+          on full-width images pushes them past the viewport edge. Clip the column so
+          that overhang never widens the layout viewport (which right-shifts popups —
+          same symptom class as the #39 modal fix). clip (not hidden) keeps overflow-y
+          visible so the upward-rendered handles aren't cut off. */}
+      <div className="mx-auto max-w-lg overflow-x-clip px-4 py-6">
         {/* Menu-style header card */}
         <header className="menu-card mb-6 px-5 py-4">
           {/* Lang toggle — above the stripe, right-aligned */}
