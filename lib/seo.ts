@@ -107,7 +107,7 @@ export function buildJsonLd(lang: SeoLang) {
     '@type': 'SoftwareApplication',
     name: c.siteName,
     alternateName: lang === 'ja' ? 'Machigai Salad' : '小エビの間違いサラダ',
-    url: `${siteUrl}${lang === 'ja' ? '/' : PATH[lang]}`,
+    url: `${siteUrl}${PATH[lang]}`,
     description: c.description,
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'Web',
