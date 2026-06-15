@@ -9,6 +9,11 @@ const dict = {
   // page.tsx — header
   appTitle: { ja: '小エビの間違いサラダ', en: 'Machigai Salad' },
   appSubtitle: { ja: '間違いさがし おたすけツール', en: 'Your spot-the-difference helper!' },
+  howToUse: { ja: '使い方', en: 'How to use' },
+  howToUseUrl: {
+    ja: 'https://llll-ll.com/ja/posts/machigai-salad/',
+    en: 'https://llll-ll.com/posts/machigai-salad/',
+  },
   bannerAlt: { ja: '小エビの間違いサラダ バナー', en: 'Machigai Salad banner' },
 
   // page.tsx — footer
