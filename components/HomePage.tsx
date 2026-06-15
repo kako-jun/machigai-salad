@@ -56,6 +56,16 @@ export default function HomePage() {
             <p className="text-xs" style={{ color: 'var(--muted)' }}>
               {t('appSubtitle')}
             </p>
+            {/* 使い方 — links to the explainer article on llll-ll.com */}
+            <a
+              href={t('howToUseUrl')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs underline underline-offset-2"
+              style={{ color: 'var(--muted)' }}
+            >
+              {t('howToUse')}
+            </a>
           </div>
 
           {/* Decorative bottom stripe */}
