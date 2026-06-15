@@ -217,10 +217,20 @@ const I18nContext = createContext<I18nContextValue>({
   t: (key) => dict[key].ja,
 })
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('ja')
+export function I18nProvider({
+  children,
+  forcedLang,
+}: {
+  children: React.ReactNode
+  // When set (the /en route), the URL owns the language: skip stored prefs and
+  // navigator auto-detect so the rendered language always matches the URL and
+  // the static <html lang>. Left undefined on `/`, which keeps auto-detection.
+  forcedLang?: Lang
+}) {
+  const [lang, setLangState] = useState<Lang>(forcedLang ?? 'ja')
 
   useEffect(() => {
+    if (forcedLang) return
     const stored = loadLang()
     if (stored) {
       setLangState(stored)
@@ -237,7 +247,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (!langs.some((l) => l.toLowerCase().startsWith('ja'))) {
       setLangState('en')
     }
-  }, [])
+  }, [forcedLang])
 
   useEffect(() => {
     document.documentElement.lang = lang

@@ -41,6 +41,33 @@
 └─────────────────────────────────────┘
 ```
 
+### ルーティングと多言語 (i18n)
+
+言語ごとに **別URL** を持ち、各ページが自分の `<html lang>` を静的に出力する。
+これは Next.js の **route group で root layout を2つ**に分ける構成で実現している。
+
+```
+app/
+├── (ja)/                 # URL `/`   — <html lang="ja">
+│   ├── layout.tsx        #   JA メタ / JSON-LD（inLanguage [ja,en]）
+│   └── page.tsx          #   → <HomePage />
+├── (en)/                 # URL `/en` — <html lang="en">
+│   ├── layout.tsx        #   EN メタ / JSON-LD、I18nProvider forcedLang="en"
+│   └── en/page.tsx       #   → <HomePage />
+├── globals.css
+├── robots.ts             # 静的 robots.txt
+└── sitemap.ts            # 静的 sitemap.xml
+```
+
+- `components/HomePage.tsx` が本体（両ルートで共有描画）
+- `lib/seo.ts` に言語別 metadata / JSON-LD を集約。`alternates.languages` で
+  **hreflang（ja=`/` / en=`/en` / x-default=`/`）** と canonical を両ページに出力
+- `lib/i18n.tsx` の `I18nProvider` は `forcedLang` を受け取る。`/en` は en 固定
+  （navigator / localStorage より URL を優先＝ちらつき防止）。`/` は従来どおり
+  ブラウザ言語で自動判定
+- `LangToggle` は 2ルート間のナビゲーション（JA→`/`、EN→`/en`）。選択を
+  localStorage に保存し、`/` の自動判定が選択を尊重する
+
 ### 画像処理パイプライン
 
 ```
@@ -355,6 +382,8 @@ alert('😅 うまくいかなかったみたい。もう一度写真をとっ�
 - ✅ PWA化（manifest + Service Worker + OGP）
 - ✅ QRコード共有
 - ✅ ヘッダバナー
+- ✅ SEO土台（robots.txt / sitemap.xml / JSON-LD / meta description）
+- ✅ 多言語ルーティング（日本語 `/` + 英語 `/en`、hreflang 相互リンク）
 
 ### 今後の候補
 

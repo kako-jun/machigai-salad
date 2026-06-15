@@ -8,7 +8,8 @@ import VisitorCounter from '@/components/VisitorCounter'
 import ShareButtons from '@/components/ShareButtons'
 import AffiliateGrid from '@/components/AffiliateGrid'
 
-export default function Home() {
+// Shared app body, rendered by both root routes: `/` (ja) and `/en` (en).
+export default function HomePage() {
   const { t } = useI18n()
 
   return (
