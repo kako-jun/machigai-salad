@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { Point, CornerOffsets } from '@/types'
 import { useOpenCV } from '@/hooks'
 import { useI18n } from '@/lib/i18n'
+import { setAppBusy } from '@/lib/appBusy'
 import {
   getImageSize,
   resizeImage,
@@ -70,6 +71,18 @@ export default function ImageProcessor() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Report the "is the user mid-task" flag to the global PWA update gate.
+  // Everything past the upload screen (corner adjustment, comparison,
+  // GIF/video export, save) is unsaved work that a forced reload would wipe.
+  useEffect(() => {
+    setAppBusy(phase !== 'upload')
+  }, [phase])
+
+  // Always clear the busy flag if this component ever unmounts.
+  useEffect(() => {
+    return () => setAppBusy(false)
   }, [])
 
   // Revoke any outstanding loaded object URLs on unmount
