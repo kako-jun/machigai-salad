@@ -2,7 +2,13 @@
 
 import { useEffect } from 'react'
 import { useI18n } from '@/lib/i18n'
-import { waitUntilIdle } from '@/lib/appBusy'
+import { isAppBusy, waitUntilIdle } from '@/lib/appBusy'
+import {
+  detectExistingUpdate,
+  watchInstallingWorker,
+  makeIdleGatedOnce,
+  type WorkerLike,
+} from '@/lib/swUpdateDetection'
 
 // Prevent SW update loop using timestamp (mirrors mypace's PWA update flow)
 const SW_UPDATE_KEY = 'sw-update-time'
@@ -67,11 +73,12 @@ export default function ServiceWorkerRegister() {
     if (!('serviceWorker' in navigator)) return
 
     let cancelled = false
+    const hasController = () => Boolean(navigator.serviceWorker.controller)
 
-    // Called once the new worker has finished installing and is sitting in
-    // `registration.waiting` (i.e. this is a real update, not the first
-    // install — see the `navigator.serviceWorker.controller` check below).
-    const applyUpdate = async (registration: ServiceWorkerRegistration) => {
+    // Called once a new worker has finished installing and is sitting in
+    // `waiting` (i.e. this is a real update, not the first install — see the
+    // `hasController` check at each call site below).
+    const applyUpdate = async (worker: WorkerLike) => {
       if (applying) return
 
       if (shouldSkipUpdate()) {
@@ -83,8 +90,7 @@ export default function ServiceWorkerRegister() {
 
       // Defer while the user is mid-task (corner adjustment / comparison /
       // GIF-video export / save) — a forced reload here would wipe unsaved
-      // work. The overlay below also blocks further interaction once shown,
-      // so there's no need to re-check busy after this point.
+      // work.
       await waitUntilIdle()
       if (cancelled) {
         applying = false
@@ -95,23 +101,51 @@ export default function ServiceWorkerRegister() {
       showUpdateOverlay(t('pwaUpdateRestarting'))
       sessionStorage.setItem(SW_UPDATE_KEY, Date.now().toString())
 
+      // The overlay covers the screen, but that only blocks pointer-driven
+      // interaction — it doesn't blur focus or trap keyboard input, so a
+      // control that was already focused before the overlay appeared can
+      // still be activated (e.g. Enter/Space), and any async work already
+      // in flight keeps running regardless of the overlay. So busy state can
+      // still flip back to true during the pre-delay/fallback wait below.
+      // makeIdleGatedOnce re-checks busy right before each point that would
+      // actually reload/postMessage, and if busy, waits for the next idle
+      // transition and retries instead of forcing it through — it also
+      // guards against controllerchange and the fallback timer both firing
+      // the reload.
+      const reloadIfIdleElseDefer = makeIdleGatedOnce({
+        isBusy: isAppBusy,
+        waitUntilIdle,
+        run: () => window.location.reload(),
+      })
+
       // Set up the listener before triggering the switch-over.
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload()
+      navigator.serviceWorker.addEventListener('controllerchange', reloadIfIdleElseDefer, {
+        once: true,
       })
 
       setTimeout(() => {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
-        // Fallback: if controllerchange doesn't fire, reload anyway.
-        setTimeout(() => {
-          window.location.reload()
-        }, CONTROLLERCHANGE_FALLBACK_MS)
+        const sendSkipWaiting = makeIdleGatedOnce({
+          isBusy: isAppBusy,
+          waitUntilIdle,
+          run: () => {
+            worker.postMessage({ type: 'SKIP_WAITING' })
+            // Fallback: if controllerchange doesn't fire, reload anyway.
+            setTimeout(reloadIfIdleElseDefer, CONTROLLERCHANGE_FALLBACK_MS)
+          },
+        })
+        sendSkipWaiting()
       }, OVERLAY_DELAY_MS)
     }
 
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })
       .then((registration) => {
+        // Catch an update that already finished installing (`waiting`) or
+        // is mid-install (`installing`) *before* this effect ran — see
+        // detectExistingUpdate's doc comment for why this is a normal
+        // post-deploy-reload timing, not just a rare edge case.
+        detectExistingUpdate(registration, hasController, (worker) => applyUpdate(worker))
+
         // Check for updates on registration.
         registration.update().catch((error) => {
           console.info('SW update check skipped:', error?.message || 'offline')
@@ -120,13 +154,7 @@ export default function ServiceWorkerRegister() {
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing
           if (!newWorker) return
-          newWorker.addEventListener('statechange', () => {
-            // `installed` + an existing controller means this is an update
-            // (not the page's first-ever SW install).
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              applyUpdate(registration)
-            }
-          })
+          watchInstallingWorker(newWorker, hasController, (worker) => applyUpdate(worker))
         })
       })
       .catch((error) => {
