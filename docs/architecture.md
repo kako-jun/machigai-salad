@@ -41,6 +41,49 @@
 └─────────────────────────────────────┘
 ```
 
+### PWA更新方針（mypace方式）
+
+手書き Service Worker（`public/sw.js`）と `components/ServiceWorkerRegister.tsx` が連携し、
+新バージョン検知後に自動で安全に切り替える。検知・busyゲートのロジック本体は
+`lib/swUpdateDetection.ts`（DOM非依存の純粋関数、vitest node環境でテスト可能）に切り出し、
+`ServiceWorkerRegister.tsx` はそれを配線するだけの薄いレイヤーにしている。
+
+- `sw.js` の `install` では `self.skipWaiting()` を**呼ばない**。既存タブが古い SW に
+  制御されている「更新」ケースでは新 SW は `waiting` のまま待機する（初回インストール時は
+  制御元がないため従来どおり即activateされる）
+- 更新検知は2経路。両方とも `lib/swUpdateDetection.ts` の関数を使う
+  - **mount時にすでに`waiting`/`installing`のSWがある場合**: `detectExistingUpdate()` が
+    `registration.waiting`/`registration.installing` を直接チェックする。ブラウザは
+    ナビゲーション時に自前でSW更新チェックを行うため、React hydration→useEffect実行より
+    前に更新が完了しているケースは通常のデプロイ後リロードで普通に起こる
+    （`updatefound` は新規installing開始時にのみ発火し、すでにそれを過ぎたworkerには
+    再発火しないため、`updatefound` 待ちだけでは検知漏れになる）
+  - **mount後に新たな更新が来た場合**: `updatefound` → 新 worker の `statechange` で
+    `installed` かつ `navigator.serviceWorker.controller` あり（=更新）を
+    `watchInstallingWorker()` が検知
+- 検知後、`lib/appBusy.ts` の `waitUntilIdle()` でユーザーが作業中でないか確認してから
+  overlay を表示（`pwaUpdateRestarting` の ja/en 文言）。作業中（`ImageProcessor` の
+  `phase !== 'upload'`：角調整・比較・GIF/動画生成・保存）の間は reload しない
+- overlay 表示〜実際の reload の間も、`makeIdleGatedOnce()` で busy を3箇所
+  （postMessage送信直前・`controllerchange` ハンドラ内・fallbackタイマー内）再チェックする。
+  overlay はポインタ操作こそ塞ぐが、フォーカス済み要素へのキー入力や既に走っている非同期処理
+  までは止めないため、overlay表示後に作業が再開されるケースがある
+- overlay 表示後、`registration.waiting.postMessage({ type: 'SKIP_WAITING' })` で
+  SW に `self.skipWaiting()` を実行させ、`controllerchange` を待って `location.reload()`
+  （`controllerchange` が来ない場合は2秒でフォールバック reload）
+- `sessionStorage` に更新時刻を記録し、10秒以内の再更新はスキップ（reload ループ防止）
+- SW登録・リスナー設定用の `useEffect` は依存配列 `[]` で**必ず一度だけ**実行する。
+  overlay文言に使う `t`（`useI18n()`）は `useRef` 経由（`tRef.current(...)`）で参照し、
+  effectの依存には含めない。`t` は `lang` が変わるたびに参照が変わる
+  （`/` route の言語auto-detectで `'ja'→'en'` に切り替わる等）ため、これをeffectの依存に
+  入れると登録処理が再実行され、cleanupが `updatefound` リスナーを外さないことと相まって
+  同一registrationに複数リスナーが残り、実更新時にモジュールレベル `applying` フラグの
+  奪い合いで更新がサイレントに握りつぶされる（#51で発生した実際のリグレッション）
+
+参考実装: mypace (`apps/web/src/main.tsx` の `registerSW`) と同じ overlay → skipWaiting →
+controllerchange → reload → cooldown の流れを、vite-plugin-pwa を使わない素の
+`navigator.serviceWorker` API で再現している。
+
 ### ルーティングと多言語 (i18n)
 
 言語ごとに **別URL** を持ち、各ページが自分の `<html lang>` を静的に出力する。

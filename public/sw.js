@@ -5,7 +5,22 @@ const PRECACHE_URLS = ['/', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)))
-  self.skipWaiting()
+  // No unconditional self.skipWaiting() here: on an update (a previous SW is
+  // already controlling open tabs), this worker should sit in `waiting`
+  // until the client explicitly approves via postMessage (see below). This
+  // lets the client defer taking over until the user is safely idle instead
+  // of forcing a mid-task reload. First-time installs (no existing
+  // controller) still activate immediately regardless — skipWaiting() only
+  // affects the update case.
+})
+
+// Client-driven activation: the client (ServiceWorkerRegister) posts this
+// once it has confirmed the user isn't mid-task, so the new SW can take
+// over and the client can reload on the resulting controllerchange.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
 
 self.addEventListener('activate', (event) => {

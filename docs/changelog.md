@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+### 追加 ✨
+
+- **PWA更新検知時の自動再起動をmypace方式に揃える** (#51)
+  - `public/sw.js`: `install` での無条件 `self.skipWaiting()` を廃止し、`message` イベントで
+    `{ type: 'SKIP_WAITING' }` を受けたときだけ `skipWaiting()` するように変更（更新時のみ影響。
+    初回インストールは制御元が無いため従来どおり即activate）
+  - `components/ServiceWorkerRegister.tsx`: `updatefound` → 新workerの`statechange`で更新を検知し、
+    overlay表示 → `postMessage(SKIP_WAITING)` → `controllerchange` 待ち reload（fallback 2秒）→
+    `sessionStorage` cooldown（10秒）の流れを追加。overlay文言はja/en対応（`lib/i18n.tsx` の
+    `pwaUpdateRestarting`）
+  - `lib/appBusy.ts` を新設。`ImageProcessor` が角調整・比較・GIF/動画生成・保存などの作業中
+    （`phase !== 'upload'`）を通知し、作業中は reload を defer（`waitUntilIdle()`）してユーザーの
+    未保存作業を守る
+  - `ServiceWorkerRegister` を両 `layout.tsx` の `I18nProvider` 内に移動（`/en` の言語判定に必要）
+  - 検知・busyゲートのロジックを `lib/swUpdateDetection.ts`（DOM非依存の純粋関数）に切り出し
+  - mount時にすでに`waiting`/`installing`のSWがある場合を`detectExistingUpdate()`で検知（`updatefound`
+    は既に過ぎたworkerには再発火しないため、更新検知漏れになっていた）
+  - overlay表示〜実reloadの間、`makeIdleGatedOnce()` でbusyを3箇所（postMessage送信直前・
+    `controllerchange`ハンドラ内・fallbackタイマー内）再チェック（overlayはポインタ操作のみ塞ぐため）
+  - SW登録用`useEffect`の依存配列を`[t]`から`[]`に修正。`t`（`useI18n()`）は`lang`変更のたびに
+    参照が変わり、それを依存に含めると登録・リスナー設定が再実行され、cleanupが`updatefound`
+    リスナーを外さないことと相まって更新がサイレントに握りつぶされるリグレッションがあった
+    （overlay文言は`tRef.current(...)`で参照）
+
 ### 修正 🐛
 
 - **比較・位置合わせ画面で右コーナーを外へドラッグするとページが右にずれる問題を修正** (#40)

@@ -26,8 +26,8 @@ export default function EnRootLayout({ children }: Readonly<{ children: React.Re
         <I18nProvider forcedLang="en">
           {children}
           <ToastContainer />
+          <ServiceWorkerRegister />
         </I18nProvider>
-        <ServiceWorkerRegister />
       </body>
     </html>
   )
