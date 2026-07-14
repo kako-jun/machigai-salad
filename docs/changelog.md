@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### 追加 ✨
+
+- **PWA更新検知時の自動再起動をmypace方式に揃える** (#51)
+  - `public/sw.js`: `install` での無条件 `self.skipWaiting()` を廃止し、`message` イベントで
+    `{ type: 'SKIP_WAITING' }` を受けたときだけ `skipWaiting()` するように変更（更新時のみ影響。
+    初回インストールは制御元が無いため従来どおり即activate）
+  - `components/ServiceWorkerRegister.tsx`: `updatefound` → 新workerの`statechange`で更新を検知し、
+    overlay表示 → `postMessage(SKIP_WAITING)` → `controllerchange` 待ち reload（fallback 2秒）→
+    `sessionStorage` cooldown（10秒）の流れを追加。overlay文言はja/en対応（`lib/i18n.tsx` の
+    `pwaUpdateRestarting`）
+  - `lib/appBusy.ts` を新設。`ImageProcessor` が角調整・比較・GIF/動画生成・保存などの作業中
+    （`phase !== 'upload'`）を通知し、作業中は reload を defer（`waitUntilIdle()`）してユーザーの
+    未保存作業を守る
+  - `ServiceWorkerRegister` を両 `layout.tsx` の `I18nProvider` 内に移動（`/en` の言語判定に必要）
+
 ### 修正 🐛
 
 - **比較・位置合わせ画面で右コーナーを外へドラッグするとページが右にずれる問題を修正** (#40)

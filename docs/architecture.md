@@ -41,6 +41,28 @@
 └─────────────────────────────────────┘
 ```
 
+### PWA更新方針（mypace方式）
+
+手書き Service Worker（`public/sw.js`）と `components/ServiceWorkerRegister.tsx` が連携し、
+新バージョン検知後に自動で安全に切り替える。
+
+- `sw.js` の `install` では `self.skipWaiting()` を**呼ばない**。既存タブが古い SW に
+  制御されている「更新」ケースでは新 SW は `waiting` のまま待機する（初回インストール時は
+  制御元がないため従来どおり即activateされる）
+- クライアント側 (`ServiceWorkerRegister`) が `updatefound` → 新 worker の `statechange`
+  で `installed` かつ `navigator.serviceWorker.controller` あり（=更新）を検知
+- 検知後、`lib/appBusy.ts` の `waitUntilIdle()` でユーザーが作業中でないか確認してから
+  overlay を表示（`pwaUpdateRestarting` の ja/en 文言）。作業中（`ImageProcessor` の
+  `phase !== 'upload'`：角調整・比較・GIF/動画生成・保存）の間は reload しない
+- overlay 表示後、`registration.waiting.postMessage({ type: 'SKIP_WAITING' })` で
+  SW に `self.skipWaiting()` を実行させ、`controllerchange` を待って `location.reload()`
+  （`controllerchange` が来ない場合は2秒でフォールバック reload）
+- `sessionStorage` に更新時刻を記録し、10秒以内の再更新はスキップ（reload ループ防止）
+
+参考実装: mypace (`apps/web/src/main.tsx` の `registerSW`) と同じ overlay → skipWaiting →
+controllerchange → reload → cooldown の流れを、vite-plugin-pwa を使わない素の
+`navigator.serviceWorker` API で再現している。
+
 ### ルーティングと多言語 (i18n)
 
 言語ごとに **別URL** を持ち、各ページが自分の `<html lang>` を静的に出力する。
