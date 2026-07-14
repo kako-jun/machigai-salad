@@ -206,6 +206,12 @@ const dict = {
 
   // Toast
   toastClose: { ja: '閉じる', en: 'Close' },
+
+  // PWA update overlay (ServiceWorkerRegister)
+  pwaUpdateRestarting: {
+    ja: '新しいバージョンがあります。再起動します...',
+    en: 'New version available. Restarting...',
+  },
 } as const
 
 type DictKey = keyof typeof dict

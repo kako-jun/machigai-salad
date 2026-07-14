@@ -27,8 +27,8 @@ export default function JaRootLayout({ children }: Readonly<{ children: React.Re
         <I18nProvider>
           {children}
           <ToastContainer />
+          <ServiceWorkerRegister />
         </I18nProvider>
-        <ServiceWorkerRegister />
       </body>
     </html>
   )
