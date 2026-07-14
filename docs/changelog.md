@@ -16,6 +16,15 @@
     （`phase !== 'upload'`）を通知し、作業中は reload を defer（`waitUntilIdle()`）してユーザーの
     未保存作業を守る
   - `ServiceWorkerRegister` を両 `layout.tsx` の `I18nProvider` 内に移動（`/en` の言語判定に必要）
+  - 検知・busyゲートのロジックを `lib/swUpdateDetection.ts`（DOM非依存の純粋関数）に切り出し
+  - mount時にすでに`waiting`/`installing`のSWがある場合を`detectExistingUpdate()`で検知（`updatefound`
+    は既に過ぎたworkerには再発火しないため、更新検知漏れになっていた）
+  - overlay表示〜実reloadの間、`makeIdleGatedOnce()` でbusyを3箇所（postMessage送信直前・
+    `controllerchange`ハンドラ内・fallbackタイマー内）再チェック（overlayはポインタ操作のみ塞ぐため）
+  - SW登録用`useEffect`の依存配列を`[t]`から`[]`に修正。`t`（`useI18n()`）は`lang`変更のたびに
+    参照が変わり、それを依存に含めると登録・リスナー設定が再実行され、cleanupが`updatefound`
+    リスナーを外さないことと相まって更新がサイレントに握りつぶされるリグレッションがあった
+    （overlay文言は`tRef.current(...)`で参照）
 
 ### 修正 🐛
 

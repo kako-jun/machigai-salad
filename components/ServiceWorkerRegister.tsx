@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { isAppBusy, waitUntilIdle } from '@/lib/appBusy'
 import {
@@ -69,6 +69,48 @@ function showUpdateOverlay(message: string) {
 export default function ServiceWorkerRegister() {
   const { t } = useI18n()
 
+  // `t` is a useCallback keyed on `lang` (see lib/i18n.tsx) — its reference
+  // changes whenever `lang` changes, e.g. the auto-detect effect flipping
+  // 'ja' -> 'en' shortly after mount on the `/` (non-forcedLang) route. The
+  // registration effect below must run exactly once per page load (see its
+  // own comment for why depending on `t` there caused a silent update-drop
+  // regression), so the current translator is threaded through a ref
+  // instead of a dependency, and read via `tRef.current` at the one call
+  // site that needs it (showUpdateOverlay).
+  const tRef = useRef(t)
+  useEffect(() => {
+    tRef.current = t
+  }, [t])
+
+  // This effect must register the SW and attach its `updatefound` listener
+  // exactly once per page load — hence the `[]` dependency array below.
+  //
+  // Regression (found in independent review of #51): this effect used to
+  // depend on `[t]` so showUpdateOverlay could read the current
+  // translation. But `t` (lib/i18n.tsx) is a useCallback keyed on `lang`,
+  // so its reference changes whenever `lang` changes — e.g. the
+  // client-side language auto-detect effect flipping 'ja' -> 'en' shortly
+  // after mount on `/` (any non-forcedLang route, for a browser without
+  // 'ja' in navigator.languages). That reference change re-ran this
+  // effect. The cleanup below only sets `cancelled = true` — it never
+  // called `registration.removeEventListener('updatefound', ...)` — so the
+  // *first* (stale) run's listener stayed attached alongside the second
+  // (live) run's listener, both on the same registration.
+  //
+  // When a real update later reached `installed`, both `watchInstallingWorker`
+  // listeners fired synchronously for the same `statechange` event. The
+  // module-level `applying` flag (see above) only guards against a
+  // *second concurrent* run — it doesn't help here, because whichever
+  // listener acquired `applying` first could be the *stale* (cancelled)
+  // one: it sets `applying = true` synchronously, the live listener's call
+  // synchronously no-ops via `if (applying) return`, and then the stale
+  // listener resumes after `await waitUntilIdle()`, sees
+  // `cancelled === true`, resets `applying = false`, and bails — with no
+  // one left to retry. Net effect: the update was silently dropped, with
+  // no error and no overlay, defeating the mount-time detection and
+  // busy-regate work this file exists for. This file has no jsdom/RTL test
+  // (vitest.config.ts is node-env, *.test.ts only) — see
+  // ServiceWorkerRegister.test.ts for a source-shape regression guard.
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
 
@@ -98,7 +140,7 @@ export default function ServiceWorkerRegister() {
       }
 
       console.info('New version available, reloading...')
-      showUpdateOverlay(t('pwaUpdateRestarting'))
+      showUpdateOverlay(tRef.current('pwaUpdateRestarting'))
       sessionStorage.setItem(SW_UPDATE_KEY, Date.now().toString())
 
       // The overlay covers the screen, but that only blocks pointer-driven
@@ -164,7 +206,7 @@ export default function ServiceWorkerRegister() {
     return () => {
       cancelled = true
     }
-  }, [t])
+  }, [])
 
   return null
 }
