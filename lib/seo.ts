@@ -20,17 +20,6 @@ const copy = {
     appleTitle: '間違いサラダ',
     description:
       '2枚の画像を並べて拡大・比較できる間違い探しのおたすけツール。答え合わせやヒント探しに便利。インストール不要、ブラウザだけで動きます。',
-    keywords: [
-      '間違い探し',
-      '間違いさがし',
-      'まちがいさがし',
-      '間違いサラダ',
-      '答え合わせ',
-      'ヒント',
-      '画像比較',
-      '拡大',
-      'ツール',
-    ],
     ogLocale: 'ja_JP',
     altLocale: 'en_US',
   },
@@ -40,15 +29,6 @@ const copy = {
     appleTitle: 'Machigai Salad',
     description:
       'A browser-only tool that helps you solve spot-the-difference puzzles: overlay two photos and only the differences wiggle. Free, no install, works on your phone.',
-    keywords: [
-      'spot the difference',
-      'find the difference',
-      'spot the difference solver',
-      'spot the difference helper',
-      'image comparison',
-      'puzzle tool',
-      'Machigai Salad',
-    ],
     ogLocale: 'en_US',
     altLocale: 'ja_JP',
   },
@@ -60,7 +40,6 @@ export function buildMetadata(lang: SeoLang): Metadata {
     metadataBase: new URL(siteUrl),
     title: c.title,
     description: c.description,
-    keywords: c.keywords,
     manifest: '/manifest.webmanifest',
     appleWebApp: {
       capable: true,
